@@ -52,17 +52,32 @@ model User {
   @@map("users")
 }
 
+enum CustomerTier {
+  VIP
+  REGULAR
+  PREMIUM
+  NEW
+}
+
 model Customer {
-  id            String       @id @default(cuid())
-  name          String
-  contactInfo   String?
-  paymentTerms  PaymentTerms @default(CASH)
-  requiresInvoice Boolean    @default(false)
-  customerTier  String       @default("REGULAR") // VIP, REGULAR, PREMIUM, NEW
-  notes         String?
-  isActive      Boolean      @default(true)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id              String       @id @default(cuid())
+  customer_code   String       @unique // C00001, C00002 等
+  name            String
+  contact_person  String?      // 主要聯絡人
+  phone           String?
+  email           String?
+  company         String?      // 公司名稱
+  tax_id          String?      // 統一編號
+  address         String?      // 聯絡地址
+  shipping_address String?     // 送貨地址
+  tier            CustomerTier @default(REGULAR)
+  paymentTerms    PaymentTerms @default(CASH)
+  requiresInvoice Boolean      @default(false)
+  credit_limit    Float?       // 信用額度
+  notes           String?
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   // 關聯表
   sales Sale[]
@@ -73,7 +88,8 @@ model Customer {
 
 model Product {
   id               String           @id @default(cuid())
-  code             String           @unique
+  product_code     String           @unique // P00001, P00002 等
+  code             String           @unique // 保留向後相容性
   name             String
   category         AlcoholCategory
   volume_ml        Int              // 容量(ml) - 統一命名規範
@@ -109,23 +125,31 @@ model Product {
   @@map("products")
 }
 
+enum VariantType {
+  A  // 一般版
+  B  // 年度限定版
+  C  // 紀念版
+  D  // 特殊限定版
+  X  // 損傷品
+}
+
 model ProductVariant {
-  id              String  @id @default(cuid())
+  id              String      @id @default(cuid())
   productId       String
-  variantCode     String  // W001-A, W001-C, W001-X
-  variantType     String  // A, B, C, D, X (損傷品)
-  description     String  // "一般版", "100周年紀念版", "損傷品"
-  basePrice       Float   // 基礎售價
-  currentPrice    Float   // 目前售價
-  discountRate    Float?  // 折扣率 (損傷品用)
-  limitedEdition  Boolean @default(false)
+  variant_code    String      @unique // P00001-A, P00001-C, P00001-X
+  variantType     VariantType // A, B, C, D, X
+  description     String      // "一般版", "100周年紀念版", "損傷品"
+  basePrice       Float       // 基礎售價
+  currentPrice    Float       // 目前售價
+  discountRate    Float?      // 折扣率 (損傷品用)
+  limitedEdition  Boolean     @default(false)
   productionYear  Int?
   serialNumber    String?
-  condition       String  @default("正常") // 商品狀況
-  stock           Int     @default(0)
-  cost            Float   @default(0) // 實際成本
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  condition       String      @default("正常") // 商品狀況
+  stock           Int         @default(0)
+  cost            Float       @default(0) // 實際成本
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   // 關聯
   product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
