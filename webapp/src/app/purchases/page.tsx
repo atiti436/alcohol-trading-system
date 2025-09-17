@@ -16,7 +16,11 @@ import {
   Tooltip,
   DatePicker,
   InputNumber,
-  Divider
+  Divider,
+  Spin,
+  Empty,
+  Skeleton,
+  Result
 } from 'antd'
 import {
   PlusOutlined,
@@ -30,6 +34,8 @@ import {
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
+import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components/auth/RoleGuard'
+import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/ui/SecurePriceDisplay'
 
 const { Search } = Input
 const { Option } = Select
@@ -89,16 +95,24 @@ export default function PurchasesPage() {
     orderBy: 'createdAt',
     order: 'desc'
   })
+  const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({})
+  const [error, setError] = useState<string | null>(null)
+  const [initialLoading, setInitialLoading] = useState(true)
 
   // Modal狀態
   const [modalVisible, setModalVisible] = useState(false)
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [form] = Form.useForm()
+  const [submitting, setSubmitting] = useState(false)
 
   // 載入採購單列表
-  const loadPurchases = async () => {
-    setLoading(true)
+  const loadPurchases = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true)
+    }
+    setError(null)
+
     try {
       const queryParams = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
@@ -108,19 +122,34 @@ export default function PurchasesPage() {
       })
 
       const response = await fetch(`/api/purchases?${queryParams}`)
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       const result = await response.json()
 
       if (result.success) {
         setPurchases(result.data.purchases)
         setTotal(result.data.total)
+        setError(null)
       } else {
-        message.error(result.error || '載入失敗')
+        throw new Error(result.error || '載入失敗')
       }
     } catch (error) {
-      message.error('載入採購單列表失敗')
-      console.error(error)
+      console.error('載入採購單列表失敗:', error)
+      const errorMessage = error instanceof Error ? error.message : '載入採購單列表失敗'
+      setError(errorMessage)
+
+      // 只在首次載入時顯示錯誤訊息，避免干擾用戶操作
+      if (initialLoading) {
+        message.error(errorMessage)
+      }
     } finally {
       setLoading(false)
+      if (initialLoading) {
+        setInitialLoading(false)
+      }
     }
   }
 
@@ -204,7 +233,13 @@ export default function PurchasesPage() {
       render: (record: Purchase) => (
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontWeight: 'bold' }}>
-            {record.currency} {record.totalAmount.toLocaleString()}
+            <SecurePriceDisplay
+              amount={record.totalAmount}
+              currency={record.currency}
+              allowedRoles={['SUPER_ADMIN', 'EMPLOYEE']}
+              displayMultiplier={0.8}
+              showFallbackIcon={true}
+            />
           </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
             匯率 {record.exchangeRate}
@@ -277,47 +312,55 @@ export default function PurchasesPage() {
             />
           </Tooltip>
 
-          {/* 編輯按鈕 - 只有草稿和待審狀態可編輯 */}
-          {['DRAFT', 'PENDING'].includes(record.status) &&
-           session?.user?.role !== 'INVESTOR' && (
-            <Tooltip title="編輯">
-              <Button
-                icon={<EditOutlined />}
-                size="small"
-                onClick={() => handleEdit(record)}
-              />
-            </Tooltip>
+          {/* 編輯按鈕 - 只有草稿和待審狀態可編輯，投資方隱藏 */}
+          {['DRAFT', 'PENDING'].includes(record.status) && (
+            <HideFromInvestor>
+              <Tooltip title="編輯">
+                <Button
+                  icon={<EditOutlined />}
+                  size="small"
+                  onClick={() => handleEdit(record)}
+                />
+              </Tooltip>
+            </HideFromInvestor>
           )}
 
-          {/* 確認按鈕 - 草稿和待審狀態可確認 */}
-          {['DRAFT', 'PENDING'].includes(record.status) &&
-           session?.user?.role !== 'INVESTOR' && (
-            <Tooltip title="確認採購單">
-              <Button
-                icon={<CheckOutlined />}
-                size="small"
-                type="primary"
-                onClick={() => handleConfirm(record)}
-              />
-            </Tooltip>
+          {/* 確認按鈕 - 草稿和待審狀態可確認，投資方隱藏 */}
+          {['DRAFT', 'PENDING'].includes(record.status) && (
+            <HideFromInvestor>
+              <Tooltip title="確認採購單">
+                <Button
+                  icon={<CheckOutlined />}
+                  size="small"
+                  type="primary"
+                  loading={actionLoading[`confirm-${record.id}`]}
+                  onClick={() => handleConfirm(record)}
+                />
+              </Tooltip>
+            </HideFromInvestor>
           )}
 
           {/* 刪除按鈕 - 只有超級管理員可刪除草稿 */}
-          {record.status === 'DRAFT' && session?.user?.role === 'SUPER_ADMIN' && (
-            <Popconfirm
-              title="確定要刪除此採購單嗎？"
-              onConfirm={() => handleDelete(record.id)}
-              okText="確定"
-              cancelText="取消"
-            >
-              <Tooltip title="刪除">
-                <Button
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  danger
-                />
-              </Tooltip>
-            </Popconfirm>
+          {record.status === 'DRAFT' && (
+            <SuperAdminOnly>
+              <Popconfirm
+                title="確定要刪除此採購單嗎？"
+                description="刪除後將無法復原"
+                onConfirm={() => handleDelete(record.id)}
+                okText="確定"
+                cancelText="取消"
+                okButtonProps={{ loading: actionLoading[`delete-${record.id}`] }}
+              >
+                <Tooltip title="刪除">
+                  <Button
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    danger
+                    loading={actionLoading[`delete-${record.id}`]}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </SuperAdminOnly>
           )}
         </Space>
       )
@@ -351,6 +394,9 @@ export default function PurchasesPage() {
 
   // 處理確認採購單
   const handleConfirm = async (purchase: Purchase) => {
+    const actionKey = `confirm-${purchase.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
     try {
       const response = await fetch(`/api/purchases/${purchase.id}/confirm`, {
         method: 'POST',
@@ -362,20 +408,25 @@ export default function PurchasesPage() {
 
       const result = await response.json()
 
-      if (result.success) {
+      if (response.ok && result.success) {
         message.success('採購單確認成功')
-        loadPurchases()
+        await loadPurchases(false) // 重新載入但不顯示loading
       } else {
         message.error(result.error || '確認失敗')
       }
     } catch (error) {
       console.error('確認採購單失敗:', error)
-      message.error('確認失敗')
+      message.error('確認失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }
   }
 
   // 處理刪除
   const handleDelete = async (id: string) => {
+    const actionKey = `delete-${id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
     try {
       const response = await fetch(`/api/purchases/${id}`, {
         method: 'DELETE'
@@ -383,63 +434,171 @@ export default function PurchasesPage() {
 
       const result = await response.json()
 
-      if (result.success) {
+      if (response.ok && result.success) {
         message.success('採購單已刪除')
-        loadPurchases()
+        await loadPurchases(false) // 重新載入但不顯示loading
       } else {
         message.error(result.error || '刪除失敗')
       }
     } catch (error) {
       console.error('刪除採購單失敗:', error)
-      message.error('刪除失敗')
+      message.error('刪除失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }
+  }
+
+  // 表單送出狀態
+  const [submitting, setSubmitting] = useState(false)
+
+  // 自定義驗證規則
+  const validationRules = {
+    supplier: [
+      { required: true, message: '請輸入供應商名稱' },
+      { min: 2, message: '供應商名稱至少需要2個字符' },
+      { max: 100, message: '供應商名稱不能超過100個字符' },
+      { pattern: /^[^<>"'&]*$/, message: '供應商名稱包含不允許的字符' }
+    ],
+    currency: [
+      { required: true, message: '請選擇幣別' }
+    ],
+    exchangeRate: [
+      { required: true, message: '請輸入匯率' },
+      { type: 'number', min: 0.001, message: '匯率必須大於0' },
+      { type: 'number', max: 1000, message: '匯率不能超過1000' }
+    ],
+    fundingSource: [
+      { required: true, message: '請選擇資金來源' }
+    ],
+    declarationNumber: [
+      { max: 50, message: '報單號碼不能超過50個字符' },
+      { pattern: /^[A-Za-z0-9\-_]*$/, message: '報單號碼只能包含字母、數字、連字符和下劃線' }
+    ],
+    notes: [
+      { max: 500, message: '備註不能超過500個字符' }
+    ]
   }
 
   // 處理儲存
   const handleSave = async (values: any) => {
+    setSubmitting(true)
     try {
+      // 額外驗證
+      const validationErrors = []
+
+      // 檢查供應商名稱是否重複（如果是新增）
+      if (!editingPurchase) {
+        const duplicateSupplier = purchases.find(p =>
+          p.supplier.toLowerCase() === values.supplier.toLowerCase() &&
+          p.status === 'DRAFT'
+        )
+        if (duplicateSupplier) {
+          validationErrors.push('該供應商已有未完成的草稿採購單，請先處理現有採購單')
+        }
+      }
+
+      // 檢查報單號碼是否重複
+      if (values.declarationNumber) {
+        const duplicateDeclaration = purchases.find(p =>
+          p.declarationNumber === values.declarationNumber &&
+          p.id !== editingPurchase?.id
+        )
+        if (duplicateDeclaration) {
+          validationErrors.push('報單號碼已存在，請使用不同的報單號碼')
+        }
+      }
+
+      // 檢查報關日期不能早於今天太久
+      if (values.declarationDate) {
+        const daysDiff = dayjs().diff(dayjs(values.declarationDate), 'days')
+        if (daysDiff > 365) {
+          validationErrors.push('報關日期不能早於一年前')
+        }
+        if (daysDiff < -30) {
+          validationErrors.push('報關日期不能超過未來30天')
+        }
+      }
+
+      if (validationErrors.length > 0) {
+        message.error(validationErrors[0])
+        return
+      }
+
       const url = editingPurchase
         ? `/api/purchases/${editingPurchase.id}`
         : '/api/purchases'
 
       const method = editingPurchase ? 'PUT' : 'POST'
 
+      const requestData = {
+        ...values,
+        declarationDate: values.declarationDate?.toISOString(),
+        totalAmount: 0, // 初始金額，後續添加商品時計算
+        items: [] // 基礎版本暫時不處理採購明細
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          ...values,
-          declarationDate: values.declarationDate?.toISOString(),
-          items: [] // 基礎版本暫時不處理採購明細
-        })
+        body: JSON.stringify(requestData)
       })
 
       const result = await response.json()
 
-      if (result.success) {
+      if (response.ok && result.success) {
         message.success(editingPurchase ? '採購單更新成功' : '採購單創建成功')
         setModalVisible(false)
         setEditingPurchase(null)
         form.resetFields()
-        loadPurchases()
+        await loadPurchases() // 等待重新載入完成
       } else {
-        message.error(result.error || '操作失敗')
+        // 處理不同類型的錯誤
+        if (response.status === 400) {
+          message.error(`資料驗證失敗：${result.error || '請檢查輸入資料'}`)
+        } else if (response.status === 401) {
+          message.error('您沒有權限執行此操作')
+        } else if (response.status === 403) {
+          message.error('操作被拒絕，請檢查您的權限')
+        } else if (response.status === 500) {
+          message.error('伺服器錯誤，請稍後再試')
+        } else {
+          message.error(result.error || '操作失敗，請重試')
+        }
+
+        // 如果是特定欄位錯誤，嘗試設置欄位錯誤
+        if (result.field) {
+          form.setFields([{
+            name: result.field,
+            errors: [result.error]
+          }])
+        }
       }
     } catch (error) {
       console.error('儲存採購單失敗:', error)
-      message.error('操作失敗')
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        message.error('網路連線錯誤，請檢查網路連線')
+      } else {
+        message.error('操作失敗，請重試')
+      }
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', minHeight: '100vh' }}>
+      <Spin spinning={initialLoading} tip="正在載入採購單資料...">
       <Card
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
             <FileTextOutlined />
-            採購管理
+            <span style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>採購管理</span>
           </div>
         }
         extra={
@@ -448,9 +607,11 @@ export default function PurchasesPage() {
               placeholder="搜尋採購單號、供應商..."
               allowClear
               style={{ width: 250 }}
+              loading={loading}
               onSearch={(value) => setFilters(prev => ({ ...prev, search: value, page: 1 }))}
+              enterButton
             />
-            {session?.user?.role !== 'INVESTOR' && (
+            <HideFromInvestor>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -458,29 +619,62 @@ export default function PurchasesPage() {
               >
                 新增採購單
               </Button>
-            )}
+            </HideFromInvestor>
           </Space>
         }
       >
-        <Table
-          columns={columns}
-          dataSource={purchases}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            current: filters.page,
-            pageSize: filters.limit,
-            total: total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `第 ${range[0]}-${range[1]} 項，共 ${total} 項`,
-            onChange: (page, limit) =>
-              setFilters(prev => ({ ...prev, page, limit }))
-          }}
-          scroll={{ x: 1200 }}
-        />
+        {error ? (
+          <Result
+            status="error"
+            title="載入失敗"
+            subTitle={error}
+            extra={[
+              <Button type="primary" key="retry" onClick={() => loadPurchases()}>
+                重新載入
+              </Button>
+            ]}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={purchases}
+            rowKey="id"
+            loading={loading}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="暫無採購單資料"
+                >
+                  <HideFromInvestor>
+                    <Button type="primary" onClick={() => handleEdit()}>
+                      新增第一筆採購單
+                    </Button>
+                  </HideFromInvestor>
+                </Empty>
+              )
+            }}
+            pagination={{
+              current: filters.page,
+              pageSize: filters.limit,
+              total: total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              responsive: true,
+              showTotal: (total, range) =>
+                `第 ${range[0]}-${range[1]} 項，共 ${total} 項`,
+              onChange: (page, limit) =>
+                setFilters(prev => ({ ...prev, page, limit })),
+              disabled: loading
+            }}
+            scroll={{
+              x: 'max-content'
+            }}
+            size="small"
+          />
+        )}
       </Card>
+      </Spin>
 
       {/* 新增/編輯採購單Modal */}
       <Modal
@@ -492,33 +686,59 @@ export default function PurchasesPage() {
           form.resetFields()
         }}
         onOk={() => form.submit()}
-        width={600}
+        confirmLoading={submitting}
+        okButtonProps={{ loading: submitting }}
+        cancelButtonProps={{ disabled: submitting }}
+        width="90%"
+        style={{
+          maxWidth: '600px',
+          width: '90vw'
+        }}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSave}
+          validateTrigger={['onBlur', 'onChange']}
+          scrollToFirstError
         >
           <Form.Item
             name="supplier"
             label="供應商"
-            rules={[{ required: true, message: '請輸入供應商' }]}
+            rules={validationRules.supplier}
+            hasFeedback
           >
-            <Input placeholder="請輸入供應商名稱" />
+            <Input
+              placeholder="請輸入供應商名稱"
+              maxLength={100}
+              showCount
+              disabled={submitting}
+            />
           </Form.Item>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px'
+          }}>
             <Form.Item
               name="currency"
               label="幣別"
               style={{ flex: 1 }}
-              rules={[{ required: true, message: '請選擇幣別' }]}
+              rules={validationRules.currency}
+              hasFeedback
             >
-              <Select placeholder="請選擇幣別">
+              <Select
+                placeholder="請選擇幣別"
+                disabled={submitting}
+                showSearch
+                optionFilterProp="children"
+              >
                 <Option value="JPY">日圓 (JPY)</Option>
                 <Option value="USD">美元 (USD)</Option>
                 <Option value="EUR">歐元 (EUR)</Option>
                 <Option value="GBP">英鎊 (GBP)</Option>
+                <Option value="TWD">新台幣 (TWD)</Option>
               </Select>
             </Form.Item>
 
@@ -526,13 +746,20 @@ export default function PurchasesPage() {
               name="exchangeRate"
               label="匯率"
               style={{ flex: 1 }}
-              rules={[{ required: true, message: '請輸入匯率' }]}
+              rules={validationRules.exchangeRate}
+              hasFeedback
+              extra="請輸入相對於新台幣的匯率"
             >
               <InputNumber
                 style={{ width: '100%' }}
                 placeholder="請輸入匯率"
-                step={0.01}
-                min={0}
+                step={0.001}
+                min={0.001}
+                max={1000}
+                precision={3}
+                disabled={submitting}
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
               />
             </Form.Item>
           </div>
@@ -540,37 +767,84 @@ export default function PurchasesPage() {
           <Form.Item
             name="fundingSource"
             label="資金來源"
-            rules={[{ required: true, message: '請選擇資金來源' }]}
+            rules={validationRules.fundingSource}
+            hasFeedback
+            extra="個人調貨將影響庫存分配和成本計算"
           >
-            <Select placeholder="請選擇資金來源">
+            <Select
+              placeholder="請選擇資金來源"
+              disabled={submitting}
+            >
               <Option value="COMPANY">公司資金</Option>
               <Option value="PERSONAL">個人調貨</Option>
             </Select>
           </Form.Item>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <Divider>報關資訊（選填）</Divider>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px'
+          }}>
             <Form.Item
               name="declarationNumber"
               label="報單號碼"
               style={{ flex: 1 }}
+              rules={validationRules.declarationNumber}
+              hasFeedback
             >
-              <Input placeholder="請輸入報單號碼" />
+              <Input
+                placeholder="請輸入報單號碼"
+                maxLength={50}
+                disabled={submitting}
+              />
             </Form.Item>
 
             <Form.Item
               name="declarationDate"
               label="報關日期"
               style={{ flex: 1 }}
+              dependencies={['declarationNumber']}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (getFieldValue('declarationNumber') && !value) {
+                      return Promise.reject(new Error('填寫報單號碼時必須選擇報關日期'))
+                    }
+                    return Promise.resolve()
+                  },
+                })
+              ]}
             >
-              <DatePicker style={{ width: '100%' }} />
+              <DatePicker
+                style={{ width: '100%' }}
+                placeholder="請選擇報關日期"
+                disabled={submitting}
+                disabledDate={(current) => {
+                  // 不能選擇未來超過30天或過去超過365天的日期
+                  const today = dayjs()
+                  return current && (
+                    current.isAfter(today.add(30, 'days')) ||
+                    current.isBefore(today.subtract(365, 'days'))
+                  )
+                }}
+              />
             </Form.Item>
           </div>
 
           <Form.Item
             name="notes"
             label="備註"
+            rules={validationRules.notes}
           >
-            <TextArea rows={3} placeholder="請輸入備註資訊" />
+            <TextArea
+              rows={3}
+              placeholder="請輸入備註資訊"
+              maxLength={500}
+              showCount
+              disabled={submitting}
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -584,7 +858,11 @@ export default function PurchasesPage() {
           setEditingPurchase(null)
         }}
         footer={null}
-        width={800}
+        width="90%"
+        style={{
+          maxWidth: '800px',
+          width: '90vw'
+        }}
       >
         {editingPurchase && (
           <div>
@@ -603,7 +881,15 @@ export default function PurchasesPage() {
                     {getFundingSourceName(editingPurchase.fundingSource)}
                   </Tag>
                 </div>
-                <div><strong>總金額：</strong>{editingPurchase.currency} {editingPurchase.totalAmount.toLocaleString()}</div>
+                <div><strong>總金額：</strong>
+                  <SecurePriceDisplay
+                    amount={editingPurchase.totalAmount}
+                    currency={editingPurchase.currency}
+                    allowedRoles={['SUPER_ADMIN', 'EMPLOYEE']}
+                    displayMultiplier={0.8}
+                    showFallbackIcon={true}
+                  />
+                </div>
                 <div><strong>匯率：</strong>{editingPurchase.exchangeRate}</div>
               </div>
             </div>

@@ -150,6 +150,7 @@ model ProductVariant {
   reserved_stock    Int         @default(0)    // 預留庫存
   available_stock   Int         @default(0)    // 可售庫存
   cost_price        Float       @default(0)    // 實際成本
+  weight_kg         Float       @default(0)    // 商品重量(kg) - 遵循DATA_MODELS.md規範
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
