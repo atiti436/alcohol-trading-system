@@ -146,14 +146,17 @@ model ProductVariant {
   productionYear  Int?
   serialNumber    String?
   condition       String      @default("正常") // 商品狀況
-  stock           Int         @default(0)
-  cost            Float       @default(0) // 實際成本
+  stock_quantity    Int         @default(0)    // 總庫存
+  reserved_stock    Int         @default(0)    // 預留庫存
+  available_stock   Int         @default(0)    // 可售庫存
+  cost_price        Float       @default(0)    // 實際成本
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   // 關聯
-  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  saleItems     SaleItem[]
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  saleItems          SaleItem[]
+  inventoryMovements InventoryMovement[]
 
   @@unique([productId, variantType])
   @@map("product_variants")
@@ -182,6 +185,27 @@ model CustomerSpecialPrice {
 
   @@unique([customer_id, product_id])
   @@map("customer_special_prices")
+}
+
+model InventoryMovement {
+  id              String   @id @default(cuid())
+  variantId       String
+  movementType    String   // 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'TRANSFER'
+  adjustmentType  String?  // 'ADD' | 'SUBTRACT' | 'SET' (只有ADJUSTMENT時使用)
+  quantity        Int      // 異動數量
+  previousStock   Int      // 異動前庫存
+  newStock        Int      // 異動後庫存
+  reason          String   // 異動原因
+  notes           String?  // 備註
+  referenceId     String?  // 關聯單據ID (採購單、銷售單等)
+  referenceType   String?  // 關聯單據類型
+  createdBy       String   // 操作者
+  created_at      DateTime @default(now())
+
+  // 關聯
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_movements")
 }
 
 model Purchase {
