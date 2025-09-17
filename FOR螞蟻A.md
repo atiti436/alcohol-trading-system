@@ -342,6 +342,61 @@ git checkout main  # 回到最新版本
 
 ---
 
+## 🔄 **專案狀態總覽** (給新Claude的快速導引)
+
+### 🎯 專案基本資訊
+- **專案名稱**: 酒類進口貿易管理系統
+- **技術棧**: Next.js 14 + React + TypeScript + Ant Design + Prisma ORM
+- **目前資料庫**: Zeabur PostgreSQL (可無痛切換Firebase)
+- **部署**: Vercel (準備中)
+- **專案位置**: `G:\CLAUDE專案\alcohol-trading-system\webapp`
+
+### 📊 開發進度 (最後更新: 2025-09-17)
+- ✅ **Room-1**: 基礎架構 100% (認證、權限、Dashboard)
+- ✅ **Room-2**: 客戶管理 100% (客戶CRUD + 專價系統)
+- ✅ **Room-3**: 採購庫存 87% (採購管理 + 庫存基礎)
+- ✅ **Room-4**: 銷售會計 100% (銷售系統 + 會計整合 + 帳齡分析)
+- 🟡 **Room-5**: 報表分析 (待開始)
+- 🟡 **Room-6**: AI智慧助手 (待開始 - API串接時機)
+- 🟡 **Room-7**: UI/UX專門 (待開始)
+
+### 🔑 重要文件快速導覽
+- **FOR螞蟻A.md**: 本文件 (螞蟻A工作指引)
+- **FOR螞蟻B.md**: 螞蟻B工作指引 (包含最新專案狀態)
+- **webapp/prisma/schema.prisma**: 資料庫模型 (Prisma ORM支援切換)
+- **.env.local**: 環境變數 (DATABASE_URL等)
+
+### 🚀 常用指令
+```bash
+# 啟動開發
+cd webapp && npm run dev
+
+# 資料庫操作
+cd webapp && npx prisma studio     # 查看資料庫
+cd webapp && npx prisma migrate dev # 遷移
+```
+
+### 🔄 如需切換資料庫 (未來給新Claude)
+老闆對新Claude說：
+```
+請讀取 "G:\CLAUDE專案\alcohol-trading-system\FOR螞蟻A.md"
+我需要從 [目前資料庫] 切換到 [新資料庫]
+新的DATABASE_URL: [貼上連線字串]
+請按照文件中的步驟執行切換。
+```
+
+步驟：
+1. 更新 `.env.local` 中的 `DATABASE_URL`
+2. 執行 `npx prisma db push`
+3. 測試各角色登入和數據隔離功能
+
+### 📞 第三方API狀態
+- **Google Gemini API**: Room-6完成後串接
+- **LINE Bot API**: Room-6完成後串接
+- **Google OAuth**: 已整合完成
+
+---
+
 ## 🎯 您的使命
 確保系統的安全性和品質，特別是保護老闆的商業機密。投資方數據隔離是您檢查的最高優先級！
 

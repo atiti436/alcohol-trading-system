@@ -571,5 +571,36 @@ Room-3已建立了重要的安全組件，Room-4開發時**必須使用**：
 
 ---
 
+---
+
+## 💡 **實戰經驗精華** (Token節省策略)
+
+### 🔥 **核心教訓 (避免重複踩坑)**
+1. **嚴格遵循命名規範**：
+   - ✅ `stock_quantity`, `alc_percentage`
+   - ❌ `stock`, `abv` (會被螞蟻A退回重做)
+
+2. **直接復用安全組件**：
+   ```tsx
+   import { RoleGuard, HideFromInvestor } from '@/components/auth/RoleGuard'
+   import { SecurePriceDisplay } from '@/components/ui/SecurePriceDisplay'
+   ```
+
+3. **品質標準認知**：
+   - 螞蟻A要求85%品質標準
+   - 寧可一開始就做對，不要想著後續優化
+
+### ⚡ **Token使用實況**
+- Room-2: ~85-95k tokens
+- Room-3: ~120-140k tokens
+- Room-4: ~100k tokens (有復用優勢)
+
+### 🎯 **最有效的省Token策略**
+1. **開工前集中閱讀所有文檔** (避免重複讀取)
+2. **直接按85%標準開發** (避免返工)
+3. **主動階段性交接** (token用完前交接)
+
+---
+
 ## 🎯 您的使命
 實作高品質的代碼，確保商業邏輯正確，特別是保護老闆的雙重價格機密！使用已建立的安全組件，遵循統一命名規範，Git版本控制和Token使用效率同樣重要！
