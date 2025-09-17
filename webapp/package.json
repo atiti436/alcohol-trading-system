@@ -6,7 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "jest",
+    "test:security": "jest src/tests/security/",
+    "seed:test": "npx tsx prisma/seeds/test-data.ts",
+    "verify:isolation": "npx tsx -e \"import {verifyDataIsolation} from './prisma/seeds/test-data'; verifyDataIsolation().then(console.log).catch(console.error)\""
   },
   "dependencies": {
     "react": "19.1.0",
