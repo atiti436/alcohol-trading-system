@@ -46,8 +46,11 @@ model User {
   updatedAt   DateTime @updatedAt
 
   // 關聯表
-  createdPurchases Purchase[]
-  createdSales     Sale[]
+  createdPurchases        Purchase[]
+  createdSales           Sale[]
+  createdAccountingEntries AccountingEntry[]
+  createdAccountsReceivable AccountsReceivable[]
+  createdPaymentRecords   PaymentRecord[]
 
   @@map("users")
 }
@@ -314,6 +317,7 @@ model Sale {
   customer Customer   @relation(fields: [customerId], references: [id])
   creator  User       @relation(fields: [createdBy], references: [id])
   items    SaleItem[]
+  accountsReceivable AccountsReceivable[]
 
   @@map("sales")
 }
@@ -360,4 +364,88 @@ model AuditLog {
   accessedPersonalData  Boolean @default(false) // 是否存取個人調貨資料
 
   @@map("audit_logs")
+}
+
+// 🧮 會計系統模型 - Room-4 擴展
+
+model AccountingEntry {
+  id              String   @id @default(cuid())
+  entryNumber     String   @unique // AE20250917001
+  entryDate       DateTime // 入帳日期
+  entryType       String   // 'SALE' | 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT'
+  referenceId     String?  // 關聯單據ID (銷售單、採購單等)
+  referenceType   String?  // 關聯單據類型
+  description     String   // 摘要說明
+  totalAmount     Float    // 合計金額
+  isPosted        Boolean  @default(false) // 是否過帳
+  notes           String?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 關聯
+  creator         User              @relation(fields: [createdBy], references: [id])
+  journalEntries  JournalEntry[]
+
+  @@map("accounting_entries")
+}
+
+model JournalEntry {
+  id                String   @id @default(cuid())
+  accountingEntryId String
+  accountCode       String   // 會科代碼 (1101, 4101 etc.)
+  accountName       String   // 會科名稱 (現金, 銷貨收入 etc.)
+  debitAmount       Float    @default(0) // 借方金額
+  creditAmount      Float    @default(0) // 貸方金額
+  description       String?  // 明細說明
+  createdAt         DateTime @default(now())
+
+  // 關聯
+  accountingEntry   AccountingEntry @relation(fields: [accountingEntryId], references: [id], onDelete: Cascade)
+
+  @@map("journal_entries")
+}
+
+// 應收帳款管理
+model AccountsReceivable {
+  id              String       @id @default(cuid())
+  arNumber        String       @unique // AR20250917001
+  customerId      String
+  saleId          String       // 關聯銷售單
+  originalAmount  Float        // 原始應收金額
+  remainingAmount Float        // 剩餘應收金額
+  dueDate         DateTime     // 到期日
+  status          String       @default("OUTSTANDING") // OUTSTANDING, OVERDUE, PAID, PARTIAL
+  daysPastDue     Int          @default(0) // 逾期天數
+  notes           String?
+  createdBy       String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // 關聯
+  customer        Customer            @relation(fields: [customerId], references: [id])
+  sale            Sale                @relation(fields: [saleId], references: [id])
+  creator         User                @relation(fields: [createdBy], references: [id])
+  payments        PaymentRecord[]
+
+  @@map("accounts_receivable")
+}
+
+model PaymentRecord {
+  id                     String   @id @default(cuid())
+  paymentNumber          String   @unique // PMT20250917001
+  accountsReceivableId   String
+  paymentAmount          Float    // 付款金額
+  paymentDate            DateTime // 付款日期
+  paymentMethod          String   // 'CASH' | 'TRANSFER' | 'CHECK' | 'CREDIT_CARD'
+  referenceNumber        String?  // 支票號碼、轉帳序號等
+  notes                  String?
+  createdBy              String
+  createdAt              DateTime @default(now())
+
+  // 關聯
+  accountsReceivable     AccountsReceivable @relation(fields: [accountsReceivableId], references: [id])
+  creator                User               @relation(fields: [createdBy], references: [id])
+
+  @@map("payment_records")
 }
