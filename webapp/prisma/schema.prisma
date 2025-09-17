@@ -112,9 +112,9 @@ model Product {
   currentPrice     Float            // 目前售價
   costPrice        Float            @default(0) // 平均成本價
   minPrice         Float            // 最低售價限制
-  totalStock       Int              @default(0) // 總庫存
-  availableStock   Int              @default(0) // 可售庫存
-  reservedStock    Int              @default(0) // 預留庫存
+  stock_quantity     Int              @default(0) // 總庫存 - 統一命名規範
+  available_stock    Int              @default(0) // 可售庫存
+  reserved_stock     Int              @default(0) // 預留庫存
   isActive         Boolean          @default(true)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt

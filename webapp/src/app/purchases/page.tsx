@@ -35,7 +35,7 @@ import {
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components/auth/RoleGuard'
-import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/ui/SecurePriceDisplay'
+import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
 
 const { Search } = Input
 const { Option } = Select

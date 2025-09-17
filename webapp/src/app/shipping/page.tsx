@@ -33,8 +33,9 @@ import {
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
-import { SecurePriceDisplay } from '@/components/ui/SecurePriceDisplay'
+import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
 import { ShippingOrderModal } from '@/components/shipping/ShippingOrderModal'
+import './shipping-print.css'
 
 const { Search } = Input
 const { Option } = Select
@@ -146,51 +147,8 @@ export default function ShippingPage() {
     }
   }
 
-  // 載入客戶列表
-  const loadCustomers = async () => {
-    try {
-      const response = await fetch('/api/customers?limit=100')
-      const result = await response.json()
-      if (result.success) {
-        setCustomers(result.data.customers)
-      }
-    } catch (error) {
-      console.error('載入客戶失敗:', error)
-    }
-  }
-
-  // 載入可出貨商品
-  const loadAvailableProducts = async () => {
-    try {
-      const response = await fetch('/api/sales?status=paid&limit=100')
-      const result = await response.json()
-      if (result.success) {
-        // 從已付款的銷售單中提取商品
-        const products = result.data.sales.flatMap((sale: any) =>
-          sale.items.map((item: any) => ({
-            key: `${item.productId}-${item.variantId || 'default'}`,
-            productId: item.productId,
-            variantId: item.variantId,
-            name: item.product.name,
-            code: item.product.product_code,
-            variant: item.variant?.description,
-            stock: item.quantity,
-            cost: item.unitPrice,
-            saleId: sale.id,
-            customerId: sale.customerId
-          }))
-        )
-        setAvailableProducts(products)
-      }
-    } catch (error) {
-      console.error('載入商品失敗:', error)
-    }
-  }
-
   useEffect(() => {
     loadShippingOrders()
-    loadCustomers()
-    loadAvailableProducts()
   }, [])
 
   // 獲取出貨狀態顏色
@@ -215,33 +173,6 @@ export default function ShippingPage() {
     return statusNames[status as keyof typeof statusNames] || status
   }
 
-  // 處理商品選擇
-  const handleProductSelection = (targetKeys: string[]) => {
-    setSelectedProducts(targetKeys)
-    const details = targetKeys.map(key => {
-      const product = availableProducts.find(p => p.key === key)
-      return {
-        ...product,
-        quantity: 1,
-        price: product?.cost || 0
-      }
-    })
-    setSelectedProductDetails(details)
-  }
-
-  // 更新數量
-  const updateQuantity = (index: number, quantity: number) => {
-    const newDetails = [...selectedProductDetails]
-    newDetails[index].quantity = quantity
-    setSelectedProductDetails(newDetails)
-  }
-
-  // 更新價格
-  const updatePrice = (index: number, price: number) => {
-    const newDetails = [...selectedProductDetails]
-    newDetails[index].price = price
-    setSelectedProductDetails(newDetails)
-  }
 
   // 創建出貨單
   const handleCreateShipping = async (data: any) => {
@@ -313,7 +244,115 @@ export default function ShippingPage() {
 
   // 導出PDF
   const exportToPDF = () => {
-    message.info('PDF導出功能開發中...')
+    if (selectedShipping) {
+      // 使用瀏覽器列印功能導出PDF
+      const printContent = document.getElementById('printable-content')
+      if (printContent) {
+        const originalContents = document.body.innerHTML
+        const printableContents = printContent.innerHTML
+
+        document.body.innerHTML = `
+          <html>
+            <head>
+              <title>出貨單 - ${selectedShipping.shippingNumber}</title>
+              <style>
+                @media print {
+                  @page {
+                    margin: 2cm;
+                    size: A4;
+                  }
+                  body {
+                    font-family: "Microsoft JhengHei", sans-serif;
+                    font-size: 12px;
+                    line-height: 1.4;
+                    color: #000;
+                  }
+                  .document-header {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    border-bottom: 2px solid #000;
+                  }
+                  .document-info {
+                    text-align: right;
+                  }
+                  .customer-section {
+                    margin: 20px 0;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                  }
+                  table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                  }
+                  th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                  }
+                  th {
+                    background-color: #f5f5f5;
+                    font-weight: bold;
+                  }
+                  .text-right {
+                    text-align: right;
+                  }
+                }
+                body {
+                  font-family: "Microsoft JhengHei", sans-serif;
+                  font-size: 12px;
+                  line-height: 1.4;
+                  color: #000;
+                }
+                .document-header {
+                  display: flex;
+                  justify-content: space-between;
+                  margin-bottom: 20px;
+                  padding-bottom: 10px;
+                  border-bottom: 2px solid #000;
+                }
+                .document-info {
+                  text-align: right;
+                }
+                .customer-section {
+                  margin: 20px 0;
+                  padding: 10px;
+                  border: 1px solid #ddd;
+                }
+                table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-top: 20px;
+                }
+                th, td {
+                  border: 1px solid #ddd;
+                  padding: 8px;
+                  text-align: left;
+                }
+                th {
+                  background-color: #f5f5f5;
+                  font-weight: bold;
+                }
+                .text-right {
+                  text-align: right;
+                }
+              </style>
+            </head>
+            <body>
+              ${printableContents}
+            </body>
+          </html>
+        `
+
+        window.print()
+        document.body.innerHTML = originalContents
+        window.location.reload()
+      }
+    } else {
+      message.error('請先選擇要導出的出貨單')
+    }
   }
 
   // 表格欄位定義
@@ -494,124 +533,12 @@ export default function ShippingPage() {
       </Card>
 
       {/* 創建出貨單Modal */}
-      <Modal
-        title={
-          <Space>
-            <PackageOutlined />
-            出貨單生成
-          </Space>
-        }
-        open={createModalVisible}
-        onCancel={() => {
-          setCreateModalVisible(false)
-          form.resetFields()
-          setSelectedProducts([])
-          setSelectedProductDetails([])
-        }}
-        onOk={() => form.submit()}
-        width={1000}
-        okText="創建出貨單"
-        cancelText="取消"
-      >
-        <Form form={form} layout="vertical" onFinish={handleCreateShipping}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="客戶選擇"
-                name="customerId"
-                rules={[{ required: true, message: '請選擇客戶' }]}
-              >
-                <Select
-                  showSearch
-                  placeholder="選擇客戶"
-                  optionFilterProp="children"
-                >
-                  {customers.map(customer => (
-                    <Option key={customer.id} value={customer.id}>
-                      {customer.name} ({customer.customer_code})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="出貨日期"
-                name="shippingDate"
-                rules={[{ required: true, message: '請選擇出貨日期' }]}
-              >
-                <DatePicker
-                  style={{ width: '100%' }}
-                  defaultValue={dayjs()}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item label="商品選擇">
-            <Transfer
-              dataSource={availableProducts}
-              targetKeys={selectedProducts}
-              onChange={handleProductSelection}
-              render={item => (
-                <div>
-                  <strong>{item.name}</strong>
-                  <div>庫存: {item.stock}瓶 | 成本: NT${item.cost}</div>
-                </div>
-              )}
-              titles={['可出貨商品', '已選商品']}
-              showSearch
-            />
-          </Form.Item>
-
-          {selectedProductDetails.length > 0 && (
-            <Card title="商品明細" className="selected-products">
-              <Table
-                dataSource={selectedProductDetails}
-                pagination={false}
-                size="small"
-                columns={[
-                  { title: '品名', dataIndex: 'name' },
-                  {
-                    title: '出貨數量',
-                    render: (_, record, index) => (
-                      <InputNumber
-                        min={1}
-                        max={record.stock}
-                        value={record.quantity}
-                        onChange={(val) => updateQuantity(index, val || 1)}
-                      />
-                    )
-                  },
-                  {
-                    title: '單價',
-                    render: (_, record, index) => (
-                      <InputNumber
-                        min={0}
-                        value={record.price}
-                        formatter={value => `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                        onChange={(val) => updatePrice(index, val || 0)}
-                      />
-                    )
-                  },
-                  {
-                    title: '小計',
-                    render: (_, record) => (
-                      <Text strong>
-                        NT$ {(record.quantity * record.price).toLocaleString()}
-                      </Text>
-                    )
-                  }
-                ]}
-              />
-            </Card>
-          )}
-
-          <Form.Item label="備註" name="notes">
-            <TextArea rows={3} placeholder="出貨備註" />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <ShippingOrderModal
+        visible={createModalVisible}
+        onCancel={() => setCreateModalVisible(false)}
+        onSubmit={handleCreateShipping}
+        loading={createLoading}
+      />
 
       {/* 出貨單預覽Modal */}
       <Modal

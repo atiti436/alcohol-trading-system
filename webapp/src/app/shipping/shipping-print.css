@@ -1,0 +1,205 @@
+/* 出貨單列印樣式 */
+@media print {
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  body {
+    font-family: "Microsoft JhengHei", "SimHei", sans-serif;
+    font-size: 11px;
+    line-height: 1.3;
+    color: #000;
+    background: white;
+  }
+
+  /* 隱藏不需要的元素 */
+  .ant-modal-mask,
+  .ant-modal-wrap,
+  .ant-btn,
+  .no-print {
+    display: none !important;
+  }
+
+  /* 文檔標題區 */
+  .document-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #000;
+  }
+
+  .document-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .document-info {
+    text-align: right;
+    font-size: 11px;
+  }
+
+  .document-info div {
+    margin-bottom: 3px;
+  }
+
+  /* 客戶資訊區 */
+  .customer-section {
+    margin: 15px 0;
+    padding: 8px;
+    border: 1px solid #333;
+    background-color: #f8f8f8;
+  }
+
+  .customer-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  .ant-row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .ant-col-12 {
+    width: 50%;
+    padding: 0 8px;
+  }
+
+  /* 表格樣式 */
+  .ant-table {
+    margin-top: 15px;
+  }
+
+  .ant-table-thead > tr > th {
+    background-color: #e6e6e6 !important;
+    border: 1px solid #333 !important;
+    padding: 6px 8px !important;
+    font-weight: bold !important;
+    font-size: 10px !important;
+  }
+
+  .ant-table-tbody > tr > td {
+    border: 1px solid #333 !important;
+    padding: 5px 8px !important;
+    font-size: 10px !important;
+    vertical-align: top;
+  }
+
+  .ant-table-summary > tr > td {
+    border: 1px solid #333 !important;
+    padding: 6px 8px !important;
+    font-weight: bold !important;
+    background-color: #f0f0f0 !important;
+  }
+
+  /* 頁尾資訊 */
+  .footer-info {
+    margin-top: 20px;
+    font-size: 10px;
+  }
+
+  .signature-area {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+  }
+
+  .signature-area div {
+    flex: 1;
+    text-align: center;
+    padding: 0 10px;
+  }
+
+  /* 價格顯示 */
+  .secure-price-display {
+    display: inline !important;
+  }
+
+  /* 強制顯示所有內容 */
+  .ant-table-content,
+  .ant-table-scroll {
+    overflow: visible !important;
+  }
+
+  /* 防止分頁 */
+  .printable-content {
+    page-break-inside: avoid;
+  }
+
+  /* 調整間距 */
+  .ant-space {
+    display: inline !important;
+  }
+
+  .ant-typography {
+    margin-bottom: 0 !important;
+  }
+
+  /* 確保文字可見 */
+  * {
+    color: #000 !important;
+    background: transparent !important;
+  }
+
+  .ant-table-thead > tr > th,
+  .ant-table-summary > tr > td {
+    background-color: #f0f0f0 !important;
+  }
+
+  .customer-section {
+    background-color: #f8f8f8 !important;
+  }
+}
+
+/* 預覽模式樣式 */
+.shipping-document {
+  background: white;
+  padding: 20px;
+  font-family: "Microsoft JhengHei", "SimHei", sans-serif;
+}
+
+.shipping-document .document-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #000;
+}
+
+.shipping-document .document-info {
+  text-align: right;
+}
+
+.shipping-document .customer-section {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #d9d9d9;
+  background-color: #fafafa;
+  border-radius: 4px;
+}
+
+.shipping-document .footer-info {
+  margin-top: 20px;
+}
+
+.shipping-document .signature-area {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px solid #d9d9d9;
+}
+
+.shipping-document .signature-area div {
+  flex: 1;
+  text-align: center;
+  padding: 0 15px;
+}

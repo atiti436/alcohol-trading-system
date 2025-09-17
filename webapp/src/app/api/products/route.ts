@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/auth-config'
+import { validateProductData } from '@/lib/validation'
 
 /**
  * 🏠 Room-2: Product 模組 API
@@ -111,9 +112,39 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+
+    // 🔒 嚴格輸入驗證 - 修復安全漏洞
+    let validatedData
+    try {
+      validatedData = validateProductData(body)
+    } catch (validationError) {
+      return NextResponse.json(
+        {
+          error: '輸入資料驗證失敗',
+          details: validationError instanceof Error ? validationError.message : '格式錯誤'
+        },
+        { status: 400 }
+      )
+    }
+
     const {
       name,
+      product_code: inputProductCode,
       category,
+      brand,
+      supplier,
+      costPrice,
+      sellingPrice,
+      investorPrice,
+      stock_quantity,
+      available_stock,
+      safetyStock,
+      description,
+      specifications
+    } = validatedData
+
+    // 從body中提取產品特有欄位（validation後處理）
+    const {
       volume_ml,
       alc_percentage,
       weight,
@@ -123,20 +154,19 @@ export async function POST(request: NextRequest) {
       accessoryWeight,
       accessories = [],
       hsCode,
-      supplier,
       manufacturingDate,
       expiryDate,
       standardPrice,
       currentPrice,
       minPrice,
-      createDefaultVariant = true // 是否自動創建一般版變體
+      createDefaultVariant = true
     } = body
 
-    // 基本驗證
-    if (!name || !category || !volume_ml || !alc_percentage || !standardPrice || !currentPrice || !minPrice) {
+    // 商品特有驗證
+    if (!volume_ml || !alc_percentage || !standardPrice || !currentPrice || !minPrice) {
       return NextResponse.json({
-        error: '必填欄位不完整',
-        required: ['name', 'category', 'volume_ml', 'alc_percentage', 'standardPrice', 'currentPrice', 'minPrice']
+        error: '商品必填欄位不完整',
+        required: ['volume_ml', 'alc_percentage', 'standardPrice', 'currentPrice', 'minPrice']
       }, { status: 400 })
     }
 

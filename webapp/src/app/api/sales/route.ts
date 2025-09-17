@@ -3,6 +3,7 @@ import { withAuth } from '@/modules/auth/middleware/permissions'
 import { filterSalesData } from '@/modules/auth/utils/data-filter'
 import { prisma } from '@/lib/prisma'
 import { PermissionContext, Role } from '@/types/auth'
+import { validateSaleData } from '@/lib/validation'
 
 // 🔒 核心商業邏輯：銷售管理API with 投資方數據隔離
 
@@ -142,6 +143,30 @@ export const POST = withAuth(async (
     }
 
     const body = await req.json()
+
+    // 🔒 嚴格輸入驗證 - 修復安全漏洞
+    let validatedData
+    try {
+      const saleData = {
+        customerId: body.customerId,
+        totalAmount: body.totalAmount || 0, // 將在後面重新計算
+        actualTotalAmount: body.actualTotalAmount || 0, // 將在後面重新計算
+        status: body.status || 'PENDING',
+        paymentStatus: body.paymentStatus || 'PENDING',
+        notes: body.notes || ''
+      }
+      validatedData = validateSaleData(saleData)
+    } catch (validationError) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: '輸入資料驗證失敗',
+          details: validationError instanceof Error ? validationError.message : '格式錯誤'
+        }
+      }, { status: 400 })
+    }
+
     const {
       customerId,
       items,
@@ -151,6 +176,27 @@ export const POST = withAuth(async (
       notes,
       fundingSource = 'COMPANY'
     } = body
+
+    // 額外驗證
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: '至少需要一個銷售項目'
+        }
+      }, { status: 400 })
+    }
+
+    if (!displayPrices || !Array.isArray(displayPrices) || displayPrices.length !== items.length) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: '顯示價格數量必須與項目數量相符'
+        }
+      }, { status: 400 })
+    }
 
     // 🔒 關鍵：雙重價格機制
     // displayPrices: 投資方看到的價格 (例如: 1000)

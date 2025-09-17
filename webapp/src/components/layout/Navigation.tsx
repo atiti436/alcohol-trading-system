@@ -24,7 +24,10 @@ import {
   LogoutOutlined,
   BellOutlined,
   MenuOutlined,
-  WineOutlined
+  WineOutlined,
+  TruckOutlined,
+  FileSearchOutlined,
+  RobotOutlined
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 
@@ -66,9 +69,24 @@ export default function Navigation({ collapsed = false, onCollapse }: Navigation
         label: <Link href="/sales">銷售管理</Link>,
       },
       {
+        key: '/shipping',
+        icon: <TruckOutlined />,
+        label: <Link href="/shipping">出貨管理</Link>,
+      },
+      {
+        key: '/statements',
+        icon: <FileSearchOutlined />,
+        label: <Link href="/statements">對帳管理</Link>,
+      },
+      {
         key: '/reports',
         icon: <BarChartOutlined />,
         label: <Link href="/reports">報表分析</Link>,
+      },
+      {
+        key: '/linebot',
+        icon: <RobotOutlined />,
+        label: <Link href="/linebot">LINE BOT助手</Link>,
       },
     ]
 

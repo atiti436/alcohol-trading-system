@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/auth-config'
+import { validateCustomerData } from '@/lib/validation'
 
 /**
  * 🏠 Room-2: Customer 模組 API
@@ -102,6 +103,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+
+    // 🔒 嚴格輸入驗證 - 修復安全漏洞
+    let validatedData
+    try {
+      validatedData = validateCustomerData(body)
+    } catch (validationError) {
+      return NextResponse.json(
+        {
+          error: '輸入資料驗證失敗',
+          details: validationError instanceof Error ? validationError.message : '格式錯誤'
+        },
+        { status: 400 }
+      )
+    }
+
     const {
       name,
       contact_person,
@@ -110,18 +126,15 @@ export async function POST(request: NextRequest) {
       company,
       tax_id,
       address,
-      shipping_address,
-      tier = 'NEW', // 新客戶預設為NEW
-      paymentTerms = 'CASH',
-      requiresInvoice = false,
-      credit_limit,
+      tier,
+      creditLimit,
+      paymentTerms,
       notes
-    } = body
+    } = validatedData
 
-    // 基本驗證
-    if (!name) {
-      return NextResponse.json({ error: '客戶名稱為必填' }, { status: 400 })
-    }
+    // 額外業務邏輯驗證
+    const shipping_address = body.shipping_address || address
+    const requiresInvoice = Boolean(body.requiresInvoice)
 
     // 生成客戶代碼
     const customer_code = await generateCustomerCode()
@@ -141,7 +154,7 @@ export async function POST(request: NextRequest) {
         tier,
         paymentTerms,
         requiresInvoice,
-        credit_limit,
+        credit_limit: creditLimit,
         notes
       }
     })

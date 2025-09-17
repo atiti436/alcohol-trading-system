@@ -25,7 +25,7 @@ import {
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import { SuperAdminOnly, HideFromInvestor } from '@/components/auth/RoleGuard'
-import { SecurePriceDisplay } from '@/components/ui/SecurePriceDisplay'
+import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
 
 const { Title, Text } = Typography
 

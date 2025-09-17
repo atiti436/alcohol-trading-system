@@ -29,7 +29,7 @@ import {
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
-import { SecurePriceDisplay } from '@/components/ui/SecurePriceDisplay'
+import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
 
 const { Option } = Select
 const { Title, Text } = Typography

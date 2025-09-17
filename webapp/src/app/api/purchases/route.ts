@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/auth-config'
+import { validatePurchaseData } from '@/lib/validation'
 
 /**
  * 🏭 Room-3: Purchase 採購管理 API
@@ -134,6 +135,28 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+
+    // 🔒 嚴格輸入驗證 - 修復安全漏洞
+    let validatedData
+    try {
+      const purchaseData = {
+        supplierId: body.supplierId || 'temp-supplier', // 兼容舊格式
+        totalAmount: body.totalAmount || 0, // 將在後面重新計算
+        status: body.status || 'DRAFT',
+        notes: body.notes || '',
+        expectedDate: body.expectedDate
+      }
+      validatedData = validatePurchaseData(purchaseData)
+    } catch (validationError) {
+      return NextResponse.json(
+        {
+          error: '輸入資料驗證失敗',
+          details: validationError instanceof Error ? validationError.message : '格式錯誤'
+        },
+        { status: 400 }
+      )
+    }
+
     const {
       fundingSource = 'COMPANY',
       supplier,
@@ -141,11 +164,10 @@ export async function POST(request: NextRequest) {
       exchangeRate,
       declarationNumber,
       declarationDate,
-      notes,
       items = [] // 採購明細
     } = body
 
-    // 基本驗證
+    // 額外商業邏輯驗證
     if (!supplier) {
       return NextResponse.json({ error: '供應商為必填' }, { status: 400 })
     }

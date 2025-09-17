@@ -1,0 +1,242 @@
+/* 對帳單列印樣式 */
+@media print {
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  body {
+    font-family: "Microsoft JhengHei", "SimHei", sans-serif;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #000;
+    background: white;
+  }
+
+  /* 隱藏不需要的元素 */
+  .ant-modal-mask,
+  .ant-modal-wrap,
+  .ant-btn,
+  .no-print {
+    display: none !important;
+  }
+
+  /* 對帳單標題區 */
+  .statement-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #000;
+  }
+
+  .statement-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .statement-header .ant-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  /* 客戶資訊區 */
+  .customer-section {
+    margin: 15px 0;
+    padding: 10px;
+    border: 1px solid #333;
+    background-color: #f8f8f8;
+  }
+
+  .customer-section h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .customer-section .ant-row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .customer-section .ant-col-12 {
+    width: 50%;
+    padding: 0 10px;
+  }
+
+  .customer-section div {
+    margin-bottom: 4px;
+  }
+
+  /* 摘要區域 */
+  .summary-section {
+    margin: 15px 0;
+  }
+
+  .summary-section h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: bold;
+  }
+
+  .summary-section .ant-row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .summary-section .ant-col-6 {
+    width: 25%;
+    padding: 0 5px;
+  }
+
+  .summary-section .ant-col-6 > div {
+    text-align: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #f5f5f5;
+  }
+
+  .summary-section .ant-col-6 > div > div:first-child {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+
+  /* 表格樣式 */
+  .ant-table {
+    margin-top: 15px;
+  }
+
+  .ant-table-thead > tr > th {
+    background-color: #e6e6e6 !important;
+    border: 1px solid #333 !important;
+    padding: 6px 8px !important;
+    font-weight: bold !important;
+    font-size: 10px !important;
+  }
+
+  .ant-table-tbody > tr > td {
+    border: 1px solid #333 !important;
+    padding: 5px 8px !important;
+    font-size: 10px !important;
+    vertical-align: top;
+  }
+
+  /* 強制顯示所有表格內容 */
+  .ant-table-content,
+  .ant-table-scroll {
+    overflow: visible !important;
+  }
+
+  .ant-table-body {
+    overflow: visible !important;
+  }
+
+  /* 價格顯示 */
+  .secure-price-display {
+    display: inline !important;
+  }
+
+  /* 標籤樣式 */
+  .ant-tag {
+    border: 1px solid #333 !important;
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+  }
+
+  .ant-tag-green {
+    background-color: #f6ffed !important;
+    border-color: #52c41a !important;
+  }
+
+  .ant-tag-orange {
+    background-color: #fff7e6 !important;
+    border-color: #fa8c16 !important;
+  }
+
+  /* 頁尾 */
+  .statement-document > div:last-child {
+    margin-top: 30px;
+    padding-top: 15px;
+    border-top: 1px solid #333;
+    text-align: center;
+    font-size: 10px;
+  }
+
+  /* 調整間距和佈局 */
+  .ant-row {
+    display: flex !important;
+    flex-wrap: wrap;
+  }
+
+  .ant-col {
+    flex: none;
+  }
+
+  .ant-col-6 {
+    width: 25%;
+  }
+
+  .ant-col-12 {
+    width: 50%;
+  }
+
+  .ant-col-24 {
+    width: 100%;
+  }
+
+  /* 分割線 */
+  .ant-divider {
+    margin: 15px 0 !important;
+    border-top: 1px solid #d9d9d9 !important;
+  }
+
+  /* 確保文字可見 */
+  * {
+    color: #000 !important;
+    background: transparent !important;
+  }
+
+  .ant-table-thead > tr > th,
+  .customer-section {
+    background-color: #f5f5f5 !important;
+  }
+
+  .summary-section .ant-col-6 > div {
+    background-color: #f0f0f0 !important;
+  }
+
+  /* 防止分頁 */
+  .statement-document {
+    page-break-inside: avoid;
+  }
+
+  .ant-table-tbody > tr {
+    page-break-inside: avoid;
+  }
+}
+
+/* 預覽模式樣式 */
+.statement-document {
+  background: white;
+  padding: 20px;
+  font-family: "Microsoft JhengHei", "SimHei", sans-serif;
+}
+
+.statement-document .statement-header {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #000;
+}
+
+.statement-document .customer-section {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #d9d9d9;
+  background-color: #fafafa;
+  border-radius: 4px;
+}
+
+.statement-document .summary-section {
+  margin: 20px 0;
+}

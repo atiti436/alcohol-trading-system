@@ -88,15 +88,15 @@ async function getSuperAdminDashboard(context: PermissionContext) {
     select: {
       id: true,
       name: true,
-      totalStock: true,
+      stock_quantity: true,
       costPrice: true,
       currentPrice: true
     }
   })
 
   const stockValue = products.reduce((sum, product) =>
-    sum + (product.totalStock * product.costPrice), 0)
-  const stockCount = products.reduce((sum, product) => sum + product.totalStock, 0)
+    sum + (product.stock_quantity * product.costPrice), 0)
+  const stockCount = products.reduce((sum, product) => sum + product.stock_quantity, 0)
 
   // 待收款項
   const unpaidSales = await prisma.sale.findMany({
@@ -111,10 +111,10 @@ async function getSuperAdminDashboard(context: PermissionContext) {
 
   // 低庫存商品
   const lowStockItems = products
-    .filter(product => product.totalStock < 10) // 假設10以下為低庫存
+    .filter(product => product.stock_quantity < 10) // 假設10以下為低庫存
     .map(product => ({
       name: product.name,
-      stock: product.totalStock,
+      stock: product.stock_quantity,
       minStock: 10
     }))
     .slice(0, 5) // 只顯示前5個
@@ -173,10 +173,10 @@ async function getInvestorDashboard(context: PermissionContext) {
       // 這裡可以根據業務邏輯篩選投資項目相關的商品
     },
     select: {
-      totalStock: true
+      stock_quantity: true
     }
   })
-  const investmentStock = investmentProducts.reduce((sum, product) => sum + product.totalStock, 0)
+  const investmentStock = investmentProducts.reduce((sum, product) => sum + product.stock_quantity, 0)
 
   return {
     // 🔑 投資方可見的KPI (基於顯示價格)
@@ -233,12 +233,12 @@ async function getEmployeeDashboard(context: PermissionContext) {
   // 庫存警報
   const stockAlerts = await prisma.product.findMany({
     where: {
-      totalStock: { lt: 10 }
+      stock_quantity: { lt: 10 }
     },
     select: {
       id: true,
       name: true,
-      totalStock: true
+      stock_quantity: true
     },
     take: 5
   })
@@ -254,7 +254,7 @@ async function getEmployeeDashboard(context: PermissionContext) {
     stockAlerts: stockAlerts.map(product => ({
       id: product.id,
       name: product.name,
-      stock: product.totalStock,
+      stock: product.stock_quantity,
       alertLevel: 'low'
     })),
     quickActions: getEmployeeQuickActions()
