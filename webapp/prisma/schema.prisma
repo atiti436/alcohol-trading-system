@@ -160,24 +160,27 @@ model ProductVariant {
 }
 
 model CustomerSpecialPrice {
-  id            String   @id @default(cuid())
-  customerId    String
-  productId     String
-  specialPrice  Float
-  discount      Float    // 折扣金額
-  discountRate  Float    // 折扣率
-  reason        String   // 調價原因
-  effectiveDate DateTime // 生效日期
-  isActive      Boolean  @default(true)
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  customer_id     String
+  product_id      String
+  standard_price  Float    // 標準價格
+  special_price   Float    // 專屬價格
+  discount_amount Float    // 折扣金額
+  discount_rate   Float    // 折扣率
+  reason          String   // 調價原因
+  effective_date  DateTime // 生效日期
+  expiry_date     DateTime? // 到期日期
+  is_active       Boolean  @default(true)
+  notes           String?
+  created_by      String   // 建立者
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
   // 關聯
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
-  @@unique([customerId, productId])
+  @@unique([customer_id, product_id])
   @@map("customer_special_prices")
 }
 

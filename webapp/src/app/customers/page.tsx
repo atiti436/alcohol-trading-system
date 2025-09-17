@@ -22,7 +22,8 @@ import {
   DeleteOutlined,
   UserOutlined,
   PhoneOutlined,
-  MailOutlined
+  MailOutlined,
+  DollarOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import type {
@@ -33,6 +34,7 @@ import type {
   CustomerFormData,
   CustomerFilters
 } from '@/types/room-2'
+import SpecialPriceManager from '@/components/customers/SpecialPriceManager'
 
 const { Search } = Input
 const { Option } = Select
@@ -58,6 +60,10 @@ export default function CustomersPage() {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [form] = Form.useForm()
+
+  // 專價管理狀態
+  const [specialPriceVisible, setSpecialPriceVisible] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
 
   // 載入客戶列表
   const loadCustomers = async () => {
@@ -200,7 +206,7 @@ export default function CustomersPage() {
     {
       title: '操作',
       key: 'actions',
-      width: 120,
+      width: 160,
       render: (record: Customer) => (
         <Space>
           <Tooltip title="編輯">
@@ -210,6 +216,18 @@ export default function CustomersPage() {
               onClick={() => handleEdit(record)}
             />
           </Tooltip>
+          {/* 專價管理按鈕 - 只有SUPER_ADMIN和EMPLOYEE可見 */}
+          {session?.user?.role !== 'INVESTOR' && (
+            <Tooltip title="專價管理">
+              <Button
+                icon={<DollarOutlined />}
+                size="small"
+                type="primary"
+                ghost
+                onClick={() => handleSpecialPrice(record)}
+              />
+            </Tooltip>
+          )}
           {session?.user?.role === 'SUPER_ADMIN' && (
             <Popconfirm
               title="確定要刪除此客戶嗎？"
@@ -240,6 +258,12 @@ export default function CustomersPage() {
       form.resetFields()
     }
     setModalVisible(true)
+  }
+
+  // 處理專價管理
+  const handleSpecialPrice = (customer: Customer) => {
+    setSelectedCustomer(customer)
+    setSpecialPriceVisible(true)
   }
 
   // 處理刪除
@@ -426,6 +450,20 @@ export default function CustomersPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 客戶專價管理Modal */}
+      {selectedCustomer && (
+        <SpecialPriceManager
+          customerId={selectedCustomer.id}
+          customerName={selectedCustomer.name}
+          customerTier={selectedCustomer.tier}
+          isVisible={specialPriceVisible}
+          onClose={() => {
+            setSpecialPriceVisible(false)
+            setSelectedCustomer(null)
+          }}
+        />
+      )}
     </div>
   )
 }
