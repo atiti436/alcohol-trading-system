@@ -3,55 +3,106 @@ import { Role, PermissionContext } from '@/types/auth'
 /**
  * 銷售資料過濾（核心商業邏輯）
  * 確保投資方永遠看不到真實的銷售價格和老闆傭金
+ * 🔒 關鍵商業機密保護：投資方看到 800→1000→獲利200，實際 800→1200→老闆抽成200
  */
 export function filterSalesData<T extends Record<string, any>>(
   data: T[],
   context: PermissionContext
 ): Partial<T>[] {
+  // 記錄敏感資料存取 (審計用)
+  logSensitiveAccess('sales', context.userId, context.role, data.length)
+
   if (context.role === Role.SUPER_ADMIN) {
-    // 超級管理員看完整資料
+    // 超級管理員看完整資料：包含真實價格1200和傭金200
     return data
   }
 
   if (context.role === Role.INVESTOR) {
-    return data
+    const filteredData = data
       .filter(item => {
-        // 只顯示投資項目
+        // 🔒 核心邏輯：只顯示投資項目，隱藏個人調貨
         return item.fundingSource === 'COMPANY' &&
                (!item.investorId || item.investorId === context.investorId)
       })
       .map(item => {
-        // 移除敏感欄位
+        // 🚨 關鍵：完全移除所有真實價格相關欄位
         const filtered = { ...item }
 
-        // 🔒 關鍵：隱藏真實價格和傭金
+        // 移除所有包含 'actual' 的欄位 (真實價格)
+        Object.keys(filtered).forEach(key => {
+          if (key.toLowerCase().includes('actual')) {
+            delete filtered[key]
+          }
+        })
+
+        // 🔒 移除老闆傣金和個人調貨相關欄位
+        delete filtered.commission
+        delete filtered.personalPurchases
+        delete filtered.ownerProfit
         delete filtered.actualPrice
         delete filtered.actualAmount
         delete filtered.actualTotalPrice
         delete filtered.actualUnitPrice
-        delete filtered.commission
-        delete filtered.personalPurchases
+        delete filtered.realPrice
+        delete filtered.trueAmount
 
-        // 只保留投資方應該看到的欄位
+        // ✅ 只保留投資方應該看到的顯示價格
         return {
           ...filtered,
-          // 確保只顯示調整後的價格
-          totalAmount: item.totalAmount, // 顯示價格
-          unitPrice: item.unitPrice,     // 顯示單價
-          profit: (item.totalAmount || 0) - (item.cost || 0) // 基於顯示價格計算獲利
+          // 確保只顯示調整後的價格 (如投資方看到的1000)
+          totalAmount: item.totalAmount || item.displayAmount, // 顯示價格
+          unitPrice: item.unitPrice || item.displayPrice,     // 顯示單價
+          // 基於顯示價格計算獲利 (1000 - 800 = 200)
+          profit: (item.totalAmount || item.displayAmount || 0) - (item.cost || 0),
+          // 確保資金來源標記
+          fundingSource: 'COMPANY',
+          // 投資方可見的利潤率
+          profitMargin: item.totalAmount ?
+            ((item.totalAmount - (item.cost || 0)) / item.totalAmount * 100) : 0
         }
       })
+
+    // 記錄投資方資料存取
+    logSensitiveAccess('sales_filtered', context.userId, context.role, filteredData.length)
+    return filteredData
   }
 
-  // 員工看到基本資料但不含獲利資訊
+  // 員工看到基本資料但不含任何財務敏感資訊
   return data.map(item => {
     const filtered = { ...item }
+    // 移除所有財務敏感欄位
     delete filtered.actualPrice
     delete filtered.actualAmount
     delete filtered.commission
     delete filtered.profit
+    delete filtered.cost
+    delete filtered.margin
     return filtered
   })
+}
+
+/**
+ * 敏感資料存取記錄 (審計功能)
+ */
+function logSensitiveAccess(
+  dataType: string,
+  userId: string,
+  role: Role,
+  recordCount: number
+) {
+  // 這裡可以整合到實際的審計系統
+  console.log(`[AUDIT] ${new Date().toISOString()} - User ${userId} (${role}) accessed ${recordCount} ${dataType} records`)
+
+  // TODO: 整合到資料庫審計日誌
+  // await prisma.auditLog.create({
+  //   data: {
+  //     userId,
+  //     userRole: role,
+  //     dataType,
+  //     recordCount,
+  //     timestamp: new Date()
+  //   }
+  // })
 }
 
 /**

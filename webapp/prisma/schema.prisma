@@ -76,8 +76,8 @@ model Product {
   code             String           @unique
   name             String
   category         AlcoholCategory
-  volumeMl         Int              // 容量(ml)
-  alcPercentage    Float            // 酒精度(%) - 統一命名
+  volume_ml        Int              // 容量(ml) - 統一命名規範
+  alc_percentage   Float            // 酒精度(%) - 統一命名規範
   weight           Float            // 商品重量(kg)
   packageWeight    Float?           // 外盒重量(kg)
   totalWeight      Float?           // 總重量(kg)
@@ -193,8 +193,8 @@ model PurchaseItem {
   dutiableValue     Float?   // 完稅價格
   tariffCode        String?  // 稅則號列
   importDutyRate    Float?   // 進口稅率
-  alcoholPercentage Float?   // 酒精度
-  volumeMl          Int?     // 容量
+  alc_percentage    Float?   // 酒精度 - 統一命名規範
+  volume_ml         Int?     // 容量 - 統一命名規範
   weightKg          Float?   // 重量
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -286,4 +286,26 @@ model SaleItem {
   variant ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@map("sale_items")
+}
+
+// 審計日誌表 - 記錄敏感資料存取
+model AuditLog {
+  id              String   @id @default(cuid())
+  userId          String   // 操作使用者ID
+  userEmail       String   // 使用者Email
+  userRole        Role     // 使用者角色
+  action          String   // 操作類型 (READ, CREATE, UPDATE, DELETE)
+  tableName       String   // 操作的表格
+  recordId        String?  // 記錄ID
+  sensitiveFields Json?    // 存取的敏感欄位
+  ipAddress       String?  // IP位址
+  userAgent       String?  // 瀏覽器資訊
+  timestamp       DateTime @default(now())
+
+  // 商業敏感資料存取記錄
+  accessedActualPrice   Boolean @default(false) // 是否存取真實價格
+  accessedCommission    Boolean @default(false) // 是否存取傭金資料
+  accessedPersonalData  Boolean @default(false) // 是否存取個人調貨資料
+
+  @@map("audit_logs")
 }

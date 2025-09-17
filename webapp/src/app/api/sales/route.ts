@@ -1,0 +1,312 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { withAuth } from '@/modules/auth/middleware/permissions'
+import { filterSalesData } from '@/modules/auth/utils/data-filter'
+import { prisma } from '@/lib/prisma'
+import { PermissionContext, Role } from '@/types/auth'
+
+// 🔒 核心商業邏輯：銷售管理API with 投資方數據隔離
+
+/**
+ * GET /api/sales - 獲取銷售資料
+ * 🚨 關鍵：根據角色自動過濾敏感資料
+ */
+export const GET = withAuth(async (
+  req: NextRequest,
+  res: NextResponse,
+  context: PermissionContext
+) => {
+  try {
+    const { searchParams } = new URL(req.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const customerId = searchParams.get('customerId')
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
+    const fundingSource = searchParams.get('fundingSource')
+
+    // 建立基礎查詢條件
+    const where: any = {}
+
+    // 🔒 投資方只能看到投資項目
+    if (context.role === Role.INVESTOR) {
+      where.fundingSource = 'COMPANY'
+      if (context.investorId) {
+        // 如果有投資方ID，只顯示該投資方的項目
+        // 這裡可以根據業務邏輯調整
+      }
+    }
+
+    // 其他篩選條件
+    if (customerId) where.customerId = customerId
+    if (fundingSource && context.role === Role.SUPER_ADMIN) {
+      where.fundingSource = fundingSource
+    }
+    if (dateFrom || dateTo) {
+      where.createdAt = {}
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
+      if (dateTo) where.createdAt.lte = new Date(dateTo)
+    }
+
+    // 查詢銷售資料
+    const [sales, total] = await Promise.all([
+      prisma.sale.findMany({
+        where,
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              customerTier: true
+            }
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true
+                }
+              },
+              variant: {
+                select: {
+                  id: true,
+                  variantCode: true,
+                  description: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      prisma.sale.count({ where })
+    ])
+
+    // 🔒 關鍵：套用資料過濾器
+    const filteredSales = filterSalesData(sales, context)
+
+    // 計算匯總資料（也要過濾）
+    const summary = calculateSalesSummary(sales, context)
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        sales: filteredSales,
+        total,
+        summary,
+        page,
+        limit
+      },
+      metadata: {
+        total,
+        page,
+        limit,
+        timestamp: new Date().toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('獲取銷售資料錯誤:', error)
+    return NextResponse.json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: '獲取銷售資料失敗'
+      }
+    }, { status: 500 })
+  }
+})
+
+/**
+ * POST /api/sales - 建立新銷售單
+ * 🚨 只有超級管理員和員工可以建立銷售單
+ */
+export const POST = withAuth(async (
+  req: NextRequest,
+  res: NextResponse,
+  context: PermissionContext
+) => {
+  try {
+    // 投資方不能建立銷售單
+    if (context.role === Role.INVESTOR) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: '投資方無權建立銷售單'
+        }
+      }, { status: 403 })
+    }
+
+    const body = await req.json()
+    const {
+      customerId,
+      items,
+      displayPrices,
+      actualPrices,
+      paymentTerms,
+      notes,
+      fundingSource = 'COMPANY'
+    } = body
+
+    // 🔒 關鍵：雙重價格機制
+    // displayPrices: 投資方看到的價格 (例如: 1000)
+    // actualPrices: 實際收取價格 (例如: 1200)
+    // commission: 老闆傭金 (actualPrices - displayPrices = 200)
+
+    let totalDisplayAmount = 0
+    let totalActualAmount = 0
+
+    // 計算總金額
+    displayPrices.forEach((price: number, index: number) => {
+      const quantity = items[index]?.quantity || 0
+      totalDisplayAmount += price * quantity
+    })
+
+    if (actualPrices) {
+      actualPrices.forEach((price: number, index: number) => {
+        const quantity = items[index]?.quantity || 0
+        totalActualAmount += price * quantity
+      })
+    } else {
+      totalActualAmount = totalDisplayAmount
+    }
+
+    // 計算老闆傭金
+    const commission = totalActualAmount - totalDisplayAmount
+
+    // 生成銷售單號
+    const saleNumber = await generateSaleNumber()
+
+    // 建立銷售單
+    const sale = await prisma.sale.create({
+      data: {
+        saleNumber,
+        customerId,
+        totalAmount: totalDisplayAmount,       // 顯示金額 (投資方看到)
+        actualAmount: totalActualAmount,       // 實際金額 (僅超級管理員)
+        commission: commission,                // 老闆傭金 (僅超級管理員)
+        fundingSource,
+        paymentTerms,
+        notes,
+        createdBy: context.userId,
+        items: {
+          create: items.map((item: any, index: number) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitPrice: displayPrices[index],                    // 顯示單價
+            actualUnitPrice: actualPrices?.[index] || displayPrices[index], // 實際單價
+            totalPrice: displayPrices[index] * item.quantity,   // 顯示總價
+            actualTotalPrice: (actualPrices?.[index] || displayPrices[index]) * item.quantity, // 實際總價
+            isPersonalPurchase: fundingSource === 'PERSONAL'
+          }))
+        }
+      },
+      include: {
+        customer: true,
+        items: {
+          include: {
+            product: true,
+            variant: true
+          }
+        }
+      }
+    })
+
+    // 🔒 回傳前也要過濾敏感資料
+    const filteredSale = filterSalesData([sale], context)[0]
+
+    return NextResponse.json({
+      success: true,
+      data: { sale: filteredSale }
+    })
+
+  } catch (error) {
+    console.error('建立銷售單錯誤:', error)
+    return NextResponse.json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: '建立銷售單失敗'
+      }
+    }, { status: 500 })
+  }
+})
+
+/**
+ * 計算銷售匯總（根據角色過濾）
+ */
+function calculateSalesSummary(sales: any[], context: PermissionContext) {
+  if (context.role === Role.SUPER_ADMIN) {
+    // 超級管理員看到完整的財務摘要
+    const totalRevenue = sales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
+    const totalDisplayRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0)
+    const totalCommission = sales.reduce((sum, sale) => sum + (sale.commission || 0), 0)
+    const totalCost = sales.reduce((sum, sale) => {
+      return sum + sale.items.reduce((itemSum: number, item: any) =>
+        itemSum + (item.product?.costPrice || 0) * item.quantity, 0)
+    }, 0)
+
+    return {
+      totalRevenue,           // 實際總收入 (1200)
+      totalDisplayRevenue,    // 顯示總收入 (1000)
+      totalCommission,        // 總傭金 (200)
+      totalCost,             // 總成本 (800)
+      totalProfit: totalRevenue - totalCost,  // 實際總獲利 (400)
+      commissionRate: totalDisplayRevenue ? (totalCommission / totalDisplayRevenue * 100) : 0
+    }
+  }
+
+  if (context.role === Role.INVESTOR) {
+    // 投資方只看到基於顯示價格的摘要
+    const investmentSales = sales.filter(sale => sale.fundingSource === 'COMPANY')
+    const totalRevenue = investmentSales.reduce((sum, sale) => sum + sale.totalAmount, 0)
+    const totalCost = investmentSales.reduce((sum, sale) => {
+      return sum + sale.items.reduce((itemSum: number, item: any) =>
+        itemSum + (item.product?.costPrice || 0) * item.quantity, 0)
+    }, 0)
+
+    return {
+      totalRevenue,           // 顯示收入 (1000)
+      totalCost,             // 成本 (800)
+      totalProfit: totalRevenue - totalCost,  // 投資方獲利 (200)
+      profitMargin: totalRevenue ? ((totalRevenue - totalCost) / totalRevenue * 100) : 0
+    }
+  }
+
+  // 員工看到基本統計
+  return {
+    totalOrders: sales.length,
+    totalQuantity: sales.reduce((sum, sale) =>
+      sum + sale.items.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0), 0)
+  }
+}
+
+/**
+ * 生成銷售單號
+ */
+async function generateSaleNumber(): Promise<string> {
+  const today = new Date()
+  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
+
+  const lastSale = await prisma.sale.findFirst({
+    where: {
+      saleNumber: {
+        startsWith: `SA${dateStr}`
+      }
+    },
+    orderBy: { saleNumber: 'desc' }
+  })
+
+  let sequence = 1
+  if (lastSale) {
+    const lastSequence = parseInt(lastSale.saleNumber.slice(-3))
+    sequence = lastSequence + 1
+  }
+
+  return `SA${dateStr}${sequence.toString().padStart(3, '0')}`
+}
