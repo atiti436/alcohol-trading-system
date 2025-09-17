@@ -131,9 +131,7 @@ export interface Product {
   currentPrice: number    // 目前售價
   costPrice: number       // 平均成本價
   minPrice: number        // 最低售價限制
-  stock_quantity: number    // 總庫存 - 統一命名規範
-  available_stock: number  // 可售庫存
-  reserved_stock: number   // 預留庫存
+  // 庫存欄位已移除 - 庫存在ProductVariant層級管理
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -206,9 +204,7 @@ export interface UpdateProductRequest {
   currentPrice?: number
   costPrice?: number
   minPrice?: number
-  stock_quantity?: number
-  available_stock?: number
-  reserved_stock?: number
+  // 庫存欄位已移除 - 庫存在ProductVariant層級管理
   isActive?: boolean
 }
 
@@ -288,7 +284,7 @@ export interface ProductStatistics {
   totalSales: number
   totalQuantitySold: number
   totalRevenue: number
-  stock_quantity: number
+  // 庫存統計從variants聚合計算
 }
 
 export interface VariantStatistics {

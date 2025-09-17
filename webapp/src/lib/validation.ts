@@ -87,9 +87,7 @@ export function validateProductData(data: Record<string, unknown>) {
     costPrice: validateNumber(data.costPrice || 0, '成本價', 0),
     sellingPrice: validateNumber(data.sellingPrice || 0, '售價', 0),
     investorPrice: validateNumber(data.investorPrice || 0, '投資方價格', 0),
-    stock_quantity: validateNumber(data.stock_quantity || data.totalStock || 0, '總庫存', 0),
-    available_stock: validateNumber(data.available_stock || data.availableStock || 0, '可售庫存', 0),
-    safetyStock: validateNumber(data.safetyStock || 0, '安全庫存', 0),
+    // 庫存欄位已移除 - 庫存在ProductVariant層級管理
     description: validateString(data.description || '', '商品描述', 0, 2000),
     specifications: validateString(data.specifications || '', '規格說明', 0, 1000)
   }
