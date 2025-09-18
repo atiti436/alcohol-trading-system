@@ -6,7 +6,7 @@ import {
   DollarOutlined,
   ShoppingOutlined,
   UserOutlined,
-  InventoryOutlined,
+  AppstoreOutlined,
   TrendingUpOutlined,
   WarningOutlined,
   CheckCircleOutlined,
@@ -99,7 +99,7 @@ function SuperAdminDashboard() {
               title="庫存價值"
               value={mockData.stockValue}
               precision={0}
-              prefix={<InventoryOutlined />}
+              prefix={<AppstoreOutlined />}
               suffix="元"
             />
           </Card>
@@ -132,7 +132,7 @@ function SuperAdminDashboard() {
               <Button icon={<UserOutlined />} block>
                 新增客戶
               </Button>
-              <Button icon={<InventoryOutlined />} block>
+              <Button icon={<AppstoreOutlined />} block>
                 庫存調撥
               </Button>
             </Space>
@@ -222,7 +222,7 @@ function InvestorDashboard() {
             <Statistic
               title="投資商品庫存"
               value={mockData.investmentStock}
-              prefix={<InventoryOutlined />}
+              prefix={<AppstoreOutlined />}
               suffix="瓶"
             />
           </Card>

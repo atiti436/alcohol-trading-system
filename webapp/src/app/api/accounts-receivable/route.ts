@@ -298,16 +298,24 @@ async function getAgeingAnalysis(where: DatabaseWhereCondition) {
   const results = []
 
   for (const bracket of ageBrackets) {
-    const bracketWhere = {
+    const bracketWhere: DatabaseWhereCondition = {
       ...where,
       status: { in: ['OUTSTANDING', 'OVERDUE', 'PARTIAL'] }
     }
 
     if (bracket.min > -999) {
-      bracketWhere.daysPastDue = { gte: bracket.min }
+      if (bracketWhere.daysPastDue && typeof bracketWhere.daysPastDue === 'object') {
+        bracketWhere.daysPastDue = { ...bracketWhere.daysPastDue, gte: bracket.min }
+      } else {
+        bracketWhere.daysPastDue = { gte: bracket.min }
+      }
     }
     if (bracket.max < 9999) {
-      bracketWhere.daysPastDue = { lte: bracket.max }
+      if (bracketWhere.daysPastDue && typeof bracketWhere.daysPastDue === 'object') {
+        bracketWhere.daysPastDue = { ...bracketWhere.daysPastDue, lte: bracket.max }
+      } else {
+        bracketWhere.daysPastDue = { lte: bracket.max }
+      }
     }
 
     const result = await prisma.accountsReceivable.aggregate({

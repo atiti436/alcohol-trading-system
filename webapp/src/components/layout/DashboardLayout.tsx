@@ -16,7 +16,7 @@ import {
   DashboardOutlined,
   UserOutlined,
   ShoppingOutlined,
-  InventoryOutlined,
+  AppstoreOutlined,
   DollarOutlined,
   BarChartOutlined,
   SettingOutlined,
@@ -68,7 +68,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       },
       {
         key: 'inventory',
-        icon: <InventoryOutlined />,
+        icon: <AppstoreOutlined />,
         label: '庫存管理',
         onClick: () => router.push('/inventory')
       },
