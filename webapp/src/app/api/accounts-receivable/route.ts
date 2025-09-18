@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/modules/auth/auth-config'
+import { authOptions } from '@/modules/auth/providers/nextauth'
+import { DatabaseWhereCondition } from '@/types/business'
 
 /**
  * 💰 Room-4: 應收帳款管理 API
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // 建立查詢條件
-    const where: any = {}
+    const where: DatabaseWhereCondition = {}
 
     if (status) where.status = status
     if (customerId) where.customerId = customerId
@@ -234,7 +235,7 @@ export async function POST(request: NextRequest) {
 }
 
 // 應收帳款統計摘要
-async function getAccountsReceivableSummary(where: any, userRole: string) {
+async function getAccountsReceivableSummary(where: DatabaseWhereCondition, userRole: string) {
   // 基礎統計
   const [totalOutstanding, totalOverdue, totalPaid, ageingAnalysis] = await Promise.all([
     // 未收金額
@@ -283,7 +284,7 @@ async function getAccountsReceivableSummary(where: any, userRole: string) {
 }
 
 // 帳齡分析
-async function getAgeingAnalysis(where: any) {
+async function getAgeingAnalysis(where: DatabaseWhereCondition) {
   const today = new Date()
 
   const ageBrackets = [

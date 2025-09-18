@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/modules/auth/auth-config'
+import { authOptions } from '@/modules/auth/providers/nextauth'
 
 /**
  * 🏠 Room-2: 單一商品管理 API
@@ -77,7 +77,7 @@ export async function GET(
     })
 
     // 🔧 修正：計算總庫存（所有變體）- 使用統一命名規範
-    const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
+    const totalStock = product.variants.reduce((sum, variant) => sum + (variant.stock_quantity || variant.stock || 0), 0)
 
     return NextResponse.json({
       success: true,

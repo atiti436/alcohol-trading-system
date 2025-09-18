@@ -122,7 +122,7 @@ async function createTestProducts() {
 
   const products = [
     {
-      code: 'W001',
+      product_code: 'W001',
       name: '山崎18年威士忌',
       category: 'WHISKY' as const,
       volume_ml: 700,
@@ -139,12 +139,12 @@ async function createTestProducts() {
       currentPrice: 21000,
       costPrice: 15000,  // 成本價
       minPrice: 18000,
-      totalStock: 50,
-      availableStock: 45,
-      reservedStock: 5
+      stock_quantity: 50,
+      available_stock: 45,
+      reserved_stock: 5
     },
     {
-      code: 'W002',
+      product_code: 'W002',
       name: '響21年威士忌',
       category: 'WHISKY' as const,
       volume_ml: 700,
@@ -161,15 +161,15 @@ async function createTestProducts() {
       currentPrice: 35000,
       costPrice: 25000,  // 成本價
       minPrice: 30000,
-      totalStock: 20,
-      availableStock: 18,
-      reservedStock: 2
+      stock_quantity: 20,
+      available_stock: 18,
+      reserved_stock: 2
     }
   ]
 
   for (const product of products) {
     await prisma.product.upsert({
-      where: { code: product.code },
+      where: { product_code: product.product_code },
       update: {},
       create: product
     })
@@ -188,7 +188,7 @@ async function createTestSales() {
   const [admin, customer, product] = await Promise.all([
     prisma.user.findUnique({ where: { email: 'admin@test.com' } }),
     prisma.customer.findUnique({ where: { name: '測試客戶A' } }),
-    prisma.product.findUnique({ where: { code: 'W001' } })
+    prisma.product.findUnique({ where: { product_code: 'W001' } })
   ])
 
   if (!admin || !customer || !product) {
@@ -252,7 +252,7 @@ async function createTestSales() {
   })
 
   // 建立更多測試資料以驗證篩選邏輯
-  const response = await prisma.product.findUnique({ where: { code: 'W002' } })
+  const response = await prisma.product.findUnique({ where: { product_code: 'W002' } })
   if (response) {
     await prisma.sale.create({
       data: {
@@ -316,7 +316,7 @@ export async function cleanTestData() {
 
   await prisma.product.deleteMany({
     where: {
-      code: {
+      product_code: {
         in: ['W001', 'W002']
       }
     }

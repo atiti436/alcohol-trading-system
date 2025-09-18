@@ -79,7 +79,7 @@ describe('稅金計算測試', () => {
       jpyPrice: 800,
       exchangeRate: 0.21,
       volume: 720,
-      alcoholPercentage: 15,
+      alc_percentage: 15,
       quantity: 100
     };
 
@@ -99,7 +99,7 @@ describe('稅金計算測試', () => {
       jpyPrice: 28000,
       exchangeRate: 0.21,
       volume: 700,
-      alcoholPercentage: 43,
+      alc_percentage: 43,
       quantity: 24
     };
 
@@ -133,7 +133,7 @@ describe('邊界值測試', () => {
     const input = {
       jpyPrice: 500,
       exchangeRate: 0.21,
-      alcoholPercentage: 0, // 無酒精
+      alc_percentage: 0, // 無酒精
       quantity: 100
     };
 
@@ -145,7 +145,7 @@ describe('邊界值測試', () => {
     const input = {
       jpyPrice: 2000,
       exchangeRate: 0.21,
-      alcoholPercentage: 100, // 純酒精
+      alc_percentage: 100, // 純酒精
       quantity: 50
     };
 

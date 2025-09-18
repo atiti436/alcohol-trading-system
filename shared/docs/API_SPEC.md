@@ -286,9 +286,9 @@ interface ProductSearchResult {
 interface CreateProductRequest {
   name: string
   category: AlcoholCategory
-  volume: number // ml
-  alcoholPercentage: number
-  weight: number // kg
+  volume_ml: number
+  alc_percentage: number
+  weight_kg: number
   packageWeight?: number // kg
   hasBox: boolean
   hasAccessories: boolean
@@ -382,7 +382,7 @@ interface CustomerSpecialPricesResponse {
 
 interface ProductSpecialPrice {
   productId: string
-  productCode: string
+  product_code: string
   productName: string
   standardPrice: number
   specialPrice: number
@@ -424,9 +424,9 @@ interface PurchaseItem {
   productName: string
   quantity: number
   unitPrice: number
-  alcoholPercentage?: number
-  volume?: number
-  weight?: number
+  alc_percentage?: number
+  volume_ml?: number
+  weight_kg?: number
 }
 
 // POST /api/purchases/ai-recognition
@@ -450,9 +450,9 @@ interface RecognizedItem {
   dutiableValue: number
   tariffCode: string
   importDutyRate: number
-  alcoholPercentage?: number
-  volume?: number
-  weight?: number
+  alc_percentage?: number
+  volume_ml?: number
+  weight_kg?: number
 }
 
 // POST /api/purchases/staging/[id]/confirm
@@ -755,8 +755,8 @@ interface LineBotEvent {
 // POST /api/linebot/calculate-cost
 interface CalculateCostRequest {
   productName: string
-  volume: number // ml
-  alcoholPercentage: number
+  volume_ml: number
+  alc_percentage: number
   jpyPrice: number
   exchangeRate: number
   isRadiation?: boolean
@@ -878,8 +878,8 @@ const response = await fetch('/api/sales', {
 // LINE BOT傳送計算請求
 const costCalc = {
   productName: '白鶴清酒',
-  volume: 720,
-  alcoholPercentage: 15,
+  volume_ml: 720,
+  alc_percentage: 15,
   jpyPrice: 800,
   exchangeRate: 0.21
 }
@@ -1059,7 +1059,7 @@ interface Quotation {
 
 interface QuotationProduct {
   productId: string
-  productCode: string
+  product_code: string
   productName: string
   quantity: number
   unitPrice: number        // 根據客戶顯示對應價格

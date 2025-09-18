@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/modules/auth/auth-config'
+import { authOptions } from '@/modules/auth/providers/nextauth'
 
 /**
  * 💰 Room-4: 個別銷售訂單管理 API

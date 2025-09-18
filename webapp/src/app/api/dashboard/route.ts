@@ -3,6 +3,7 @@ import { withAuth } from '@/modules/auth/middleware/permissions'
 import { filterDataByRole } from '@/modules/auth/utils/data-filter'
 import { prisma } from '@/lib/prisma'
 import { PermissionContext, Role } from '@/types/auth'
+import { SaleItem, Product, DashboardData } from '@/types/business'
 
 /**
  * GET /api/dashboard - 獲取Dashboard資料
@@ -14,7 +15,7 @@ export const GET = withAuth(async (
   context: PermissionContext
 ) => {
   try {
-    let dashboardData: any = {}
+    let dashboardData: Partial<DashboardData> = {}
 
     switch (context.role) {
       case Role.SUPER_ADMIN:
@@ -178,7 +179,7 @@ async function getInvestorDashboard(context: PermissionContext) {
   // 🔒 關鍵：基於顯示價格計算投資方看到的數據
   const investmentRevenue = investmentSales.reduce((sum, sale) => sum + sale.totalAmount, 0) // 顯示價格
   const investmentCost = investmentSales.reduce((sum, sale) => {
-    return sum + sale.items.reduce((itemSum: any, item: any) =>
+    return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
       itemSum + (item.product?.costPrice || 0) * item.quantity, 0)
   }, 0)
   const investmentProfit = investmentRevenue - investmentCost // 基於顯示價格的獲利

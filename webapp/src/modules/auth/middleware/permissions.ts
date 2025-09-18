@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/modules/auth/auth-config'
+import { authOptions } from '@/modules/auth/providers/nextauth'
 import { Role, PermissionContext } from '@/types/auth'
 
 export type NextApiHandler = (

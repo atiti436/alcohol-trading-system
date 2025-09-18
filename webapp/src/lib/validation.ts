@@ -217,8 +217,8 @@ function validatePurchaseItemData(data: Record<string, unknown>, itemLabel: stri
     dutiableValue: data.dutiableValue ? validateNumber(data.dutiableValue, `${itemLabel} 完稅價格`, 0) : null,
     tariffCode: data.tariffCode ? validateString(data.tariffCode, `${itemLabel} 稅則號碼`, 0, 20) : null,
     importDutyRate: data.importDutyRate ? validateNumber(data.importDutyRate, `${itemLabel} 進口稅率`, 0, 100) : null,
-    alcoholPercentage: data.alcoholPercentage ? validateNumber(data.alcoholPercentage, `${itemLabel} 酒精濃度`, 0, 100) : null,
-    volumeML: data.volumeML ? validateNumber(data.volumeML, `${itemLabel} 容量(毫升)`, 1, 10000) : null,
+    alc_percentage: data.alc_percentage ? validateNumber(data.alc_percentage, `${itemLabel} 酒精濃度`, 0, 100) : null,
+    volume_ml: data.volume_ml ? validateNumber(data.volume_ml, `${itemLabel} 容量(毫升)`, 1, 10000) : null,
     weight: data.weight ? validateNumber(data.weight, `${itemLabel} 重量(公斤)`, 0.001, 10000) : null
   }
 }

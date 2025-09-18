@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/modules/auth/auth-config'
+import { authOptions } from '@/modules/auth/providers/nextauth'
+import { DatabaseWhereCondition, GroupingQuery } from '@/types/business'
 
 /**
  * 📊 Room-5: 報表圖表 API
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || 'month' // day, week, month, quarter, year
 
     // 🔒 投資方數據隔離：只能看公司資金的交易
-    const baseWhere: any = {
+    const baseWhere: DatabaseWhereCondition = {
       isPaid: true
     }
 
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
 }
 
 // 總覽報表
-async function getOverviewReport(baseWhere: any, userRole: string) {
+async function getOverviewReport(baseWhere: DatabaseWhereCondition, userRole: string) {
   // 基本統計
   const totalSales = await prisma.sale.count({ where: baseWhere })
   const totalCustomers = await prisma.customer.count({ where: { isActive: true } })
@@ -208,11 +209,11 @@ async function getOverviewReport(baseWhere: any, userRole: string) {
 }
 
 // 銷售趨勢報表
-async function getSalesTrendReport(baseWhere: any, period: string, userRole: string) {
+async function getSalesTrendReport(baseWhere: DatabaseWhereCondition, period: string, userRole: string) {
   // 根據期間類型生成時間序列
   const now = new Date()
   let dateFormat: string
-  let groupingQuery: any
+  let groupingQuery: GroupingQuery
 
   switch (period) {
     case 'day':
@@ -310,7 +311,7 @@ async function getSalesTrendReport(baseWhere: any, period: string, userRole: str
 }
 
 // 商品分析報表 - 🔧 修復N+1查詢問題
-async function getProductAnalysisReport(baseWhere: any, userRole: string) {
+async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userRole: string) {
   // 一次性查詢所有商品統計和產品資訊 - 避免N+1問題
   const productStatsWithDetails = await prisma.saleItem.groupBy({
     by: ['productId'],
@@ -398,7 +399,7 @@ async function getProductAnalysisReport(baseWhere: any, userRole: string) {
 }
 
 // 客戶分析報表 - 🔧 修復N+1查詢問題
-async function getCustomerAnalysisReport(baseWhere: any, userRole: string) {
+async function getCustomerAnalysisReport(baseWhere: DatabaseWhereCondition, userRole: string) {
   // 客戶銷售統計
   const customerStats = await prisma.sale.groupBy({
     by: ['customerId'],

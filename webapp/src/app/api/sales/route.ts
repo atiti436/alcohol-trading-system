@@ -4,6 +4,7 @@ import { filterSalesData } from '@/modules/auth/utils/data-filter'
 import { prisma } from '@/lib/prisma'
 import { PermissionContext, Role } from '@/types/auth'
 import { validateSaleData } from '@/lib/validation'
+import { DatabaseWhereCondition, Sale, SaleItem } from '@/types/business'
 
 // 🔒 核心商業邏輯：銷售管理API with 投資方數據隔離
 
@@ -26,7 +27,7 @@ export const GET = withAuth(async (
     const fundingSource = searchParams.get('fundingSource')
 
     // 建立基礎查詢條件
-    const where: any = {}
+    const where: DatabaseWhereCondition = {}
 
     // 🔒 投資方只能看到投資項目
     if (context.role === Role.INVESTOR) {
@@ -240,7 +241,7 @@ export const POST = withAuth(async (
         notes,
         createdBy: context.userId,
         items: {
-          create: items.map((item: any, index: number) => ({
+          create: items.map((item: SaleItem, index: number) => ({
             productId: item.productId,
             variantId: item.variantId,
             quantity: item.quantity,
@@ -286,14 +287,14 @@ export const POST = withAuth(async (
 /**
  * 計算銷售匯總（根據角色過濾）
  */
-function calculateSalesSummary(sales: any[], context: PermissionContext) {
+function calculateSalesSummary(sales: Sale[], context: PermissionContext) {
   if (context.role === Role.SUPER_ADMIN) {
     // 超級管理員看到完整的財務摘要
     const totalRevenue = sales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
     const totalDisplayRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0)
     const totalCommission = sales.reduce((sum, sale) => sum + (sale.commission || 0), 0)
     const totalCost = sales.reduce((sum, sale) => {
-      return sum + sale.items.reduce((itemSum: number, item: any) =>
+      return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
         itemSum + (item.product?.costPrice || 0) * item.quantity, 0)
     }, 0)
 
@@ -312,7 +313,7 @@ function calculateSalesSummary(sales: any[], context: PermissionContext) {
     const investmentSales = sales.filter(sale => sale.fundingSource === 'COMPANY')
     const totalRevenue = investmentSales.reduce((sum, sale) => sum + sale.totalAmount, 0)
     const totalCost = investmentSales.reduce((sum, sale) => {
-      return sum + sale.items.reduce((itemSum: number, item: any) =>
+      return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
         itemSum + (item.product?.costPrice || 0) * item.quantity, 0)
     }, 0)
 
@@ -328,7 +329,7 @@ function calculateSalesSummary(sales: any[], context: PermissionContext) {
   return {
     totalOrders: sales.length,
     totalQuantity: sales.reduce((sum, sale) =>
-      sum + sale.items.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0), 0)
+      sum + sale.items.reduce((itemSum: number, item: SaleItem) => itemSum + item.quantity, 0), 0)
   }
 }
 

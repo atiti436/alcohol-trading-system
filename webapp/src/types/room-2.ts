@@ -111,7 +111,7 @@ export enum VariantType {
 export interface Product {
   id: string
   product_code: string      // P00001
-  code: string             // 向後相容性
+  // 已移除 code 欄位，統一使用 product_code
   name: string
   category: AlcoholCategory
   volume_ml: number        // 容量(ml)
@@ -150,8 +150,8 @@ export interface ProductVariant {
   productionYear?: number
   serialNumber?: string
   condition: string       // 商品狀況
-  stock: number
-  cost: number           // 實際成本
+  stock_quantity: number
+  cost_price: number     // 實際成本
   createdAt: Date
   updatedAt: Date
 }
@@ -264,8 +264,8 @@ export interface PurchaseItem {
   dutiableValue?: number
   tariffCode?: string
   importDutyRate?: number
-  alcoholPercentage?: number
-  volumeML?: number
+  alc_percentage?: number
+  volume_ml?: number
   weight?: number
   createdAt: Date
   updatedAt: Date
@@ -291,8 +291,8 @@ export interface CreatePurchaseItemRequest {
   dutiableValue?: number
   tariffCode?: string
   importDutyRate?: number
-  alcoholPercentage?: number
-  volumeML?: number
+  alc_percentage?: number
+  volume_ml?: number
   weight?: number
 }
 

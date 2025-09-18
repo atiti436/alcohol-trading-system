@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/modules/auth/auth-config'
+import { authOptions } from '@/modules/auth/providers/nextauth'
 import { validateProductData } from '@/lib/validation'
+import { DatabaseWhereCondition } from '@/types/business'
 
 /**
  * 🏠 Room-2: Product 模組 API
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // 建立查詢條件
-    const where: any = {}
+    const where: DatabaseWhereCondition = {}
 
     // 只顯示活躍商品
     if (active) {

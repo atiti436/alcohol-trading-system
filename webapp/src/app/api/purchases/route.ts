@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/modules/auth/auth-config'
+import { authOptions } from '@/modules/auth/providers/nextauth'
 import { validatePurchaseData } from '@/lib/validation'
 
 /**
@@ -206,8 +206,8 @@ export async function POST(request: NextRequest) {
         dutiableValue: item.dutiableValue ? parseFloat(item.dutiableValue) : null,
         tariffCode: item.tariffCode || null,
         importDutyRate: item.importDutyRate ? parseFloat(item.importDutyRate) : null,
-        alcoholPercentage: item.alcoholPercentage ? parseFloat(item.alcoholPercentage) : null,
-        volumeML: item.volumeML ? parseInt(item.volumeML) : null,
+        alc_percentage: item.alc_percentage ? parseFloat(item.alc_percentage) : null,
+        volume_ml: item.volume_ml ? parseInt(item.volume_ml) : null,
         weight: item.weight ? parseFloat(item.weight) : null
       })
     }

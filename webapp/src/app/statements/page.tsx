@@ -30,43 +30,15 @@ import { useSession } from 'next-auth/react'
 import dayjs, { Dayjs } from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
+import { Sale, SaleItem, AccountReceivable, StatementData, Customer, Product, ProductVariant } from '@/types/business'
 import './statements-print.css'
 
 const { Option } = Select
 const { RangePicker } = DatePicker
 const { Title, Text } = Typography
 
-interface Customer {
-  id: string
-  customer_code: string
-  name: string
-  company?: string
-  contact_person?: string
-  phone?: string
-  email?: string
-  address?: string
-  paymentTerms: string
-}
-
-interface StatementData {
-  customer: Customer
-  periodInfo: {
-    dateFrom: string
-    dateTo: string
-    type: string
-  }
-  sales: any[]
-  receivables: any[]
-  summary: {
-    totalSales: number
-    totalSalesAmount: number
-    totalActualAmount?: number
-    totalCommission?: number
-    totalReceivableAmount: number
-    totalPaidAmount: number
-    totalOutstandingAmount: number
-  }
-}
+// 型別定義已移至 @/types/business
+// 保留此註解以便理解原本的 interface 位置
 
 /**
  * 📋 Room-5: 對帳單管理頁面
@@ -202,9 +174,9 @@ export default function StatementsPage() {
     {
       title: '商品明細',
       key: 'items',
-      render: (_: any, record: any) => (
+      render: (_: any, record: Sale) => (
         <div>
-          {record.items.map((item: any, index: number) => (
+          {record.items.map((item: SaleItem, index: number) => (
             <div key={index} style={{ marginBottom: '4px' }}>
               <Text strong>{item.product.name}</Text>
               {item.variant && <Text type="secondary"> - {item.variant.description}</Text>}
@@ -222,7 +194,7 @@ export default function StatementsPage() {
       key: 'amount',
       width: 120,
       align: 'right' as const,
-      render: (_: any, record: any) => (
+      render: (_: any, record: Sale) => (
         <div>
           <div>
             <SecurePriceDisplay

@@ -145,38 +145,38 @@
       },
       {
         title: '品號',
-        key: 'productCode',
+        key: 'product_code',
         width: 100,
         render: (_, record, index) => (
           <Input
-            value={record.productCode}
+            value={record.product_code}
             placeholder="W001"
-            onChange={(e) => updateField(index, 'productCode', e.target.value)}
+            onChange={(e) => updateField(index, 'product_code', e.target.value)}
           />
         )
       },
       {
         title: '酒精度(%)',
-        dataIndex: 'alcoholPercentage',
+        dataIndex: 'alc_percentage',
         width: 100,
         render: (value, record, index) => (
           <InputNumber
             value={value}
             min={0}
             max={100}
-            onChange={(val) => updateField(index, 'alcoholPercentage', val)}
+            onChange={(val) => updateField(index, 'alc_percentage', val)}
           />
         )
       },
       {
         title: '容量(ml)',
-        dataIndex: 'volumeML',
+        dataIndex: 'volume_ml',
         width: 100,
         render: (value, record, index) => (
           <InputNumber
             value={value}
             min={0}
-            onChange={(val) => updateField(index, 'volumeML', val)}
+            onChange={(val) => updateField(index, 'volume_ml', val)}
           />
         )
       },
