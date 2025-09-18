@@ -106,44 +106,58 @@ async function getOverviewReport(baseWhere: DatabaseWhereCondition, userRole: st
     ? 0
     : salesData.reduce((sum, sale) => sum + (sale.commission || 0), 0)
 
-  // 最近7天趨勢
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
+  // 最近7天趨勢 - 🔧 優化：使用單一查詢取代多個平行查詢
+  const last7DaysStart = new Date()
+  last7DaysStart.setDate(last7DaysStart.getDate() - 6)
+  last7DaysStart.setHours(0, 0, 0, 0)
+
+  const last7DaysEnd = new Date()
+  last7DaysEnd.setHours(23, 59, 59, 999)
+
+  // 一次性查詢最近7天的所有銷售資料
+  const last7DaysSales = await prisma.sale.findMany({
+    where: {
+      ...baseWhere,
+      createdAt: {
+        gte: last7DaysStart,
+        lte: last7DaysEnd
+      }
+    },
+    select: {
+      totalAmount: true,
+      actualAmount: true,
+      createdAt: true
+    }
+  })
+
+  // 手動分組資料按日期
+  const dailyMap = new Map<string, { sales: number, revenue: number, actualRevenue: number }>()
+
+  // 初始化最近7天的資料
+  for (let i = 6; i >= 0; i--) {
     const date = new Date()
     date.setDate(date.getDate() - i)
-    return date
-  }).reverse()
+    const dateStr = date.toISOString().split('T')[0]
+    dailyMap.set(dateStr, { sales: 0, revenue: 0, actualRevenue: 0 })
+  }
 
-  const dailyTrend = await Promise.all(
-    last7Days.map(async (date) => {
-      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-      const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
+  // 聚合銷售資料
+  last7DaysSales.forEach(sale => {
+    const dateStr = sale.createdAt.toISOString().split('T')[0]
+    if (dailyMap.has(dateStr)) {
+      const dayData = dailyMap.get(dateStr)!
+      dayData.sales += 1
+      dayData.revenue += sale.totalAmount
+      dayData.actualRevenue += sale.actualAmount || sale.totalAmount
+    }
+  })
 
-      const dayWhere = {
-        ...baseWhere,
-        createdAt: {
-          gte: startOfDay,
-          lte: endOfDay
-        }
-      }
-
-      const daySales = await prisma.sale.findMany({
-        where: dayWhere,
-        select: { totalAmount: true, actualAmount: true }
-      })
-
-      const dayRevenue = daySales.reduce((sum, sale) => sum + sale.totalAmount, 0)
-      const dayActualRevenue = userRole === 'INVESTOR'
-        ? dayRevenue
-        : daySales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
-
-      return {
-        date: date.toISOString().split('T')[0],
-        sales: daySales.length,
-        revenue: dayRevenue,
-        actualRevenue: userRole === 'INVESTOR' ? undefined : dayActualRevenue
-      }
-    })
-  )
+  const dailyTrend = Array.from(dailyMap.entries()).map(([date, data]) => ({
+    date,
+    sales: data.sales,
+    revenue: data.revenue,
+    actualRevenue: userRole === 'INVESTOR' ? undefined : data.actualRevenue
+  }))
 
   // 熱銷商品 Top 5 - 🔧 修復N+1查詢問題
   const topProducts = await prisma.saleItem.groupBy({
@@ -398,28 +412,14 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
   })
 }
 
-// 客戶分析報表 - 🔧 修復N+1查詢問題
+// 客戶分析報表 - 🔧 進一步優化：使用單一查詢整合客戶和銷售統計
 async function getCustomerAnalysisReport(baseWhere: DatabaseWhereCondition, userRole: string) {
-  // 客戶銷售統計
-  const customerStats = await prisma.sale.groupBy({
-    by: ['customerId'],
-    where: baseWhere,
-    _sum: {
-      totalAmount: true,
-      actualAmount: true
-    },
-    _count: {
-      id: true
-    }
-  })
-
-  // 取得所有相關客戶的ID
-  const customerIds = customerStats.map(stat => stat.customerId)
-
-  // 一次性查詢所有客戶資訊 - 解決N+1問題
-  const customers = await prisma.customer.findMany({
+  // 使用findMany搭配include一次性取得客戶和相關銷售資料
+  const customersWithSales = await prisma.customer.findMany({
     where: {
-      id: { in: customerIds }
+      sales: {
+        some: baseWhere // 只取有銷售記錄的客戶
+      }
     },
     select: {
       id: true,
@@ -427,36 +427,46 @@ async function getCustomerAnalysisReport(baseWhere: DatabaseWhereCondition, user
       customer_code: true,
       company: true,
       tier: true,
-      paymentTerms: true
+      paymentTerms: true,
+      sales: {
+        where: baseWhere,
+        select: {
+          totalAmount: true,
+          actualAmount: true
+        }
+      }
     }
   })
 
-  // 建立客戶資訊快取
-  const customerMap = new Map(customers.map(c => [c.id, c]))
+  // 手動計算統計數據（避免二次查詢）
+  const customerAnalysis = customersWithSales
+    .map(customer => {
+      const salesCount = customer.sales.length
+      if (salesCount === 0) return null
 
-  const customerAnalysis = customerStats.map((stat) => {
-    const customer = customerMap.get(stat.customerId)
+      const revenue = customer.sales.reduce((sum, sale) => sum + sale.totalAmount, 0)
+      const actualRevenue = customer.sales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
 
-    if (!customer) {
-      return null // 跳過不存在的客戶
-    }
-
-    const revenue = stat._sum.totalAmount || 0
-    const actualRevenue = stat._sum.actualAmount || revenue
-
-    return {
-      ...customer,
-      salesCount: stat._count.id,
-      revenue,
-      actualRevenue: userRole === 'INVESTOR' ? undefined : actualRevenue,
-      averageOrderValue: revenue / stat._count.id
-    }
-  }).filter(Boolean) // 移除null值
+      return {
+        id: customer.id,
+        name: customer.name,
+        customer_code: customer.customer_code,
+        company: customer.company,
+        tier: customer.tier,
+        paymentTerms: customer.paymentTerms,
+        salesCount,
+        revenue,
+        actualRevenue: userRole === 'INVESTOR' ? undefined : actualRevenue,
+        averageOrderValue: revenue / salesCount
+      }
+    })
+    .filter(Boolean) // 移除null值
+    .sort((a, b) => b.revenue - a.revenue)
 
   return NextResponse.json({
     success: true,
     data: {
-      customers: customerAnalysis.sort((a, b) => b.revenue - a.revenue)
+      customers: customerAnalysis
     }
   })
 }

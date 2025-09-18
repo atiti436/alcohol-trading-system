@@ -84,33 +84,29 @@ async function getSuperAdminDashboard(context: PermissionContext) {
   // 計算總傭金 (老闆賺的差價)
   const totalCommission = sales.reduce((sum, sale) => sum + (sale.commission || 0), 0)
 
-  // 庫存價值 - 🔧 修正：從ProductVariant聚合計算庫存
-  const products = await prisma.product.findMany({
-    select: {
-      id: true,
-      name: true,
-      costPrice: true,
-      currentPrice: true,
-      variants: {
-        select: {
-          stock_quantity: true,
-          cost_price: true
-        }
+  // 庫存價值 - 🔧 修正：使用聚合查詢一次性計算避免N+1問題
+  const stockAggregation = await prisma.productVariant.aggregate({
+    where: {
+      product: {
+        isActive: true
       }
+    },
+    _sum: {
+      stock_quantity: true
     }
   })
 
-  const stockValue = products.reduce((sum, product) => {
-    const productStockValue = product.variants.reduce((variantSum, variant) =>
-      variantSum + (variant.stock_quantity * (variant.cost_price || product.costPrice)), 0)
-    return sum + productStockValue
-  }, 0)
+  // 計算庫存價值 - 使用原始SQL查詢避免複雜的nested循環
+  const stockValueResult = await prisma.$queryRaw`
+    SELECT
+      SUM(pv.stock_quantity * COALESCE(pv.cost_price, p.cost_price)) as stock_value
+    FROM product_variants pv
+    INNER JOIN products p ON pv.product_id = p.id
+    WHERE p.is_active = true
+  ` as Array<{ stock_value: number }>
 
-  const stockCount = products.reduce((sum, product) => {
-    const productStockCount = product.variants.reduce((variantSum, variant) =>
-      variantSum + variant.stock_quantity, 0)
-    return sum + productStockCount
-  }, 0)
+  const stockValue = Number(stockValueResult[0]?.stock_value || 0)
+  const stockCount = stockAggregation._sum.stock_quantity || 0
 
   // 待收款項
   const unpaidSales = await prisma.sale.findMany({
@@ -123,18 +119,26 @@ async function getSuperAdminDashboard(context: PermissionContext) {
   const pendingReceivables = unpaidSales.reduce((sum, sale) =>
     sum + (sale.actualAmount || sale.totalAmount), 0)
 
-  // 低庫存商品 - 🔧 修正：從variants計算總庫存
-  const lowStockItems = products
-    .map(product => {
-      const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
-      return {
-        name: product.name,
-        stock: totalStock,
-        minStock: 10
-      }
-    })
-    .filter(item => item.stock < 10) // 假設10以下為低庫存
-    .slice(0, 5) // 只顯示前5個
+  // 低庫存商品 - 🔧 修正：使用優化的批次查詢避免N+1問題
+  const lowStockItemsRaw = await prisma.$queryRaw`
+    SELECT
+      p.id,
+      p.name,
+      SUM(pv.stock_quantity) as total_stock
+    FROM products p
+    INNER JOIN product_variants pv ON pv.product_id = p.id
+    WHERE p.is_active = true
+    GROUP BY p.id, p.name
+    HAVING SUM(pv.stock_quantity) < 10
+    ORDER BY SUM(pv.stock_quantity) ASC
+    LIMIT 5
+  ` as Array<{ id: string, name: string, total_stock: number }>
+
+  const lowStockItems = lowStockItemsRaw.map(item => ({
+    name: item.name,
+    stock: Number(item.total_stock),
+    minStock: 10
+  }))
 
   return {
     // 🔑 關鍵KPI (包含真實數據)
@@ -184,24 +188,19 @@ async function getInvestorDashboard(context: PermissionContext) {
   }, 0)
   const investmentProfit = investmentRevenue - investmentCost // 基於顯示價格的獲利
 
-  // 投資商品庫存 - 🔧 修正：從variants計算庫存
-  const investmentProducts = await prisma.product.findMany({
+  // 投資商品庫存 - 🔧 修正：使用一次性聚合查詢避免N+1問題
+  const investmentStockResult = await prisma.productVariant.aggregate({
     where: {
-      // 這裡可以根據業務邏輯篩選投資項目相關的商品
-    },
-    select: {
-      variants: {
-        select: {
-          stock_quantity: true
-        }
+      product: {
+        // 這裡可以根據業務邏輯篩選投資項目相關的商品
+        isActive: true
       }
+    },
+    _sum: {
+      stock_quantity: true
     }
   })
-  const investmentStock = investmentProducts.reduce((sum, product) => {
-    const productStock = product.variants.reduce((variantSum, variant) =>
-      variantSum + variant.stock_quantity, 0)
-    return sum + productStock
-  }, 0)
+  const investmentStock = investmentStockResult._sum.stock_quantity || 0
 
   return {
     // 🔑 投資方可見的KPI (基於顯示價格)
@@ -255,30 +254,26 @@ async function getEmployeeDashboard(context: PermissionContext) {
     }
   })
 
-  // 庫存警報 - 🔧 修正：從variants計算低庫存
-  const allProducts = await prisma.product.findMany({
-    select: {
-      id: true,
-      name: true,
-      variants: {
-        select: {
-          stock_quantity: true
-        }
-      }
-    }
-  })
+  // 庫存警報 - 🔧 修正：使用優化的原始SQL查詢避免N+1問題
+  const stockAlertsRaw = await prisma.$queryRaw`
+    SELECT
+      p.id,
+      p.name,
+      SUM(pv.stock_quantity) as total_stock
+    FROM products p
+    INNER JOIN product_variants pv ON pv.product_id = p.id
+    WHERE p.is_active = true
+    GROUP BY p.id, p.name
+    HAVING SUM(pv.stock_quantity) < 10
+    ORDER BY SUM(pv.stock_quantity) ASC
+    LIMIT 5
+  ` as Array<{ id: string, name: string, total_stock: number }>
 
-  const stockAlerts = allProducts
-    .map(product => {
-      const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
-      return {
-        id: product.id,
-        name: product.name,
-        stock_quantity: totalStock
-      }
-    })
-    .filter(item => item.stock_quantity < 10)
-    .slice(0, 5)
+  const stockAlerts = stockAlertsRaw.map(item => ({
+    id: item.id,
+    name: item.name,
+    stock_quantity: Number(item.total_stock)
+  }))
 
   return {
     todayTasks,
