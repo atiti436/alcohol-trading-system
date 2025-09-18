@@ -340,7 +340,11 @@ export default function SpecialPriceManager({
       open={isVisible}
       onCancel={onClose}
       footer={null}
-      width={1200}
+      width="90%"
+      style={{
+        maxWidth: '1200px',
+        width: '90vw'
+      }}
       destroyOnClose
     >
       <Card

@@ -127,7 +127,7 @@ export default function CustomersPage() {
       key: 'customer_code',
       width: 120,
       render: (code: string) => (
-        <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
+        <span style={{ fontWeight: 'bold' }}>
           {code}
         </span>
       )
@@ -328,39 +328,67 @@ export default function CustomersPage() {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card>
-        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <Space>
-            <Search
-              placeholder="搜尋客戶名稱、電話、公司..."
-              allowClear
-              style={{ width: 300 }}
-              onSearch={(value) => setFilters(prev => ({ ...prev, search: value, page: 1 }))}
-            />
-            <Select
-              placeholder="選擇分級"
-              allowClear
-              style={{ width: 120 }}
-              onChange={(tier) => setFilters(prev => ({ ...prev, tier, page: 1 }))}
-            >
-              <Option value="VIP">VIP客戶</Option>
-              <Option value="PREMIUM">高價客戶</Option>
-              <Option value="REGULAR">一般客戶</Option>
-              <Option value="NEW">新客戶</Option>
-            </Select>
-          </Space>
-
-          {session?.user?.role !== 'INVESTOR' && (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => handleEdit()}
-            >
-              新增客戶
-            </Button>
-          )}
-        </div>
+    <div style={{
+      padding: '24px',
+      minHeight: '100vh'
+    }}>
+      <Card
+        title={
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <UserOutlined />
+            <span style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>客戶管理</span>
+          </div>
+        }
+        extra={
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <Search
+                placeholder="搜尋客戶名稱、電話、公司..."
+                allowClear
+                style={{
+                  flex: '1 1 auto',
+                  minWidth: '200px',
+                  maxWidth: '300px'
+                }}
+                loading={loading}
+                onSearch={(value) => setFilters(prev => ({ ...prev, search: value, page: 1 }))}
+                enterButton
+              />
+              <Select
+                placeholder="選擇分級"
+                allowClear
+                style={{ width: 120 }}
+                onChange={(tier) => setFilters(prev => ({ ...prev, tier, page: 1 }))}
+              >
+                <Option value="VIP">VIP客戶</Option>
+                <Option value="PREMIUM">高價客戶</Option>
+                <Option value="REGULAR">一般客戶</Option>
+                <Option value="NEW">新客戶</Option>
+              </Select>
+            </div>
+            {session?.user?.role !== 'INVESTOR' && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => handleEdit()}
+                style={{ flexShrink: 0 }}
+              >
+                新增客戶
+              </Button>
+            )}
+          </div>
+        }
+      >
 
         <Table
           columns={columns}
@@ -371,9 +399,17 @@ export default function CustomersPage() {
             current: filters.page,
             pageSize: filters.limit,
             total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            responsive: true,
             showTotal: (total, range) => `第 ${range[0]}-${range[1]} 項，共 ${total} 項`,
-            onChange: (page, pageSize) => setFilters(prev => ({ ...prev, page, limit: pageSize }))
+            onChange: (page, pageSize) => setFilters(prev => ({ ...prev, page, limit: pageSize })),
+            disabled: loading
           }}
+          scroll={{
+            x: 'max-content'
+          }}
+          size="small"
         />
       </Card>
 
