@@ -85,6 +85,7 @@ model Customer {
   // 關聯表
   sales Sale[]
   specialPrices CustomerSpecialPrice[]
+  accountsReceivable AccountsReceivable[]
 
   @@map("customers")
 }

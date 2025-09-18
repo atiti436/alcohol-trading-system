@@ -88,24 +88,26 @@ async function createTestCustomers() {
 
   const customers = [
     {
+      customer_code: 'C00001',
       name: '測試客戶A',
-      contactInfo: 'customer-a@test.com',
+      email: 'customer-a@test.com',
       paymentTerms: 'MONTHLY' as const,
-      customerTier: 'VIP',
+      tier: 'VIP' as const,
       requiresInvoice: true
     },
     {
+      customer_code: 'C00002',
       name: '測試客戶B',
-      contactInfo: 'customer-b@test.com',
+      email: 'customer-b@test.com',
       paymentTerms: 'CASH' as const,
-      customerTier: 'REGULAR',
+      tier: 'REGULAR' as const,
       requiresInvoice: false
     }
   ]
 
   for (const customer of customers) {
     await prisma.customer.upsert({
-      where: { name: customer.name },
+      where: { customer_code: customer.customer_code },
       update: {},
       create: customer
     })
@@ -123,6 +125,7 @@ async function createTestProducts() {
   const products = [
     {
       product_code: 'W001',
+      code: 'W001',  // 向後相容性
       name: '山崎18年威士忌',
       category: 'WHISKY' as const,
       volume_ml: 700,
@@ -138,13 +141,11 @@ async function createTestProducts() {
       standardPrice: 21000,
       currentPrice: 21000,
       costPrice: 15000,  // 成本價
-      minPrice: 18000,
-      stock_quantity: 50,
-      available_stock: 45,
-      reserved_stock: 5
+      minPrice: 18000
     },
     {
       product_code: 'W002',
+      code: 'W002',  // 向後相容性
       name: '響21年威士忌',
       category: 'WHISKY' as const,
       volume_ml: 700,
@@ -160,10 +161,7 @@ async function createTestProducts() {
       standardPrice: 35000,
       currentPrice: 35000,
       costPrice: 25000,  // 成本價
-      minPrice: 30000,
-      stock_quantity: 20,
-      available_stock: 18,
-      reserved_stock: 2
+      minPrice: 30000
     }
   ]
 
@@ -187,7 +185,7 @@ async function createTestSales() {
   // 獲取測試資料的ID
   const [admin, customer, product] = await Promise.all([
     prisma.user.findUnique({ where: { email: 'admin@test.com' } }),
-    prisma.customer.findUnique({ where: { name: '測試客戶A' } }),
+    prisma.customer.findUnique({ where: { customer_code: 'C00001' } }),
     prisma.product.findUnique({ where: { product_code: 'W001' } })
   ])
 
@@ -324,8 +322,8 @@ export async function cleanTestData() {
 
   await prisma.customer.deleteMany({
     where: {
-      name: {
-        startsWith: '測試客戶'
+      customer_code: {
+        in: ['C00001', 'C00002']
       }
     }
   })

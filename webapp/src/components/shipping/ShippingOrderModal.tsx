@@ -24,9 +24,9 @@ import {
   TruckOutlined,
   ShoppingCartOutlined,
   UserOutlined,
-  CalendarOutlined,
-  PackageOutlined
+  CalendarOutlined
 } from '@ant-design/icons'
+import { InboxOutlined } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
@@ -336,7 +336,7 @@ export function ShippingOrderModal({
             <div style={{ marginBottom: '16px' }}>
               <Title level={5} style={{ margin: '0 0 16px 0' }}>
                 <Space>
-                  <PackageOutlined />
+                  <InboxOutlined />
                   選擇出貨商品
                 </Space>
               </Title>
