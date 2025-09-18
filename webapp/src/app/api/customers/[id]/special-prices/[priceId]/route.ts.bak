@@ -32,10 +32,10 @@ export async function GET(
         product: {
           select: {
             product_code: true,
-            name: true,
-            
-            standardPrice: true,
-            currentPrice: true
+            name_zh: true,
+            name_en: true,
+            standard_price: true,
+            current_price: true
           }
         },
         customer: {
@@ -97,7 +97,7 @@ export async function PUT(
       },
       include: {
         product: {
-          select: { standardPrice: true }
+          select: { standard_price: true }
         }
       }
     })
@@ -119,7 +119,7 @@ export async function PUT(
         }, { status: 400 })
       }
 
-      const standard_price = existingPrice.product.standardPrice
+      const standard_price = existingPrice.standard_price
       if (special_price > standard_price) {
         return NextResponse.json({
           error: '專屬價格不能高於標準價格'
@@ -150,8 +150,8 @@ export async function PUT(
         product: {
           select: {
             product_code: true,
-            name: true,
-            standardPrice: true
+            name_zh: true,
+            standard_price: true
           }
         }
       }

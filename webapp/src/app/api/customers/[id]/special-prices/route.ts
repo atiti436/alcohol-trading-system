@@ -59,10 +59,10 @@ export async function GET(
           product: {
             select: {
               product_code: true,
-              name_zh: true,
-              name_en: true,
-              standard_price: true,
-              current_price: true
+              name: true,
+              
+              standardPrice: true,
+              currentPrice: true
             }
           }
         }
@@ -131,14 +131,14 @@ export async function POST(
     // 驗證產品是否存在並取得標準價格
     const product = await prisma.product.findUnique({
       where: { id: product_id },
-      select: { id: true, standard_price: true, current_price: true }
+      select: { id: true, standardPrice: true, currentPrice: true }
     })
     if (!product) {
       return NextResponse.json({ error: '產品不存在' }, { status: 404 })
     }
 
     // 計算折扣金額和折扣率
-    const standard_price = product.standard_price
+    const standard_price = product.standardPrice
     const discount_amount = standard_price - special_price
     const discount_rate = discount_amount / standard_price
 
@@ -188,8 +188,8 @@ export async function POST(
         product: {
           select: {
             product_code: true,
-            name_zh: true,
-            standard_price: true
+            name: true,
+            standardPrice: true
           }
         }
       }

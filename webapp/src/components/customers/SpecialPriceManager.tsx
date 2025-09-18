@@ -29,10 +29,10 @@ const { Option } = Select
 interface Product {
   id: string
   product_code: string
-  name_zh: string
-  name_en?: string
-  standard_price: number
-  current_price: number
+  name: string
+  
+  standardPrice: number
+  currentPrice: number
 }
 
 interface SpecialPrice {
@@ -40,7 +40,7 @@ interface SpecialPrice {
   customer_id: string
   product_id: string
   product: Product
-  standard_price: number
+  standardPrice: number
   special_price: number
   discount_amount: number
   discount_rate: number
@@ -221,7 +221,7 @@ export default function SpecialPriceManager({
       key: 'product',
       render: (record: SpecialPrice) => (
         <div>
-          <Text strong>{record.product.name_zh}</Text>
+          <Text strong>{record.product.name}</Text>
           <br />
           <Text type="secondary" style={{ fontSize: '12px' }}>
             {record.product.product_code}
@@ -231,8 +231,8 @@ export default function SpecialPriceManager({
     },
     {
       title: '標準價格',
-      dataIndex: 'standard_price',
-      key: 'standard_price',
+      dataIndex: 'standardPrice',
+      key: 'standardPrice',
       render: (price: number) => <Text>NT$ {price.toLocaleString()}</Text>
     },
     {
@@ -401,7 +401,7 @@ export default function SpecialPriceManager({
             >
               {products.map(product => (
                 <Option key={product.id} value={product.id}>
-                  {product.name_zh} ({product.product_code}) - NT$ {product.standard_price.toLocaleString()}
+                  {product.name} ({product.product_code}) - NT$ {product.standardPrice.toLocaleString()}
                 </Option>
               ))}
             </Select>

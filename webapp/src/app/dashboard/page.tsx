@@ -7,7 +7,8 @@ import {
   ShoppingOutlined,
   UserOutlined,
   AppstoreOutlined,
-  TrendingUpOutlined,
+  LineChartOutlined,
+  
   WarningOutlined,
   CheckCircleOutlined,
   PlusOutlined
@@ -87,7 +88,7 @@ function SuperAdminDashboard() {
               title="個人調貨營收"
               value={mockData.personalRevenue}
               precision={0}
-              prefix={<TrendingUpOutlined />}
+              prefix={<LineChartOutlined />}
               suffix="元"
               valueStyle={{ color: '#1890ff' }}
             />
@@ -211,7 +212,7 @@ function InvestorDashboard() {
               title="投資獲利"
               value={mockData.investmentProfit}
               precision={0}
-              prefix={<TrendingUpOutlined />}
+              prefix={<LineChartOutlined />}
               suffix="元"
               valueStyle={{ color: '#1890ff' }}
             />
