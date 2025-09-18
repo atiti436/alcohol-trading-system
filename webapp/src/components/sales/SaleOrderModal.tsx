@@ -30,6 +30,7 @@ import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { DualPriceManager } from './DualPriceManager'
+import { Sale, CreateSaleRequest, CreateSaleItemRequest } from '@/types/room-2'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -77,8 +78,8 @@ interface SaleOrderItem {
 interface SaleOrderModalProps {
   visible: boolean
   onCancel: () => void
-  onSubmit: (data: any) => void
-  editingSale?: any
+  onSubmit: (data: CreateSaleRequest) => void
+  editingSale?: Sale
   loading?: boolean
 }
 
@@ -164,7 +165,7 @@ export function SaleOrderModal({
 
       // 載入已有的訂單明細
       if (editingSale.items) {
-        const items = editingSale.items.map((item: any, index: number) => ({
+        const items = editingSale.items.map((item, index: number) => ({
           key: `item-${index}`,
           productId: item.productId,
           variantId: item.variantId,

@@ -164,6 +164,142 @@ export interface ProductWithVariants extends Product {
   }
 }
 
+// 🔧 新增：Sales 相關類型定義 - 修復 any 類型問題
+
+export interface Sale {
+  id: string
+  saleNumber: string
+  customerId: string
+  totalAmount: number        // 顯示金額（投資方看到的）
+  actualAmount?: number      // 實際收取金額（僅超級管理員）
+  commission?: number        // 老闆傭金（僅超級管理員）
+  fundingSource: 'COMPANY' | 'PERSONAL'
+  paymentTerms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
+  isPaid: boolean
+  paidAt?: Date
+  dueDate?: Date
+  notes?: string
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+  items?: SaleItem[]
+  customer?: Customer
+}
+
+export interface SaleItem {
+  id: string
+  saleId: string
+  productId: string
+  variantId?: string
+  quantity: number
+  unitPrice: number          // 顯示單價
+  actualUnitPrice?: number   // 實際單價（僅超級管理員）
+  totalPrice: number         // 顯示總價
+  actualTotalPrice?: number  // 實際總價（僅超級管理員）
+  isPersonalPurchase: boolean
+  createdAt: Date
+  updatedAt: Date
+  product?: Product
+  variant?: ProductVariant
+}
+
+export interface CreateSaleRequest {
+  customerId: string
+  totalAmount: number
+  actualAmount?: number
+  commission?: number
+  fundingSource: 'COMPANY' | 'PERSONAL'
+  paymentTerms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
+  dueDate?: string
+  notes?: string
+  items: CreateSaleItemRequest[]
+}
+
+export interface CreateSaleItemRequest {
+  productId: string
+  variantId?: string
+  quantity: number
+  unitPrice: number
+  actualUnitPrice?: number
+  totalPrice: number
+  actualTotalPrice?: number
+  isPersonalPurchase?: boolean
+}
+
+export interface UpdateSaleRequest extends Partial<CreateSaleRequest> {
+  isPaid?: boolean
+  paidAt?: string
+}
+
+// 🔧 新增：Purchase 相關類型定義 - 修復 any 類型問題
+
+export interface Purchase {
+  id: string
+  purchaseNumber: string
+  supplierId?: string
+  supplier: string
+  currency: 'JPY' | 'USD' | 'TWD'
+  exchangeRate: number
+  totalAmount: number
+  fundingSource: 'COMPANY' | 'PERSONAL'
+  status: 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'RECEIVED' | 'CANCELLED'
+  declarationNumber?: string
+  declarationDate?: Date
+  notes?: string
+  createdBy: string
+  investorId?: string
+  createdAt: Date
+  updatedAt: Date
+  items?: PurchaseItem[]
+}
+
+export interface PurchaseItem {
+  id: string
+  purchaseId: string
+  productId?: string
+  productName: string
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  dutiableValue?: number
+  tariffCode?: string
+  importDutyRate?: number
+  alcoholPercentage?: number
+  volumeML?: number
+  weight?: number
+  createdAt: Date
+  updatedAt: Date
+  product?: Product
+}
+
+export interface CreatePurchaseRequest {
+  supplier: string
+  currency: 'JPY' | 'USD' | 'TWD'
+  exchangeRate: number
+  fundingSource: 'COMPANY' | 'PERSONAL'
+  declarationNumber?: string
+  declarationDate?: string
+  notes?: string
+  items: CreatePurchaseItemRequest[]
+}
+
+export interface CreatePurchaseItemRequest {
+  productId?: string
+  productName: string
+  quantity: number
+  unitPrice: number
+  dutiableValue?: number
+  tariffCode?: string
+  importDutyRate?: number
+  alcoholPercentage?: number
+  volumeML?: number
+  weight?: number
+}
+
+export interface UpdatePurchaseRequest extends Partial<CreatePurchaseRequest> {
+  status?: 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'RECEIVED' | 'CANCELLED'
+}
+
 export interface CreateProductRequest {
   name: string
   category: AlcoholCategory

@@ -36,6 +36,7 @@ import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
+import { CreatePurchaseRequest } from '@/types/room-2'
 
 const { Search } = Input
 const { Option } = Select
@@ -480,7 +481,7 @@ export default function PurchasesPage() {
   }
 
   // 處理儲存
-  const handleSave = async (values: any) => {
+  const handleSave = async (values: CreatePurchaseRequest) => {
     setSubmitting(true)
     try {
       // 額外驗證
