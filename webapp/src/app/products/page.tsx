@@ -208,7 +208,7 @@ export default function ProductsPage() {
             </Button>
           </Badge>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-            庫存: {record.totalStock}
+            庫存: {record.variants?.reduce((sum, v) => sum + (v.stock_quantity || 0), 0) || 0}
           </div>
         </div>
       )

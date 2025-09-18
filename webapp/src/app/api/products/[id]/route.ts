@@ -76,8 +76,8 @@ export async function GET(
       }
     })
 
-    // 計算總庫存（所有變體）
-    const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock, 0)
+    // 🔧 修正：計算總庫存（所有變體）- 使用統一命名規範
+    const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
 
     return NextResponse.json({
       success: true,
@@ -134,9 +134,8 @@ export async function PUT(
       currentPrice,
       costPrice,
       minPrice,
-      totalStock,
-      availableStock,
-      reservedStock,
+      // 🔧 移除：庫存字段已遷移至 ProductVariant 層級管理
+      // totalStock, availableStock, reservedStock 不在 Product 模型中
       isActive
     } = body
 
@@ -177,9 +176,7 @@ export async function PUT(
         ...(currentPrice !== undefined && { currentPrice }),
         ...(costPrice !== undefined && { costPrice }),
         ...(minPrice !== undefined && { minPrice }),
-        ...(totalStock !== undefined && { totalStock }),
-        ...(availableStock !== undefined && { availableStock }),
-        ...(reservedStock !== undefined && { reservedStock }),
+        // 🔧 移除：庫存字段不在 Product 模型中，在 ProductVariant 中管理
         ...(isActive !== undefined && { isActive })
       }
     })

@@ -67,7 +67,8 @@ export async function GET(request: NextRequest) {
               variantType: true,
               description: true,
               currentPrice: true,
-              stock: true,
+              stock_quantity: true, // 🔧 修正：使用統一命名規範
+              available_stock: true, // 🔧 增加：顯示可售庫存
               condition: true
             }
           },
@@ -133,14 +134,10 @@ export async function POST(request: NextRequest) {
       category,
       brand,
       supplier,
-      costPrice,
-      sellingPrice,
-      investorPrice,
-      stock_quantity,
-      available_stock,
-      safetyStock,
       description,
       specifications
+      // 注意：庫存相關欄位已移除，庫存在ProductVariant層級管理
+      // 價格欄位從body中直接取得（下方處理）
     } = validatedData
 
     // 從body中提取產品特有欄位（validation後處理）
