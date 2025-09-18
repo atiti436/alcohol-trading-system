@@ -28,7 +28,7 @@ import {
   PrinterOutlined,
   FilePdfOutlined,
   TruckOutlined,
-  PackageOutlined
+  InboxOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
