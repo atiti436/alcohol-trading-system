@@ -125,101 +125,35 @@ export function withAuthenticated(
  * @param requiredRoles 必要的角色權限
  * @returns 包裝後的處理函數
  */
-export function withAuth(
+export function withAppAuth(
   handler: AppRouteHandler,
   requiredRoles?: Role[]
-): (req: NextRequest) => Promise<NextResponse>
-export function withAuth(
-  handler: (
-    req: NextApiRequest,
-    res: NextApiResponse,
-    context: PermissionContext
-  ) => Promise<void> | void,
-  requiredRoles?: Role[]
-): (req: NextApiRequest, res: NextApiResponse) => Promise<void>
-export function withAuth(
-  handler: any,
-  requiredRoles?: Role[]
-): any {
-  // App Router 版本
-  if (handler.length === 3) {
-    return async (req: NextRequest) => {
-      try {
-        // 1. 驗證Session
-        const session = await getServerSession(authOptions)
-
-        if (!session || !session.user) {
-          return NextResponse.json({
-            success: false,
-            error: {
-              code: 'UNAUTHORIZED',
-              message: '請先登入'
-            }
-          }, { status: 401 })
-        }
-
-        // 2. 檢查使用者角色權限
-        if (requiredRoles && requiredRoles.length > 0) {
-          if (!requiredRoles.includes(session.user.role)) {
-            return NextResponse.json({
-              success: false,
-              error: {
-                code: 'FORBIDDEN',
-                message: '權限不足'
-              }
-            }, { status: 403 })
-          }
-        }
-
-        // 3. 建立權限上下文
-        const context: PermissionContext = {
-          userId: session.user.id,
-          role: session.user.role,
-          investorId: session.user.investorId
-        }
-
-        // 4. 執行原始handler並注入權限上下文
-        return await handler(req, new NextResponse(), context)
-
-      } catch (error) {
-        console.error('權限檢查中間件錯誤:', error)
-        return NextResponse.json({
-          success: false,
-          error: {
-            code: 'INTERNAL_ERROR',
-            message: '內部伺服器錯誤'
-          }
-        }, { status: 500 })
-      }
-    }
-  }
-
-  // Pages API 版本 (舊版本)
-  return async (req: NextApiRequest, res: NextApiResponse) => {
+): (req: NextRequest) => Promise<NextResponse> {
+  return async (req: NextRequest) => {
     try {
       // 1. 驗證Session
-      const session = await getServerSession(req, res, authOptions)
+      const session = await getServerSession(authOptions)
 
       if (!session || !session.user) {
-        return res.status(401).json({
+        return NextResponse.json({
           success: false,
           error: {
             code: 'UNAUTHORIZED',
             message: '請先登入'
           }
-        })
+        }, { status: 401 })
       }
 
       // 2. 檢查使用者角色權限
       if (requiredRoles && requiredRoles.length > 0) {
         if (!requiredRoles.includes(session.user.role)) {
-          return res.status(403).json({
+          return NextResponse.json({
             success: false,
             error: {
               code: 'FORBIDDEN',
               message: '權限不足'
             }
-          })
+          }, { status: 403 })
         }
       }
 
@@ -231,17 +165,38 @@ export function withAuth(
       }
 
       // 4. 執行原始handler並注入權限上下文
-      return await handler(req, res, context)
+      return await handler(req, new NextResponse(), context)
 
     } catch (error) {
       console.error('權限檢查中間件錯誤:', error)
-      return res.status(500).json({
+      return NextResponse.json({
         success: false,
         error: {
           code: 'INTERNAL_ERROR',
           message: '內部伺服器錯誤'
         }
-      })
+      }, { status: 500 })
     }
   }
+}
+
+/**
+ * App Router版本 - 僅超級管理員權限
+ */
+export function withAppSuperAdmin(handler: AppRouteHandler) {
+  return withAppAuth(handler, [Role.SUPER_ADMIN])
+}
+
+/**
+ * App Router版本 - 管理員或投資方權限
+ */
+export function withAppAdminOrInvestor(handler: AppRouteHandler) {
+  return withAppAuth(handler, [Role.SUPER_ADMIN, Role.INVESTOR])
+}
+
+/**
+ * App Router版本 - 所有已認證使用者
+ */
+export function withAppAuthenticated(handler: AppRouteHandler) {
+  return withAppAuth(handler)
 }

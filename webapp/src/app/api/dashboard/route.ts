@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAuth } from '@/modules/auth/middleware/permissions'
+import { withAppAuth } from '@/modules/auth/middleware/permissions'
 import { filterDataByRole } from '@/modules/auth/utils/data-filter'
 import { prisma } from '@/lib/prisma'
 import { PermissionContext, Role } from '@/types/auth'
@@ -10,7 +10,7 @@ import { MonthlySalesAccumulator } from '@/types/api'
  * GET /api/dashboard - 獲取Dashboard資料
  * 🔒 根據使用者角色返回不同的Dashboard數據
  */
-export const GET = withAuth(async (
+export const GET = withAppAuth(async (
   req: NextRequest,
   res: NextResponse,
   context: PermissionContext
