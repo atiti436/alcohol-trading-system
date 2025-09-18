@@ -73,7 +73,7 @@ export const GET = withAppAuth(async (
               variant: {
                 select: {
                   id: true,
-                  variantCode: true,
+                  variant_code: true,
                   description: true
                 }
               }
