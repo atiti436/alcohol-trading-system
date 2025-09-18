@@ -449,9 +449,6 @@ export default function PurchasesPage() {
     }
   }
 
-  // 表單送出狀態
-  const [submitting, setSubmitting] = useState(false)
-
   // 自定義驗證規則
   const validationRules = {
     supplier: [
