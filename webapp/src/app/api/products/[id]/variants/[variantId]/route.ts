@@ -117,7 +117,7 @@ export async function PUT(
       productionYear,
       serialNumber,
       condition,
-      stock,
+      stock_quantity,
       cost
     } = body
 
@@ -146,7 +146,7 @@ export async function PUT(
         ...(productionYear !== undefined && { productionYear }),
         ...(serialNumber !== undefined && { serialNumber }),
         ...(condition && { condition }),
-        ...(stock !== undefined && { stock }),
+        ...(stock_quantity !== undefined && { stock_quantity }),
         ...(cost !== undefined && { cost })
       }
     })

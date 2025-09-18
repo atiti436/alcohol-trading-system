@@ -84,7 +84,7 @@ export async function POST(
       productionYear,
       serialNumber,
       condition = '正常',
-      stock = 0
+      stock_quantity = 0
     } = body
 
     // 基本驗證
@@ -138,7 +138,7 @@ export async function POST(
         productionYear,
         serialNumber,
         condition,
-        stock
+        stock_quantity
       }
     })
 

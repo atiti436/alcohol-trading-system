@@ -128,10 +128,10 @@ export interface ReportsQueryParams {
  * Dashboard統計計算的Accumulator型別
  */
 export interface DashboardStatsAccumulator {
-  totalStock: number
-  totalReserved: number
-  totalAvailable: number
-  totalValue: number
+  total_stock_quantity: number  // 統一命名規範
+  total_reserved_stock: number  // 統一命名規範
+  total_available_stock: number // 統一命名規範
+  total_value: number
 }
 
 /**
@@ -195,12 +195,12 @@ export interface PaginatedResponse<T> {
  * 庫存統計介面
  */
 export interface InventoryStats {
-  totalStock: number
-  totalReserved: number
-  totalAvailable: number
-  totalValue: number
-  stockStatus: 'NORMAL' | 'LOW_STOCK' | 'OUT_OF_STOCK'
-  variantCount: number
+  total_stock_quantity: number  // 統一命名規範
+  total_reserved_stock: number  // 統一命名規範
+  total_available_stock: number // 統一命名規範
+  total_value: number
+  stock_status: 'NORMAL' | 'LOW_STOCK' | 'OUT_OF_STOCK'  // 統一命名規範
+  variant_count: number         // 統一命名規範
 }
 
 /**

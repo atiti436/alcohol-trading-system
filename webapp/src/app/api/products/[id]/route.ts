@@ -77,7 +77,7 @@ export async function GET(
     })
 
     // 🔧 修正：計算總庫存（所有變體）- 使用統一命名規範
-    const totalStock = product.variants.reduce((sum, variant) => sum + (variant.stock_quantity || variant.stock || 0), 0)
+    const total_stock_quantity = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
 
     return NextResponse.json({
       success: true,
@@ -88,7 +88,7 @@ export async function GET(
           totalSales: product._count.saleItems,
           totalQuantitySold: salesStats._sum.quantity || 0,
           totalRevenue: salesStats._sum.totalPrice || 0,
-          totalStock
+          total_stock_quantity
         }
       }
     })

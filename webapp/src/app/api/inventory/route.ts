@@ -109,29 +109,29 @@ export async function GET(request: NextRequest) {
     const inventoryData = products.map(product => {
       const stats: DashboardStatsAccumulator = product.variants.reduce(
         (acc: DashboardStatsAccumulator, variant) => ({
-          totalStock: acc.totalStock + variant.stock_quantity,
-          totalReserved: acc.totalReserved + variant.reserved_stock,
-          totalAvailable: acc.totalAvailable + variant.available_stock,
-          totalValue: acc.totalValue + (variant.stock_quantity * (variant.cost_price || 0))
+          total_stock_quantity: acc.total_stock_quantity + variant.stock_quantity,
+          total_reserved_stock: acc.total_reserved_stock + variant.reserved_stock,
+          total_available_stock: acc.total_available_stock + variant.available_stock,
+          total_value: acc.total_value + (variant.stock_quantity * (variant.cost_price || 0))
         }),
-        { totalStock: 0, totalReserved: 0, totalAvailable: 0, totalValue: 0 }
+        { total_stock_quantity: 0, total_reserved_stock: 0, total_available_stock: 0, total_value: 0 }
       )
 
       // 判斷庫存狀態
-      let stockStatus: InventoryStats['stockStatus'] = 'NORMAL'
-      if (stats.totalAvailable === 0) {
-        stockStatus = 'OUT_OF_STOCK'
-      } else if (stats.totalAvailable <= 10 || stats.totalAvailable <= stats.totalStock * 0.2) {
-        stockStatus = 'LOW_STOCK'
+      let stock_status: InventoryStats['stock_status'] = 'NORMAL'
+      if (stats.total_available_stock === 0) {
+        stock_status = 'OUT_OF_STOCK'
+      } else if (stats.total_available_stock <= 10 || stats.total_available_stock <= stats.total_stock_quantity * 0.2) {
+        stock_status = 'LOW_STOCK'
       }
 
       const inventory: InventoryStats = {
-        totalStock: stats.totalStock,
-        totalReserved: stats.totalReserved,
-        totalAvailable: stats.totalAvailable,
-        totalValue: Math.round(stats.totalValue),
-        stockStatus,
-        variantCount: product.variants.length
+        total_stock_quantity: stats.total_stock_quantity,
+        total_reserved_stock: stats.total_reserved_stock,
+        total_available_stock: stats.total_available_stock,
+        total_value: Math.round(stats.total_value),
+        stock_status,
+        variant_count: product.variants.length
       }
 
       return {

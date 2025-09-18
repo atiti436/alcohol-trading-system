@@ -34,16 +34,16 @@ enum AlcoholCategory {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String
-  image       String?
-  role        Role     @default(EMPLOYEE)
-  investorId  String?  // 投資方關聯ID
-  isActive    Boolean  @default(true)
-  preferences Json?    // 個人偏好設定
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  image         String?
+  role          Role     @default(EMPLOYEE)
+  investor_id   String?  // 投資方關聯ID - 統一命名規範
+  is_active     Boolean  @default(true)  // 統一命名規範
+  preferences   Json?    // 個人偏好設定
+  created_at    DateTime @default(now())  // 統一命名規範
+  updated_at    DateTime @updatedAt      // 統一命名規範
 
   // 關聯表
   createdPurchases        Purchase[]
@@ -74,13 +74,13 @@ model Customer {
   address         String?      // 聯絡地址
   shipping_address String?     // 送貨地址
   tier            CustomerTier @default(REGULAR)
-  paymentTerms    PaymentTerms @default(CASH)
-  requiresInvoice Boolean      @default(false)
+  payment_terms   PaymentTerms @default(CASH)  // 統一命名規範
+  requires_invoice Boolean     @default(false) // 統一命名規範
   credit_limit    Float?       // 信用額度
   notes           String?
-  isActive        Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  is_active       Boolean      @default(true)  // 統一命名規範
+  created_at      DateTime     @default(now()) // 統一命名規範
+  updated_at      DateTime     @updatedAt     // 統一命名規範
 
   // 關聯表
   sales Sale[]
