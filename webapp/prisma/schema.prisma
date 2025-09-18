@@ -93,29 +93,28 @@ model Customer {
 model Product {
   id               String           @id @default(cuid())
   product_code     String           @unique // P00001, P00002 等
-  code             String           @unique // 保留向後相容性
   name             String
   category         AlcoholCategory
   volume_ml        Int              // 容量(ml) - 統一命名規範
   alc_percentage   Float            // 酒精度(%) - 統一命名規範
-  weight           Float            // 商品重量(kg)
-  packageWeight    Float?           // 外盒重量(kg)
-  totalWeight      Float?           // 總重量(kg)
-  hasBox           Boolean          @default(false)
-  hasAccessories   Boolean          @default(false)
-  accessoryWeight  Float?           // 附件重量(kg)
+  weight_kg        Float            // 商品重量(kg) - 統一命名規範
+  package_weight_kg Float?          // 外盒重量(kg) - 統一命名規範
+  total_weight_kg  Float?           // 總重量(kg) - 統一命名規範
+  has_box          Boolean          @default(false)  // 統一命名規範
+  has_accessories  Boolean          @default(false)  // 統一命名規範
+  accessory_weight_kg Float?        // 附件重量(kg) - 統一命名規範
   accessories      String[]         // 附件清單
-  hsCode           String?          // 稅則號列
+  hs_code          String?          // 稅則號列 - 統一命名規範
   supplier         String?
-  manufacturingDate String?
-  expiryDate       String?
-  standardPrice    Float            // 標準售價
-  currentPrice     Float            // 目前售價
-  costPrice        Float            @default(0) // 平均成本價
-  minPrice         Float            // 最低售價限制
-  isActive         Boolean          @default(true)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  manufacturing_date String?        // 統一命名規範
+  expiry_date      String?          // 統一命名規範
+  standard_price   Float            // 標準售價 - 統一命名規範
+  current_price    Float            // 目前售價 - 統一命名規範
+  cost_price       Float            @default(0) // 平均成本價 - 統一命名規範
+  min_price        Float            // 最低售價限制 - 統一命名規範
+  is_active        Boolean          @default(true)  // 統一命名規範
+  created_at       DateTime         @default(now())  // 統一命名規範
+  updated_at       DateTime         @updatedAt      // 統一命名規範
 
   // 關聯表
   variants         ProductVariant[]

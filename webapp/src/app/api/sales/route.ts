@@ -66,7 +66,7 @@ export const GET = withAppAuth(async (
               product: {
                 select: {
                   id: true,
-                  code: true,
+                  product_code: true,
                   name: true
                 }
               },
