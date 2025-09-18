@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import {
+  InventoryWhereCondition,
+  InventoryQueryParams,
+  DashboardStatsAccumulator,
+  InventoryStats,
+  InventoryMovementCreate
+} from '@/types/api'
 
 /**
  * 🏭 Room-3: Inventory 庫存管理 API
@@ -29,8 +36,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // 建立查詢條件
-    const where: any = {
+    // 建立查詢條件 - 🔧 修復：使用正確的型別定義
+    const where: InventoryWhereCondition = {
       isActive: true
     }
 
@@ -98,32 +105,38 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
-    // 計算庫存統計資訊
+    // 計算庫存統計資訊 - 🔧 修復：使用型別化的reduce操作
     const inventoryData = products.map(product => {
-      const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
-      const totalReserved = product.variants.reduce((sum, variant) => sum + variant.reserved_stock, 0)
-      const totalAvailable = product.variants.reduce((sum, variant) => sum + variant.available_stock, 0)
-      const totalValue = product.variants.reduce((sum, variant) =>
-        sum + (variant.stock_quantity * (variant.cost_price || 0)), 0)
+      const stats: DashboardStatsAccumulator = product.variants.reduce(
+        (acc: DashboardStatsAccumulator, variant) => ({
+          totalStock: acc.totalStock + variant.stock_quantity,
+          totalReserved: acc.totalReserved + variant.reserved_stock,
+          totalAvailable: acc.totalAvailable + variant.available_stock,
+          totalValue: acc.totalValue + (variant.stock_quantity * (variant.cost_price || 0))
+        }),
+        { totalStock: 0, totalReserved: 0, totalAvailable: 0, totalValue: 0 }
+      )
 
       // 判斷庫存狀態
-      let stockStatus = 'NORMAL'
-      if (totalAvailable === 0) {
+      let stockStatus: InventoryStats['stockStatus'] = 'NORMAL'
+      if (stats.totalAvailable === 0) {
         stockStatus = 'OUT_OF_STOCK'
-      } else if (totalAvailable <= 10 || totalAvailable <= totalStock * 0.2) {
+      } else if (stats.totalAvailable <= 10 || stats.totalAvailable <= stats.totalStock * 0.2) {
         stockStatus = 'LOW_STOCK'
+      }
+
+      const inventory: InventoryStats = {
+        totalStock: stats.totalStock,
+        totalReserved: stats.totalReserved,
+        totalAvailable: stats.totalAvailable,
+        totalValue: Math.round(stats.totalValue),
+        stockStatus,
+        variantCount: product.variants.length
       }
 
       return {
         ...product,
-        inventory: {
-          totalStock,
-          totalReserved,
-          totalAvailable,
-          totalValue: Math.round(totalValue),
-          stockStatus,
-          variantCount: product.variants.length
-        }
+        inventory
       }
     })
 

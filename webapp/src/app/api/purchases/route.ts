@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { validatePurchaseData } from '@/lib/validation'
+import {
+  PurchaseWhereCondition,
+  PurchaseQueryParams,
+  StandardApiResponse
+} from '@/types/api'
 
 /**
  * 🏭 Room-3: Purchase 採購管理 API
@@ -30,8 +35,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // 建立查詢條件
-    const where: any = {}
+    // 建立查詢條件 - 🔧 修復：使用正確的型別定義
+    const where: PurchaseWhereCondition = {}
 
     // 搜尋條件 - 支援採購單號、供應商的模糊搜尋
     if (search) {

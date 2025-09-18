@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { DatabaseWhereCondition, GroupingQuery } from '@/types/business'
+import { ProductAnalysisAccumulator } from '@/types/api'
 
 /**
  * 📊 Room-5: 報表圖表 API
@@ -261,8 +262,18 @@ async function getSalesTrendReport(baseWhere: DatabaseWhereCondition, period: st
     orderBy: { createdAt: 'asc' }
   })
 
-  // 手動分組數據
-  const groupedData = sales.reduce((acc: any, sale) => {
+  // 手動分組數據 - 🔧 修復：使用正確的Accumulator型別
+  interface SalesTrendAccumulator {
+    [key: string]: {
+      period: string
+      sales: number
+      revenue: number
+      actualRevenue: number
+      commission: number
+    }
+  }
+
+  const groupedData = sales.reduce((acc: SalesTrendAccumulator, sale) => {
     let key: string
     const date = new Date(sale.createdAt)
 
@@ -307,7 +318,7 @@ async function getSalesTrendReport(baseWhere: DatabaseWhereCondition, period: st
     return acc
   }, {})
 
-  const trendData = Object.values(groupedData).map((item: any) => ({
+  const trendData = Object.values(groupedData).map((item) => ({
     period: item.period,
     sales: item.sales,
     revenue: item.revenue,
@@ -384,8 +395,8 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
     }
   }).filter(Boolean) // 移除null值
 
-  // 分類統計
-  const categoryStats = productAnalysis.reduce((acc: any, product) => {
+  // 分類統計 - 🔧 修復：使用正確的Accumulator型別
+  const categoryStats = productAnalysis.reduce((acc: ProductAnalysisAccumulator, product) => {
     const category = product.category || 'OTHER'
     if (!acc[category]) {
       acc[category] = {

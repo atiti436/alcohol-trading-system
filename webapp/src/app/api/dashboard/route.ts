@@ -4,6 +4,7 @@ import { filterDataByRole } from '@/modules/auth/utils/data-filter'
 import { prisma } from '@/lib/prisma'
 import { PermissionContext, Role } from '@/types/auth'
 import { SaleItem, Product, DashboardData } from '@/types/business'
+import { MonthlySalesAccumulator } from '@/types/api'
 
 /**
  * GET /api/dashboard - 獲取Dashboard資料
@@ -217,7 +218,7 @@ async function getInvestorDashboard(context: PermissionContext) {
       id: sale.id,
       saleNumber: sale.saleNumber,
       amount: sale.totalAmount, // 顯示金額
-      profit: sale.totalAmount - (sale.items.reduce((sum: any, item: any) =>
+      profit: sale.totalAmount - (sale.items.reduce((sum: number, item: SaleItem) =>
         sum + (item.product?.costPrice || 0) * item.quantity, 0)),
       date: sale.createdAt
     }))
@@ -297,7 +298,7 @@ async function getEmployeeDashboard(context: PermissionContext) {
  * 計算月度銷售趨勢
  */
 function calculateMonthlySalesTrend(sales: any[], includeActualAmount: boolean) {
-  const monthlyData: Record<string, { revenue: number, profit: number, count: number }> = {}
+  const monthlyData: MonthlySalesAccumulator = {}
 
   sales.forEach(sale => {
     const month = sale.createdAt.toISOString().slice(0, 7) // YYYY-MM
@@ -310,7 +311,7 @@ function calculateMonthlySalesTrend(sales: any[], includeActualAmount: boolean) 
     const revenue = includeActualAmount ?
       (sale.actualAmount || sale.totalAmount) : sale.totalAmount
 
-    const cost = sale.items.reduce((sum: any, item: any) =>
+    const cost = sale.items.reduce((sum: number, item: SaleItem) =>
       sum + (item.product?.costPrice || 0) * item.quantity, 0)
 
     monthlyData[month].revenue += revenue

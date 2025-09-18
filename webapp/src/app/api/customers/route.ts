@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { validateCustomerData } from '@/lib/validation'
+import {
+  CustomerWhereCondition,
+  CustomerQueryParams,
+  StandardApiResponse
+} from '@/types/api'
 
 /**
  * 🏠 Room-2: Customer 模組 API
@@ -28,8 +33,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // 建立查詢條件
-    const where: any = {
+    // 建立查詢條件 - 🔧 修復：使用正確的型別定義
+    const where: CustomerWhereCondition = {
       isActive: true
     }
 
