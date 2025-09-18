@@ -166,7 +166,7 @@
         <span className="product-code">{item.code}</span>
       </div>
       <div className="product-specs">
-        {item.alcoholPercentage}% | {item.volume}ml
+        {item.alc_percentage}% | {item.volume_ml}ml
       </div>
       <Button size="small" onClick={() => selectProduct(item)}>
         選擇

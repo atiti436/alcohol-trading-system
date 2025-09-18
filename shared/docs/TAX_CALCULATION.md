@@ -65,10 +65,10 @@ function calculateAllCosts(item: ImportItem, exchangeRate: number) {
 ### **核心分類邏輯**（從DEMO.txt複製）
 ```typescript
 function calculateAlcoholTax(item: ImportItem): number {
-  const alcoholPercentage = parseFloat(item.alcoholPercentage) || 0;
-  const volumeML = parseFloat(item.volumeML) || 0;
+  const alcPercentage = parseFloat(item.alc_percentage) || 0;
+  const volumeMl = parseFloat(item.volume_ml) || 0;
   const quantity = parseFloat(item.quantity) || 0;
-  const volumeInLiters = volumeML / 1000;
+  const volumeInLiters = volumeMl / 1000;
   const itemName = (item.name || '').toUpperCase();
 
   let alcoholTaxPerLiter = 0;
@@ -87,7 +87,7 @@ function calculateAlcoholTax(item: ImportItem): number {
            itemName.includes('RUM') ||
            itemName.includes('GIN') ||
            itemName.includes('BRANDY')) {
-    alcoholTaxPerLiter = 2.5 * alcoholPercentage;
+    alcoholTaxPerLiter = 2.5 * alcPercentage;
   }
 
   // 🍶 釀造酒類：每公升按酒精成分每度 7 元
@@ -95,22 +95,22 @@ function calculateAlcoholTax(item: ImportItem): number {
            itemName.includes('葡萄酒') ||
            itemName.includes('SAKE') ||
            itemName.includes('清酒')) {
-    alcoholTaxPerLiter = 7 * alcoholPercentage;
+    alcoholTaxPerLiter = 7 * alcPercentage;
   }
 
   // 🍯 再製酒類（利口酒）：根據酒精濃度判斷
   else if (itemName.includes('LIQUEUR') ||
            itemName.includes('利口酒')) {
-    if (alcoholPercentage > 20) {
+    if (alcPercentage > 20) {
       alcoholTaxPerLiter = 185; // 超過20%：每公升 185 元
     } else {
-      alcoholTaxPerLiter = 7 * alcoholPercentage; // 20%以下：每公升按度數 7 元
+      alcoholTaxPerLiter = 7 * alcPercentage; // 20%以下：每公升按度數 7 元
     }
   }
 
   // 🔄 其他酒類：預設為釀造酒
   else {
-    alcoholTaxPerLiter = 7 * alcoholPercentage;
+    alcoholTaxPerLiter = 7 * alcPercentage;
   }
 
   return alcoholTaxPerLiter * volumeInLiters * quantity;
@@ -227,8 +227,8 @@ function allocateExtraCosts(
 ```typescript
 const testItem = {
   name: '白鶴清酒',
-  alcoholPercentage: 15,
-  volumeML: 720,
+  alc_percentage: 15,
+  volume_ml: 720,
   quantity: 1,
   foreignCurrencyUnitPrice: 800, // JPY
   dutiableValueTWD: 168, // 800 * 0.21
