@@ -43,7 +43,7 @@ export const authOptions: NextAuthOptions = {
           })
           token.id = newUser.id
           token.role = newUser.role as Role
-          token.investor_id = newUser.investor_id
+          token.investor_id = newUser.investor_id ?? undefined
         }
       }
 

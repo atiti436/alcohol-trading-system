@@ -31,8 +31,8 @@ export interface Customer {
   address?: string
   shipping_address?: string
   tier: CustomerTier
-  paymentTerms: PaymentTerms
-  requiresInvoice: boolean
+  payment_terms: PaymentTerms
+  requires_invoice: boolean
   credit_limit?: number     // 信用額度
   notes?: string
   is_active: boolean
@@ -47,11 +47,11 @@ export interface CustomerWithStats extends Customer {
   total_amount?: number
   recentOrders?: Array<{
     id: string
-    saleNumber: string
+    sale_number: string
     total_amount: number
     actual_amount?: number    // 只有SUPER_ADMIN看得到
     created_at: Date
-    isPaid: boolean
+    is_paid: boolean
   }>
 }
 
@@ -65,8 +65,8 @@ export interface CreateCustomerRequest {
   address?: string
   shipping_address?: string
   tier?: CustomerTier
-  paymentTerms?: PaymentTerms
-  requiresInvoice?: boolean
+  payment_terms?: PaymentTerms
+  requires_invoice?: boolean
   credit_limit?: number
   notes?: string
 }
@@ -81,8 +81,8 @@ export interface UpdateCustomerRequest {
   address?: string
   shipping_address?: string
   tier?: CustomerTier
-  paymentTerms?: PaymentTerms
-  requiresInvoice?: boolean
+  payment_terms?: PaymentTerms
+  requires_invoice?: boolean
   credit_limit?: number
   notes?: string
   is_active?: boolean
@@ -111,27 +111,25 @@ export enum VariantType {
 export interface Product {
   id: string
   product_code: string      // P00001
-  // 已移除 code 欄位，統一使用 product_code
   name: string
   category: AlcoholCategory
   volume_ml: number        // 容量(ml)
   alc_percentage: number   // 酒精度(%)
-  weight: number          // 商品重量(kg)
-  packageWeight?: number   // 外盒重量(kg)
-  totalWeight?: number     // 總重量(kg)
-  hasBox: boolean
-  hasAccessories: boolean
-  accessoryWeight?: number // 附件重量(kg)
+  weight_kg: number          // 商品重量(kg)
+  package_weight_kg?: number   // 外盒重量(kg)
+  total_weight_kg?: number     // 總重量(kg)
+  has_box: boolean
+  has_accessories: boolean
+  accessory_weight_kg?: number // 附件重量(kg)
   accessories: string[]    // 附件清單
   hs_code?: string         // 稅則號列
   supplier?: string
-  manufacturingDate?: string
-  expiryDate?: string
+  manufacturing_date?: string
+  expiry_date?: string
   standard_price: number   // 標準售價
   current_price: number    // 目前售價
   cost_price: number       // 平均成本價
   min_price: number        // 最低售價限制
-  // 庫存欄位已移除 - 庫存在ProductVariant層級管理
   is_active: boolean
   created_at: Date
   updated_at: Date
@@ -141,14 +139,14 @@ export interface ProductVariant {
   id: string
   product_id: string
   variant_code: string    // P00001-A
-  variantType: VariantType
+  variant_type: VariantType
   description: string     // "一般版", "100周年紀念版"
-  basePrice: number       // 基礎售價
+  base_price: number       // 基礎售價
   current_price: number    // 目前售價
-  discountRate?: number   // 折扣率 (損傷品用)
-  limitedEdition: boolean
-  productionYear?: number
-  serialNumber?: string
+  discount_rate?: number   // 折扣率 (損傷品用)
+  limited_edition: boolean
+  production_year?: number
+  serial_number?: string
   condition: string       // 商品狀況
   stock_quantity: number
   cost_price: number     // 實際成本
@@ -160,7 +158,7 @@ export interface ProductWithVariants extends Product {
   variants: ProductVariant[]
   _count: {
     variants: number
-    saleItems: number
+    sale_items: number
   }
 }
 
@@ -168,18 +166,18 @@ export interface ProductWithVariants extends Product {
 
 export interface Sale {
   id: string
-  saleNumber: string
+  sale_number: string
   customer_id: string
   total_amount: number        // 顯示金額（投資方看到的）
   actual_amount?: number      // 實際收取金額（僅超級管理員）
   commission?: number        // 老闆傭金（僅超級管理員）
-  fundingSource: 'COMPANY' | 'PERSONAL'
-  paymentTerms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
-  isPaid: boolean
-  paidAt?: Date
-  dueDate?: Date
+  funding_source: 'COMPANY' | 'PERSONAL'
+  payment_terms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
+  is_paid: boolean
+  paid_at?: Date
+  due_date?: Date
   notes?: string
-  createdBy: string
+  created_by: string
   created_at: Date
   updated_at: Date
   items?: SaleItem[]
@@ -188,15 +186,15 @@ export interface Sale {
 
 export interface SaleItem {
   id: string
-  saleId: string
+  sale_id: string
   product_id: string
-  variantId?: string
+  variant_id?: string
   quantity: number
   unit_price: number          // 顯示單價
   actual_unit_price?: number   // 實際單價（僅超級管理員）
   total_price: number         // 顯示總價
   actual_total_price?: number  // 實際總價（僅超級管理員）
-  isPersonalPurchase: boolean
+  is_personal_purchase: boolean
   created_at: Date
   updated_at: Date
   product?: Product
@@ -208,45 +206,45 @@ export interface CreateSaleRequest {
   total_amount: number
   actual_amount?: number
   commission?: number
-  fundingSource: 'COMPANY' | 'PERSONAL'
-  paymentTerms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
-  dueDate?: string
+  funding_source: 'COMPANY' | 'PERSONAL'
+  payment_terms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
+  due_date?: string
   notes?: string
   items: CreateSaleItemRequest[]
 }
 
 export interface CreateSaleItemRequest {
   product_id: string
-  variantId?: string
+  variant_id?: string
   quantity: number
   unit_price: number
   actual_unit_price?: number
   total_price: number
   actual_total_price?: number
-  isPersonalPurchase?: boolean
+  is_personal_purchase?: boolean
 }
 
 export interface UpdateSaleRequest extends Partial<CreateSaleRequest> {
-  isPaid?: boolean
-  paidAt?: string
+  is_paid?: boolean
+  paid_at?: string
 }
 
 // 🔧 新增：Purchase 相關類型定義 - 修復 any 類型問題
 
 export interface Purchase {
   id: string
-  purchaseNumber: string
-  supplierId?: string
+  purchase_number: string
+  supplier_id?: string
   supplier: string
   currency: 'JPY' | 'USD' | 'TWD'
-  exchangeRate: number
+  exchange_rate: number
   total_amount: number
-  fundingSource: 'COMPANY' | 'PERSONAL'
+  funding_source: 'COMPANY' | 'PERSONAL'
   status: 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'RECEIVED' | 'CANCELLED'
-  declarationNumber?: string
-  declarationDate?: Date
+  declaration_number?: string
+  declaration_date?: Date
   notes?: string
-  createdBy: string
+  created_by: string
   investor_id?: string
   created_at: Date
   updated_at: Date
@@ -255,18 +253,18 @@ export interface Purchase {
 
 export interface PurchaseItem {
   id: string
-  purchaseId: string
+  purchase_id: string
   product_id?: string
-  productName: string
+  product_name: string
   quantity: number
   unit_price: number
   total_price: number
-  dutiableValue?: number
-  tariffCode?: string
-  importDutyRate?: number
+  dutiable_value?: number
+  tariff_code?: string
+  import_duty_rate?: number
   alc_percentage?: number
   volume_ml?: number
-  weight?: number
+  weight_kg?: number
   created_at: Date
   updated_at: Date
   product?: Product
@@ -275,25 +273,25 @@ export interface PurchaseItem {
 export interface CreatePurchaseRequest {
   supplier: string
   currency: 'JPY' | 'USD' | 'TWD'
-  exchangeRate: number
-  fundingSource: 'COMPANY' | 'PERSONAL'
-  declarationNumber?: string
-  declarationDate?: string
+  exchange_rate: number
+  funding_source: 'COMPANY' | 'PERSONAL'
+  declaration_number?: string
+  declaration_date?: string
   notes?: string
   items: CreatePurchaseItemRequest[]
 }
 
 export interface CreatePurchaseItemRequest {
   product_id?: string
-  productName: string
+  product_name: string
   quantity: number
   unit_price: number
-  dutiableValue?: number
-  tariffCode?: string
-  importDutyRate?: number
+  dutiable_value?: number
+  tariff_code?: string
+  import_duty_rate?: number
   alc_percentage?: number
   volume_ml?: number
-  weight?: number
+  weight_kg?: number
 }
 
 export interface UpdatePurchaseRequest extends Partial<CreatePurchaseRequest> {
@@ -305,20 +303,20 @@ export interface CreateProductRequest {
   category: AlcoholCategory
   volume_ml: number
   alc_percentage: number
-  weight: number
-  packageWeight?: number
-  hasBox?: boolean
-  hasAccessories?: boolean
-  accessoryWeight?: number
+  weight_kg: number
+  package_weight_kg?: number
+  has_box?: boolean
+  has_accessories?: boolean
+  accessory_weight_kg?: number
   accessories?: string[]
   hs_code?: string
   supplier?: string
-  manufacturingDate?: string
-  expiryDate?: string
+  manufacturing_date?: string
+  expiry_date?: string
   standard_price: number
   current_price: number
   min_price: number
-  createDefaultVariant?: boolean
+  create_default_variant?: boolean
 }
 
 export interface UpdateProductRequest {
@@ -326,48 +324,47 @@ export interface UpdateProductRequest {
   category?: AlcoholCategory
   volume_ml?: number
   alc_percentage?: number
-  weight?: number
-  packageWeight?: number
-  hasBox?: boolean
-  hasAccessories?: boolean
-  accessoryWeight?: number
+  weight_kg?: number
+  package_weight_kg?: number
+  has_box?: boolean
+  has_accessories?: boolean
+  accessory_weight_kg?: number
   accessories?: string[]
   hs_code?: string
   supplier?: string
-  manufacturingDate?: string
-  expiryDate?: string
+  manufacturing_date?: string
+  expiry_date?: string
   standard_price?: number
   current_price?: number
   cost_price?: number
   min_price?: number
-  // 庫存欄位已移除 - 庫存在ProductVariant層級管理
   is_active?: boolean
 }
 
 export interface CreateVariantRequest {
-  variantType: VariantType
+  variant_type: VariantType
   description: string
-  basePrice: number
+  base_price: number
   current_price: number
-  discountRate?: number
-  limitedEdition?: boolean
-  productionYear?: number
-  serialNumber?: string
+  discount_rate?: number
+  limited_edition?: boolean
+  production_year?: number
+  serial_number?: string
   condition?: string
-  stock?: number
+  stock_quantity?: number
 }
 
 export interface UpdateVariantRequest {
   description?: string
-  basePrice?: number
+  base_price?: number
   current_price?: number
-  discountRate?: number
-  limitedEdition?: boolean
-  productionYear?: number
-  serialNumber?: string
+  discount_rate?: number
+  limited_edition?: boolean
+  production_year?: number
+  serial_number?: string
   condition?: string
-  stock?: number
-  cost?: number
+  stock_quantity?: number
+  cost_price?: number
 }
 
 // ===== API Response 類型 =====
@@ -383,7 +380,7 @@ export interface APIResponse<T> {
 export interface PaginatedResponse<T> {
   success: boolean
   data: {
-    [key: string]: T[]
+    items: T[]
     total: number
     page: number
     limit: number

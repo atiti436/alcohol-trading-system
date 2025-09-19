@@ -59,7 +59,7 @@ export const GET = withAppAuth(async (
 /**
  * 超級管理員Dashboard - 完整的商業數據
  */
-async function getSuperAdminDashboard(context: PermissionContext) {
+async function getSuperAdminDashboard(context: PermissionContext): Promise<Partial<DashboardData>> {
   // 獲取所有銷售資料 (包含真實價格和傭金)
   const sales = await prisma.sale.findMany({
     include: {
@@ -74,8 +74,8 @@ async function getSuperAdminDashboard(context: PermissionContext) {
   })
 
   // 分離個人調貨和投資項目
-  const personalSales = sales.filter(sale => sale.fundingSource === 'PERSONAL')
-  const investmentSales = sales.filter(sale => sale.fundingSource === 'COMPANY')
+  const personalSales = sales.filter(sale => sale.funding_source === 'PERSONAL')
+  const investmentSales = sales.filter(sale => sale.funding_source === 'COMPANY')
 
   // 計算總營收 (真實金額)
   const totalRevenue = sales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
@@ -111,7 +111,7 @@ async function getSuperAdminDashboard(context: PermissionContext) {
 
   // 待收款項
   const unpaidSales = await prisma.sale.findMany({
-    where: { isPaid: false },
+    where: { is_paid: false },
     select: {
       actual_amount: true,
       total_amount: true
@@ -143,10 +143,10 @@ async function getSuperAdminDashboard(context: PermissionContext) {
 
   return {
     // 🔑 關鍵KPI (包含真實數據)
-    totalRevenue,           // 總營收 (包含真實1200)
-    personalRevenue,        // 個人調貨營收
-    investmentRevenue,      // 投資項目營收
-    commission: totalCommission, // 老闆總傭金
+    totalRevenue,
+    personalRevenue,
+    investmentRevenue,
+    commission: totalCommission,
     stockValue,
     stockCount,
     pendingReceivables,
@@ -163,13 +163,13 @@ async function getSuperAdminDashboard(context: PermissionContext) {
 /**
  * 投資方Dashboard - 過濾後的投資數據
  */
-async function getInvestorDashboard(context: PermissionContext) {
+async function getInvestorDashboard(context: PermissionContext): Promise<Partial<DashboardData>> {
   // 🔒 只獲取投資項目的銷售資料
   const investmentSales = await prisma.sale.findMany({
     where: {
-      fundingSource: 'COMPANY',
+      funding_source: 'COMPANY',
       // 如果有investor_id，只顯示該投資方的項目
-      ...(context.investor_id && { investor_id: context.investor_id })
+      ...(context.investor_id && { creator: { investor_id: context.investor_id } })
     },
     include: {
       items: {
@@ -184,7 +184,7 @@ async function getInvestorDashboard(context: PermissionContext) {
   // 🔒 關鍵：基於顯示價格計算投資方看到的數據
   const investmentRevenue = investmentSales.reduce((sum, sale) => sum + sale.total_amount, 0) // 顯示價格
   const investmentCost = investmentSales.reduce((sum, sale) => {
-    return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
+    return sum + sale.items.reduce((itemSum: number, item: any) =>
       itemSum + (item.product?.cost_price || 0) * item.quantity, 0)
   }, 0)
   const investmentProfit = investmentRevenue - investmentCost // 基於顯示價格的獲利
@@ -205,9 +205,9 @@ async function getInvestorDashboard(context: PermissionContext) {
 
   return {
     // 🔑 投資方可見的KPI (基於顯示價格)
-    investmentRevenue,      // 投資項目營收 (1000 不是 1200)
-    investmentProfit,       // 投資獲利 (200)
-    investmentStock,        // 投資商品庫存
+    investmentRevenue,
+    investmentProfit,
+    investmentStock,
     profitMargin: investmentRevenue ? (investmentProfit / investmentRevenue * 100) : 0,
 
     // 投資趨勢 (過濾後的數據)
@@ -216,9 +216,9 @@ async function getInvestorDashboard(context: PermissionContext) {
     // 投資項目明細
     investmentItems: investmentSales.slice(0, 10).map(sale => ({
       id: sale.id,
-      saleNumber: sale.saleNumber,
+      sale_number: sale.sale_number,
       amount: sale.total_amount, // 顯示金額
-      profit: sale.total_amount - (sale.items.reduce((sum: number, item: SaleItem) =>
+      profit: sale.total_amount - (sale.items.reduce((sum: number, item: any) =>
         sum + (item.product?.cost_price || 0) * item.quantity, 0)),
       date: sale.created_at
     }))
@@ -228,7 +228,7 @@ async function getInvestorDashboard(context: PermissionContext) {
 /**
  * 員工Dashboard - 基本操作數據
  */
-async function getEmployeeDashboard(context: PermissionContext) {
+async function getEmployeeDashboard(context: PermissionContext): Promise<Partial<DashboardData>> {
   // 今日待辦事項 (這裡用模擬資料，實際可從任務系統取得)
   const todayTasks = [
     { id: 1, task: '處理客戶A的報價單', status: 'pending' },
@@ -247,10 +247,10 @@ async function getEmployeeDashboard(context: PermissionContext) {
     take: 5,
     select: {
       id: true,
-      saleNumber: true,
+      sale_number: true,
       customer: true,
       total_amount: true, // 顯示金額 (不含實際金額)
-      isPaid: true,
+      is_paid: true,
       created_at: true
     }
   })
@@ -278,11 +278,11 @@ async function getEmployeeDashboard(context: PermissionContext) {
 
   return {
     todayTasks,
-    recentOrders: recentOrders.map(order => ({
-      id: order.saleNumber,
+    recentOrders: recentOrders.map((order: any) => ({
+      id: order.sale_number,
       customer: order.customer.name,
       amount: order.total_amount, // 只顯示顯示金額
-      status: order.isPaid ? 'completed' : 'processing'
+      status: order.is_paid ? 'completed' : 'processing'
     })),
     stockAlerts: stockAlerts.map(product => ({
       id: product.id,
@@ -311,7 +311,7 @@ function calculateMonthlySalesTrend(sales: any[], includeActualAmount: boolean) 
     const revenue = includeActualAmount ?
       (sale.actual_amount || sale.total_amount) : sale.total_amount
 
-    const cost = sale.items.reduce((sum: number, item: SaleItem) =>
+    const cost = sale.items.reduce((sum: number, item: any) =>
       sum + (item.product?.cost_price || 0) * item.quantity, 0)
 
     monthlyData[month].revenue += revenue

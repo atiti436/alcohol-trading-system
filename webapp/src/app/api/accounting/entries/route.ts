@@ -26,23 +26,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const entryType = searchParams.get('entryType')
-    const dateFrom = searchParams.get('dateFrom')
-    const dateTo = searchParams.get('dateTo')
-    const isPosted = searchParams.get('isPosted')
+    const entryType = searchParams.get('entry_type')
+    const dateFrom = searchParams.get('date_from')
+    const dateTo = searchParams.get('date_to')
+    const isPosted = searchParams.get('is_posted')
 
     const skip = (page - 1) * limit
 
     // 建立查詢條件
     const where: any = {}
 
-    if (entryType) where.entryType = entryType
-    if (isPosted !== null) where.isPosted = isPosted === 'true'
+    if (entryType) where.entry_type = entryType
+    if (isPosted !== null) where.is_posted = isPosted === 'true'
 
     if (dateFrom || dateTo) {
-      where.entryDate = {}
-      if (dateFrom) where.entryDate.gte = new Date(dateFrom)
-      if (dateTo) where.entryDate.lte = new Date(dateTo)
+      where.entry_date = {}
+      if (dateFrom) where.entry_date.gte = new Date(dateFrom)
+      if (dateTo) where.entry_date.lte = new Date(dateTo)
     }
 
     // 執行查詢
@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
       prisma.accountingEntry.findMany({
         where,
         include: {
-          journalEntries: {
-            orderBy: { accountCode: 'asc' }
+          journal_entries: {
+            orderBy: { account_code: 'asc' }
           },
           creator: {
             select: {
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: { entryDate: 'desc' },
+        orderBy: { entry_date: 'desc' },
         skip,
         take: limit
       }),
@@ -99,41 +99,41 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const {
-      entryType,
-      referenceId,
-      referenceType,
-      entryDate,
+      entry_type,
+      reference_id,
+      reference_type,
+      entry_date,
       description,
       notes
     } = body
 
     // 基本驗證
-    if (!entryType || !referenceId || !referenceType) {
+    if (!entry_type || !reference_id || !reference_type) {
       return NextResponse.json({
         error: '分錄類型、關聯單據ID和類型為必填欄位'
       }, { status: 400 })
     }
 
     // 根據不同類型產生對應的會計分錄
-    let journalEntries = []
-    let totalAmount = 0
+    let journal_entries = []
+    let total_amount = 0
     let entryDescription = description
 
-    switch (entryType) {
+    switch (entry_type) {
       case 'SALE':
         // 銷售分錄處理
-        const saleData = await generateSaleEntry(referenceId, session.user.role)
-        journalEntries = saleData.journalEntries
-        totalAmount = saleData.totalAmount
-        entryDescription = entryDescription || `銷售收入 - ${saleData.saleNumber}`
+        const saleData = await generateSaleEntry(reference_id, session.user.role)
+        journal_entries = saleData.journal_entries
+        total_amount = saleData.total_amount
+        entryDescription = entryDescription || `銷售收入 - ${saleData.sale_number}`
         break
 
       case 'PAYMENT':
         // 收款分錄處理
-        const paymentData = await generatePaymentEntry(referenceId)
-        journalEntries = paymentData.journalEntries
-        totalAmount = paymentData.totalAmount
-        entryDescription = entryDescription || `客戶付款 - ${paymentData.paymentNumber}`
+        const paymentData = await generatePaymentEntry(reference_id)
+        journal_entries = paymentData.journal_entries
+        total_amount = paymentData.total_amount
+        entryDescription = entryDescription || `客戶付款 - ${paymentData.payment_number}`
         break
 
       default:
@@ -143,27 +143,27 @@ export async function POST(request: NextRequest) {
     }
 
     // 產生分錄編號
-    const entryNumber = await generateEntryNumber()
+    const entry_number = await generateEntryNumber()
 
     // 建立會計分錄
     const accountingEntry = await prisma.accountingEntry.create({
       data: {
-        entryNumber,
-        entryDate: entryDate ? new Date(entryDate) : new Date(),
-        entryType,
-        referenceId,
-        referenceType,
+        entry_number,
+        entry_date: entry_date ? new Date(entry_date) : new Date(),
+        entry_type,
+        reference_id,
+        reference_type,
         description: entryDescription,
-        totalAmount,
+        total_amount,
         notes,
-        createdBy: session.user.id,
-        journalEntries: {
-          create: journalEntries
+        created_by: session.user.id,
+        journal_entries: {
+          create: journal_entries
         }
       },
       include: {
-        journalEntries: {
-          orderBy: { accountCode: 'asc' }
+        journal_entries: {
+          orderBy: { account_code: 'asc' }
         }
       }
     })
@@ -201,52 +201,52 @@ async function generateSaleEntry(saleId: string, userRole: string) {
     throw new Error('銷售單不存在')
   }
 
-  const journalEntries = []
+  const journal_entries = []
 
   // 根據付款條件決定借方科目
-  const debitAccount = sale.paymentTerms === 'CASH'
+  const debitAccount = sale.payment_terms === 'CASH'
     ? { code: '1101', name: '現金' }
     : { code: '1103', name: '應收帳款' }
 
   // 🔒 核心：根據角色決定使用哪個金額
   // 超級管理員看到實際金額，其他角色看到顯示金額
-  const actual_amount = userRole === 'SUPER_ADMIN' && sale.actualAmount
-    ? sale.actualAmount
-    : sale.totalAmount
+  const actual_amount = userRole === 'SUPER_ADMIN' && sale.actual_amount
+    ? sale.actual_amount
+    : sale.total_amount
 
   // 借：現金/應收帳款
-  journalEntries.push({
-    accountCode: debitAccount.code,
-    accountName: debitAccount.name,
-    debitAmount: actual_amount,
-    creditAmount: 0,
+  journal_entries.push({
+    account_code: debitAccount.code,
+    account_name: debitAccount.name,
+    debit_amount: actual_amount,
+    credit_amount: 0,
     description: `銷售 - ${sale.customer.name}`
   })
 
   // 貸：銷貨收入
-  journalEntries.push({
-    accountCode: '4101',
-    accountName: '銷貨收入',
-    debitAmount: 0,
-    creditAmount: sale.totalAmount, // 投資方看到的金額
+  journal_entries.push({
+    account_code: '4101',
+    account_name: '銷貨收入',
+    debit_amount: 0,
+    credit_amount: sale.total_amount, // 投資方看到的金額
     description: `銷售收入 - ${sale.customer.name}`
   })
 
   // 🔒 如果有老闆傭金且是超級管理員，額外記錄
   if (userRole === 'SUPER_ADMIN' && sale.commission && sale.commission > 0) {
-    journalEntries.push({
-      accountCode: '6201',
-      accountName: '銷售傭金',
-      debitAmount: 0,
-      creditAmount: sale.commission,
+    journal_entries.push({
+      account_code: '6201',
+      account_name: '銷售傭金',
+      debit_amount: 0,
+      credit_amount: sale.commission,
       description: `銷售傭金 - ${sale.customer.name}`
     })
   }
 
   return {
-    journalEntries,
-    totalAmount: actual_amount,
-    saleNumber: sale.saleNumber
+    journal_entries,
+    total_amount: actual_amount,
+    sale_number: sale.sale_number
   }
 }
 
@@ -255,7 +255,7 @@ async function generatePaymentEntry(paymentId: string) {
   const payment = await prisma.paymentRecord.findUnique({
     where: { id: paymentId },
     include: {
-      accountsReceivable: {
+      accounts_receivable: {
         include: {
           customer: true,
           sale: true
@@ -268,30 +268,30 @@ async function generatePaymentEntry(paymentId: string) {
     throw new Error('付款記錄不存在')
   }
 
-  const journalEntries = []
+  const journal_entries = []
 
   // 借：現金
-  journalEntries.push({
-    accountCode: '1101',
-    accountName: '現金',
-    debitAmount: payment.paymentAmount,
-    creditAmount: 0,
-    description: `收款 - ${payment.accountsReceivable.customer.name}`
+  journal_entries.push({
+    account_code: '1101',
+    account_name: '現金',
+    debit_amount: payment.payment_amount,
+    credit_amount: 0,
+    description: `收款 - ${payment.accounts_receivable.customer.name}`
   })
 
   // 貸：應收帳款
-  journalEntries.push({
-    accountCode: '1103',
-    accountName: '應收帳款',
-    debitAmount: 0,
-    creditAmount: payment.paymentAmount,
-    description: `收款 - ${payment.accountsReceivable.customer.name}`
+  journal_entries.push({
+    account_code: '1103',
+    account_name: '應收帳款',
+    debit_amount: 0,
+    credit_amount: payment.payment_amount,
+    description: `收款 - ${payment.accounts_receivable.customer.name}`
   })
 
   return {
-    journalEntries,
-    totalAmount: payment.paymentAmount,
-    paymentNumber: payment.paymentNumber
+    journal_entries,
+    total_amount: payment.payment_amount,
+    payment_number: payment.payment_number
   }
 }
 
@@ -303,18 +303,18 @@ async function generateEntryNumber(): Promise<string> {
   // 查找今日最後一筆分錄
   const lastEntry = await prisma.accountingEntry.findFirst({
     where: {
-      entryNumber: {
+      entry_number: {
         startsWith: `AE${dateString}`
       }
     },
     orderBy: {
-      entryNumber: 'desc'
+      entry_number: 'desc'
     }
   })
 
   let sequence = 1
   if (lastEntry) {
-    const lastSequence = parseInt(lastEntry.entryNumber.slice(-3))
+    const lastSequence = parseInt(lastEntry.entry_number.slice(-3))
     sequence = lastSequence + 1
   }
 

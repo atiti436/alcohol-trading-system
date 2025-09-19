@@ -27,14 +27,14 @@ export async function GET(
       include: {
         sales: {
           take: 10, // 最近10筆訂單
-          orderBy: { createdAt: 'desc' },
+          orderBy: { created_at: 'desc' },
           select: {
             id: true,
-            saleNumber: true,
-            totalAmount: true,
-            actualAmount: session.user.role === 'SUPER_ADMIN' ? true : false, // 只有超級管理員看得到實際金額
-            createdAt: true,
-            isPaid: true
+            sale_number: true,
+            total_amount: true,
+            actual_amount: session.user.role === 'SUPER_ADMIN' ? true : false, // 只有超級管理員看得到實際金額
+            created_at: true,
+            is_paid: true
           }
         },
         _count: {
@@ -51,9 +51,9 @@ export async function GET(
 
     // 計算客戶統計資料
     const totalAmount = await prisma.sale.aggregate({
-      where: { customerId: params.id },
+      where: { customer_id: params.id },
       _sum: {
-        totalAmount: true
+        total_amount: true
       }
     })
 
@@ -63,7 +63,7 @@ export async function GET(
         customer,
         statistics: {
           totalOrders: customer._count.sales,
-          totalAmount: totalAmount._sum.totalAmount || 0
+          totalAmount: totalAmount._sum.total_amount || 0
         }
       }
     })
@@ -100,8 +100,8 @@ export async function PUT(
       address,
       shipping_address,
       tier,
-      paymentTerms,
-      requiresInvoice,
+      payment_terms,
+      requires_invoice,
       credit_limit,
       notes,
       is_active
@@ -129,8 +129,8 @@ export async function PUT(
         ...(address !== undefined && { address }),
         ...(shipping_address !== undefined && { shipping_address }),
         ...(tier && { tier }),
-        ...(paymentTerms && { paymentTerms }),
-        ...(requiresInvoice !== undefined && { requiresInvoice }),
+        ...(payment_terms && { payment_terms }),
+        ...(requires_invoice !== undefined && { requires_invoice }),
         ...(credit_limit !== undefined && { credit_limit }),
         ...(notes !== undefined && { notes }),
         ...(is_active !== undefined && { is_active })

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { VariantType } from '@prisma/client'
 
 /**
  * 🏠 Room-2: 商品變體管理 API
@@ -34,11 +35,11 @@ export async function GET(
     // 查詢變體列表
     const variants = await prisma.productVariant.findMany({
       where: { product_id: params.id },
-      orderBy: { variantType: 'asc' },
+      orderBy: { variant_type: 'asc' },
       include: {
         _count: {
           select: {
-            saleItems: true
+            sale_items: true
           }
         }
       }
@@ -75,23 +76,24 @@ export async function POST(
 
     const body = await request.json()
     const {
-      variantType,
+      variant_type,
       description,
-      basePrice,
+      base_price,
       current_price,
-      discountRate,
-      limitedEdition = false,
-      productionYear,
-      serialNumber,
+      discount_rate,
+      limited_edition = false,
+      production_year,
+      serial_number,
       condition = '正常',
-      stock_quantity = 0
+      stock_quantity = 0,
+      sku
     } = body
 
     // 基本驗證
-    if (!variantType || !description || !basePrice || !current_price) {
+    if (!variant_type || !description || !base_price || !current_price || !sku) {
       return NextResponse.json({
         error: '必填欄位不完整',
-        required: ['variantType', 'description', 'basePrice', 'current_price']
+        required: ['variant_type', 'description', 'base_price', 'current_price', 'sku']
       }, { status: 400 })
     }
 
@@ -108,35 +110,36 @@ export async function POST(
     // 檢查變體類型是否已存在
     const existingVariant = await prisma.productVariant.findUnique({
       where: {
-        productId_variantType: {
+        product_id_variant_type: {
           product_id: params.id,
-          variantType: variantType
+          variant_type: variant_type as VariantType
         }
       }
     })
 
     if (existingVariant) {
       return NextResponse.json({
-        error: `變體類型 ${variantType} 已存在`
+        error: `變體類型 ${variant_type} 已存在`
       }, { status: 400 })
     }
 
     // 生成變體編號
-    const variant_code = `${product.product_code}-${variantType}`
+    const variant_code = `${product.product_code}-${variant_type}`
 
     // 創建變體
     const variant = await prisma.productVariant.create({
       data: {
         product_id: params.id,
         variant_code,
-        variantType,
+        sku,
+        variant_type,
         description,
-        basePrice,
+        base_price,
         current_price,
-        discountRate,
-        limitedEdition,
-        productionYear,
-        serialNumber,
+        discount_rate,
+        limited_edition,
+        production_year,
+        serial_number,
         condition,
         stock_quantity
       }

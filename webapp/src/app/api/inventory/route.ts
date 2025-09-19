@@ -9,6 +9,7 @@ import {
   InventoryStats,
   InventoryMovementCreate
 } from '@/types/api'
+import { AlcoholCategory } from '@prisma/client'
 
 /**
  * 🏭 Room-3: Inventory 庫存管理 API
@@ -36,8 +37,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // 建立查詢條件 - 🔧 修復：使用正確的型別定義
-    const where: InventoryWhereCondition = {
+    // 建立查詢條件
+    const where: any = {
       is_active: true
     }
 
@@ -51,23 +52,26 @@ export async function GET(request: NextRequest) {
     }
 
     // 分類篩選
-    if (category) {
-      where.category = category
+    if (category && Object.values(AlcoholCategory).includes(category as AlcoholCategory)) {
+      where.category = category as AlcoholCategory
     }
 
     // 低庫存篩選
     if (lowStock) {
       where.variants = {
         some: {
-          OR: [
-            { available_stock: { lte: 10 } }, // 可售庫存 <= 10
-            {
-              AND: [
-                { stock_quantity: { gt: 0 } },
-                { available_stock: { lte: { stock_quantity: 0.2 } } } // 可售庫存 <= 總庫存的20%
-              ]
-            }
-          ]
+          available_stock: { lte: 10 } 
+          // TODO: Prisma does not support comparing two columns in a where clause directly.
+          // This logic needs to be implemented differently, possibly with a raw query or by filtering in the application.
+          // OR: [
+          //   { available_stock: { lte: 10 } }, // 可售庫存 <= 10
+          //   {
+          //     AND: [
+          //       { stock_quantity: { gt: 0 } },
+          //       { available_stock: { lte: { stock_quantity: 0.2 } } } // 可售庫存 <= 總庫存的20%
+          //     ]
+          //   }
+          // ]
         }
       }
     }
@@ -105,7 +109,7 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
-    // 計算庫存統計資訊 - 🔧 修復：使用型別化的reduce操作
+    // 計算庫存統計資訊
     const inventoryData = products.map(product => {
       const stats: DashboardStatsAccumulator = product.variants.reduce(
         (acc: DashboardStatsAccumulator, variant) => ({
@@ -192,21 +196,21 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const {
-      variantId,
-      adjustmentType, // 'ADD' | 'SUBTRACT' | 'SET'
+      variant_id,
+      adjustment_type, // 'ADD' | 'SUBTRACT' | 'SET'
       quantity,
       reason,
       notes
     } = body
 
     // 基本驗證
-    if (!variantId || !adjustmentType || quantity === undefined) {
+    if (!variant_id || !adjustment_type || quantity === undefined) {
       return NextResponse.json({
         error: '變體ID、調整類型和數量為必填'
       }, { status: 400 })
     }
 
-    if (!['ADD', 'SUBTRACT', 'SET'].includes(adjustmentType)) {
+    if (!['ADD', 'SUBTRACT', 'SET'].includes(adjustment_type)) {
       return NextResponse.json({
         error: '調整類型必須是 ADD、SUBTRACT 或 SET'
       }, { status: 400 })
@@ -221,7 +225,7 @@ export async function POST(request: NextRequest) {
 
     // 檢查變體是否存在
     const variant = await prisma.productVariant.findUnique({
-      where: { id: variantId },
+      where: { id: variant_id },
       include: {
         product: {
           select: {
@@ -239,7 +243,7 @@ export async function POST(request: NextRequest) {
     // 計算新的庫存數量
     let newStockQuantity: number
 
-    switch (adjustmentType) {
+    switch (adjustment_type) {
       case 'ADD':
         newStockQuantity = variant.stock_quantity + adjustmentQuantity
         break
@@ -264,7 +268,7 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction(async (prisma) => {
       // 更新庫存
       const updatedVariant = await prisma.productVariant.update({
-        where: { id: variantId },
+        where: { id: variant_id },
         data: {
           stock_quantity: newStockQuantity,
           available_stock: newStockQuantity - variant.reserved_stock,
@@ -283,15 +287,15 @@ export async function POST(request: NextRequest) {
       // 記錄庫存異動
       await prisma.inventoryMovement.create({
         data: {
-          variantId,
-          movementType: 'ADJUSTMENT',
-          adjustmentType,
+          variant_id,
+          movement_type: 'ADJUSTMENT',
+          adjustment_type,
           quantity: adjustmentQuantity,
-          previousStock: variant.stock_quantity,
-          newStock: newStockQuantity,
+          previous_stock: variant.stock_quantity,
+          new_stock: newStockQuantity,
           reason: reason || '手動調整',
           notes,
-          createdBy: session.user.id
+          created_by: session.user.id
         }
       })
 

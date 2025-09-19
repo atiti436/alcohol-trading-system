@@ -37,7 +37,7 @@ export async function GET(
             phone: true,
             email: true,
             address: true,
-            paymentTerms: true
+            payment_terms: true
           }
         },
         creator: {
@@ -66,7 +66,7 @@ export async function GET(
               select: {
                 id: true,
                 variant_code: true,
-                variantType: true,
+                variant_type: true,
                 description: true,
                 current_price: true,
                 cost_price: true // 只有超級管理員能看到
@@ -84,7 +84,7 @@ export async function GET(
     // 🔒 投資方數據隔離檢查
     if (session.user.role === 'INVESTOR') {
       // 投資方只能看公司資金的銷售
-      if (sale.fundingSource === 'PERSONAL') {
+      if (sale.funding_source === 'PERSONAL') {
         return NextResponse.json({ error: '權限不足' }, { status: 403 })
       }
     }
@@ -98,12 +98,12 @@ export async function GET(
       // 隱藏創建者資訊（投資方）
       creator: session.user.role === 'INVESTOR' ? null : sale.creator,
       // 過濾商品資訊
-      items: sale.items.map(item => ({
+      items: sale.items.map((item: any) => ({
         ...item,
         // 投資方看不到實際價格
         actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
         actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
-        isPersonalPurchase: session.user.role === 'INVESTOR' ? undefined : item.isPersonalPurchase,
+        is_personal_purchase: session.user.role === 'INVESTOR' ? undefined : item.is_personal_purchase,
         // 過濾產品成本資訊
         product: {
           ...item.product,
@@ -161,17 +161,17 @@ export async function PUT(
     }
 
     // 🔒 權限檢查：員工不能編輯個人調貨訂單
-    if (existingSale.fundingSource === 'PERSONAL' && session.user.role === 'EMPLOYEE') {
+    if (existingSale.funding_source === 'PERSONAL' && session.user.role === 'EMPLOYEE') {
       return NextResponse.json({ error: '員工無權限編輯個人調貨訂單' }, { status: 403 })
     }
 
     const {
       customer_id,
-      paymentTerms,
-      dueDate,
+      payment_terms,
+      due_date,
       notes,
-      isPaid,
-      paidAt
+      is_paid,
+      paid_at
     } = body
 
     // 更新銷售訂單基本資訊
@@ -179,12 +179,11 @@ export async function PUT(
       where: { id },
       data: {
         ...(customer_id && { customer_id }),
-        ...(paymentTerms && { paymentTerms }),
-        ...(dueDate && { dueDate: new Date(dueDate) }),
+        ...(payment_terms && { payment_terms }),
+        ...(due_date && { due_date: new Date(due_date) }),
         ...(notes !== undefined && { notes }),
-        ...(isPaid !== undefined && { isPaid }),
-        ...(paidAt && { paidAt: new Date(paidAt) }),
-        updated_at: new Date()
+        ...(is_paid !== undefined && { is_paid }),
+        ...(paid_at && { paid_at: new Date(paid_at) }),
       },
       include: {
         customer: {
@@ -217,7 +216,7 @@ export async function PUT(
               select: {
                 id: true,
                 variant_code: true,
-                variantType: true,
+                variant_type: true,
                 description: true
               }
             }
@@ -232,11 +231,11 @@ export async function PUT(
       actual_amount: session.user.role === 'INVESTOR' ? undefined : updatedSale.actual_amount,
       commission: session.user.role === 'INVESTOR' ? undefined : updatedSale.commission,
       creator: session.user.role === 'INVESTOR' ? null : updatedSale.creator,
-      items: updatedSale.items.map(item => ({
+      items: updatedSale.items.map((item: any) => ({
         ...item,
         actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
         actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
-        isPersonalPurchase: session.user.role === 'INVESTOR' ? undefined : item.isPersonalPurchase
+        is_personal_purchase: session.user.role === 'INVESTOR' ? undefined : item.is_personal_purchase
       }))
     }
 
@@ -285,7 +284,7 @@ export async function DELETE(
     }
 
     // 檢查是否已付款（已付款的訂單不能刪除）
-    if (existingSale.isPaid) {
+    if (existingSale.is_paid) {
       return NextResponse.json({ error: '已付款的銷售訂單無法刪除' }, { status: 400 })
     }
 

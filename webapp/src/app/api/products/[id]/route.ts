@@ -26,15 +26,15 @@ export async function GET(
       where: { id: params.id },
       include: {
         variants: {
-          orderBy: { variantType: 'asc' }
+          orderBy: { variant_type: 'asc' }
         },
-        saleItems: {
+        sale_items: {
           take: 10, // 最近10筆銷售記錄
           orderBy: { created_at: 'desc' },
           include: {
             sale: {
               select: {
-                saleNumber: true,
+                sale_number: true,
                 customer: {
                   select: {
                     name: true
@@ -44,7 +44,7 @@ export async function GET(
             }
           }
         },
-        specialPrices: {
+        special_prices: {
           include: {
             customer: {
               select: {
@@ -57,7 +57,7 @@ export async function GET(
         _count: {
           select: {
             variants: true,
-            saleItems: true
+            sale_items: true
           }
         }
       }
@@ -85,7 +85,7 @@ export async function GET(
         product,
         statistics: {
           totalVariants: product._count.variants,
-          totalSales: product._count.saleItems,
+          totalSales: product._count.sale_items,
           totalQuantitySold: salesStats._sum.quantity || 0,
           totalRevenue: salesStats._sum.total_price || 0,
           total_stock_quantity
@@ -120,22 +120,20 @@ export async function PUT(
       category,
       volume_ml,
       alc_percentage,
-      weight,
-      packageWeight,
-      hasBox,
-      hasAccessories,
-      accessoryWeight,
+      weight_kg,
+      package_weight_kg,
+      has_box,
+      has_accessories,
+      accessory_weight_kg,
       accessories,
       hs_code,
       supplier,
-      manufacturingDate,
-      expiryDate,
+      manufacturing_date,
+      expiry_date,
       standard_price,
       current_price,
       cost_price,
       min_price,
-      // 🔧 移除：庫存字段已遷移至 ProductVariant 層級管理
-      // totalStock, availableStock, reservedStock 不在 Product 模型中
       is_active
     } = body
 
@@ -149,8 +147,8 @@ export async function PUT(
     }
 
     // 計算總重量
-    const calculatedTotalWeight = weight !== undefined
-      ? weight + (packageWeight || existingProduct.packageWeight || 0) + (accessoryWeight || existingProduct.accessoryWeight || 0)
+    const calculatedTotalWeight = weight_kg !== undefined
+      ? weight_kg + (package_weight_kg || existingProduct.package_weight_kg || 0) + (accessory_weight_kg || existingProduct.accessory_weight_kg || 0)
       : undefined
 
     // 更新商品資料
@@ -161,22 +159,21 @@ export async function PUT(
         ...(category && { category }),
         ...(volume_ml !== undefined && { volume_ml }),
         ...(alc_percentage !== undefined && { alc_percentage }),
-        ...(weight !== undefined && { weight }),
-        ...(packageWeight !== undefined && { packageWeight }),
-        ...(calculatedTotalWeight !== undefined && { totalWeight: calculatedTotalWeight }),
-        ...(hasBox !== undefined && { hasBox }),
-        ...(hasAccessories !== undefined && { hasAccessories }),
-        ...(accessoryWeight !== undefined && { accessoryWeight }),
+        ...(weight_kg !== undefined && { weight_kg }),
+        ...(package_weight_kg !== undefined && { package_weight_kg }),
+        ...(calculatedTotalWeight !== undefined && { total_weight_kg: calculatedTotalWeight }),
+        ...(has_box !== undefined && { has_box }),
+        ...(has_accessories !== undefined && { has_accessories }),
+        ...(accessory_weight_kg !== undefined && { accessory_weight_kg }),
         ...(accessories && { accessories }),
         ...(hs_code !== undefined && { hs_code }),
         ...(supplier !== undefined && { supplier }),
-        ...(manufacturingDate !== undefined && { manufacturingDate }),
-        ...(expiryDate !== undefined && { expiryDate }),
+        ...(manufacturing_date !== undefined && { manufacturing_date }),
+        ...(expiry_date !== undefined && { expiry_date }),
         ...(standard_price !== undefined && { standard_price }),
         ...(current_price !== undefined && { current_price }),
         ...(cost_price !== undefined && { cost_price }),
         ...(min_price !== undefined && { min_price }),
-        // 🔧 移除：庫存字段不在 Product 模型中，在 ProductVariant 中管理
         ...(is_active !== undefined && { is_active })
       }
     })
@@ -214,8 +211,8 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            saleItems: true,
-            purchaseItems: true
+            sale_items: true,
+            purchase_items: true
           }
         }
       }
@@ -226,7 +223,7 @@ export async function DELETE(
     }
 
     // 檢查是否有關聯的交易記錄
-    if (existingProduct._count.saleItems > 0 || existingProduct._count.purchaseItems > 0) {
+    if (existingProduct._count.sale_items > 0 || existingProduct._count.purchase_items > 0) {
       // 有交易記錄的商品只能軟刪除
       await prisma.product.update({
         where: { id: params.id },

@@ -32,13 +32,13 @@ export async function GET(
             category: true
           }
         },
-        saleItems: {
+        sale_items: {
           take: 10,
           orderBy: { created_at: 'desc' },
           include: {
             sale: {
               select: {
-                saleNumber: true,
+                sale_number: true,
                 customer: {
                   select: {
                     name: true
@@ -50,7 +50,7 @@ export async function GET(
         },
         _count: {
           select: {
-            saleItems: true
+            sale_items: true
           }
         }
       }
@@ -67,7 +67,7 @@ export async function GET(
 
     // 計算銷售統計
     const salesStats = await prisma.saleItem.aggregate({
-      where: { variantId: params.variantId },
+      where: { variant_id: params.variantId },
       _sum: {
         quantity: true,
         total_price: true
@@ -79,7 +79,7 @@ export async function GET(
       data: {
         variant,
         statistics: {
-          totalSales: variant._count.saleItems,
+          totalSales: variant._count.sale_items,
           totalQuantitySold: salesStats._sum.quantity || 0,
           totalRevenue: salesStats._sum.total_price || 0
         }
@@ -110,15 +110,15 @@ export async function PUT(
     const body = await request.json()
     const {
       description,
-      basePrice,
+      base_price,
       current_price,
-      discountRate,
-      limitedEdition,
-      productionYear,
-      serialNumber,
+      discount_rate,
+      limited_edition,
+      production_year,
+      serial_number,
       condition,
       stock_quantity,
-      cost
+      cost_price
     } = body
 
     // 檢查變體是否存在並屬於指定商品
@@ -139,15 +139,15 @@ export async function PUT(
       where: { id: params.variantId },
       data: {
         ...(description && { description }),
-        ...(basePrice !== undefined && { basePrice }),
+        ...(base_price !== undefined && { base_price }),
         ...(current_price !== undefined && { current_price }),
-        ...(discountRate !== undefined && { discountRate }),
-        ...(limitedEdition !== undefined && { limitedEdition }),
-        ...(productionYear !== undefined && { productionYear }),
-        ...(serialNumber !== undefined && { serialNumber }),
+        ...(discount_rate !== undefined && { discount_rate }),
+        ...(limited_edition !== undefined && { limited_edition }),
+        ...(production_year !== undefined && { production_year }),
+        ...(serial_number !== undefined && { serial_number }),
         ...(condition && { condition }),
         ...(stock_quantity !== undefined && { stock_quantity }),
-        ...(cost !== undefined && { cost })
+        ...(cost_price !== undefined && { cost_price })
       }
     })
 
@@ -184,7 +184,7 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            saleItems: true
+            sale_items: true
           }
         }
       }
@@ -199,7 +199,7 @@ export async function DELETE(
     }
 
     // 檢查是否有銷售記錄
-    if (existingVariant._count.saleItems > 0) {
+    if (existingVariant._count.sale_items > 0) {
       return NextResponse.json({
         error: '無法刪除已有銷售記錄的變體'
       }, { status: 400 })

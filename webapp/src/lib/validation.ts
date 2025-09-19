@@ -119,8 +119,8 @@ export function validateCustomerData(data: Record<string, unknown>) {
     tax_id: validateString(data.tax_id || '', '統一編號', 0, 20),
     address: validateString(data.address || '', '地址', 0, 500),
     tier: validateEnum(String(data.tier || 'REGULAR'), ['VIP', 'PREMIUM', 'REGULAR', 'NEW'], '客戶等級'),
-    creditLimit: validateNumber(data.creditLimit || 0, '信用額度', 0, 100000000),
-    paymentTerms: validateNumber(data.paymentTerms || 30, '付款條件', 0, 365),
+    credit_limit: validateNumber(data.credit_limit || 0, '信用額度', 0, 100000000),
+    payment_terms: validateString(data.payment_terms || 'CASH', ['CASH', 'WEEKLY', 'MONTHLY', 'SIXTY_DAYS'], '付款條件'),
     notes: validateString(data.notes || '', '備註', 0, 1000)
   }
 }
@@ -139,13 +139,13 @@ export function validateProductData(data: Record<string, unknown>) {
     // 🍷 酒類特有屬性
     volume_ml: validateNumber(data.volume_ml, '容量(毫升)', 1, 10000),
     alc_percentage: validateNumber(data.alc_percentage, '酒精濃度', 0, 100),
-    weight: validateNumber(data.weight, '重量(公克)', 1, 50000),
-    packageWeight: data.packageWeight ? validateNumber(data.packageWeight, '包裝重量', 0, 10000) : 0,
-    accessoryWeight: data.accessoryWeight ? validateNumber(data.accessoryWeight, '配件重量', 0, 5000) : 0,
+    weight_kg: validateNumber(data.weight_kg, '重量(公斤)', 0.01, 50),
+    package_weight_kg: data.package_weight_kg ? validateNumber(data.package_weight_kg, '包裝重量', 0, 10) : 0,
+    accessory_weight_kg: data.accessory_weight_kg ? validateNumber(data.accessory_weight_kg, '配件重量', 0, 5) : 0,
 
     // 📦 包裝屬性
-    hasBox: Boolean(data.hasBox),
-    hasAccessories: Boolean(data.hasAccessories),
+    has_box: Boolean(data.has_box),
+    has_accessories: Boolean(data.has_accessories),
     accessories: Array.isArray(data.accessories) ?
       (data.accessories as string[]).map(acc => validateString(acc, '配件', 0, 100)) : [],
 
@@ -159,8 +159,8 @@ export function validateProductData(data: Record<string, unknown>) {
     cost_price: data.cost_price ? validateNumber(data.cost_price, '成本價', 0, 999999) : 0,
 
     // 📅 日期驗證
-    manufacturingDate: data.manufacturingDate ? validateDate(data.manufacturingDate, '製造日期') : null,
-    expiryDate: data.expiryDate ? validateDate(data.expiryDate, '到期日期') : null
+    manufacturing_date: data.manufacturing_date ? validateDate(data.manufacturing_date, '製造日期') : null,
+    expiry_date: data.expiry_date ? validateDate(data.expiry_date, '到期日期') : null
   }
 
   // 商業邏輯驗證
@@ -172,8 +172,8 @@ export function validateProductData(data: Record<string, unknown>) {
     throw new Error('目前價格不能高於標準價格')
   }
 
-  if (validated.manufacturingDate && validated.expiryDate &&
-      validated.manufacturingDate >= validated.expiryDate) {
+  if (validated.manufacturing_date && validated.expiry_date &&
+      validated.manufacturing_date >= validated.expiry_date) {
     throw new Error('製造日期必須早於到期日期')
   }
 
@@ -183,18 +183,18 @@ export function validateProductData(data: Record<string, unknown>) {
 // 🔒 採購驗證 Schema - 強化版
 export function validatePurchaseData(data: Record<string, unknown>) {
   // 基本欄位驗證
-  const validatedData = {
-    supplierId: validateRequired(data.supplierId, '供應商ID'),
+  const validatedData: any = {
+    supplier_id: validateRequired(data.supplier_id, '供應商ID'),
     supplier: validateRequired(data.supplier, '供應商名稱'),
     total_amount: validateNumber(data.total_amount, '總金額', 0, 100000000), // 限制最大1億
-    currency: validateEnum(data.currency || 'JPY', ['JPY', 'USD', 'TWD'], '幣別'),
-    exchangeRate: validateNumber(data.exchangeRate, '匯率', 0.001, 1000),
-    status: validateEnum(data.status || 'DRAFT', ['DRAFT', 'PENDING', 'CONFIRMED', 'RECEIVED', 'CANCELLED'], '狀態'),
-    fundingSource: validateEnum(data.fundingSource || 'COMPANY', ['COMPANY', 'PERSONAL'], '資金來源'),
+    currency: validateEnum(String(data.currency || 'JPY'), ['JPY', 'USD', 'TWD'], '幣別'),
+    exchange_rate: validateNumber(data.exchange_rate, '匯率', 0.001, 1000),
+    status: validateEnum(String(data.status || 'DRAFT'), ['DRAFT', 'PENDING', 'CONFIRMED', 'RECEIVED', 'CANCELLED'], '狀態'),
+    funding_source: validateEnum(String(data.funding_source || 'COMPANY'), ['COMPANY', 'PERSONAL'], '資金來源'),
     notes: validateString(data.notes || '', '備註', 0, 1000),
-    expectedDate: data.expectedDate ? validateDate(data.expectedDate, '預期到貨日') : null,
-    declarationNumber: data.declarationNumber ? validateString(data.declarationNumber, '報關號碼', 0, 50) : null,
-    declarationDate: data.declarationDate ? validateDate(data.declarationDate, '報關日期') : null
+    expected_date: data.expected_date ? validateDate(data.expected_date, '預期到貨日') : null,
+    declaration_number: data.declaration_number ? validateString(data.declaration_number, '報關號碼', 0, 50) : null,
+    declaration_date: data.declaration_date ? validateDate(data.declaration_date, '報關日期') : null
   }
 
   // 驗證採購項目
@@ -211,15 +211,15 @@ export function validatePurchaseData(data: Record<string, unknown>) {
 function validatePurchaseItemData(data: Record<string, unknown>, itemLabel: string) {
   return {
     product_id: data.product_id ? validateString(data.product_id, `${itemLabel} 產品ID`, 1, 50) : null,
-    productName: validateRequired(data.productName, `${itemLabel} 產品名稱`),
+    product_name: validateRequired(data.product_name, `${itemLabel} 產品名稱`),
     quantity: validateNumber(data.quantity, `${itemLabel} 數量`, 0.01, 999999),
     unit_price: validateNumber(data.unit_price, `${itemLabel} 單價`, 0, 999999),
-    dutiableValue: data.dutiableValue ? validateNumber(data.dutiableValue, `${itemLabel} 完稅價格`, 0) : null,
-    tariffCode: data.tariffCode ? validateString(data.tariffCode, `${itemLabel} 稅則號碼`, 0, 20) : null,
-    importDutyRate: data.importDutyRate ? validateNumber(data.importDutyRate, `${itemLabel} 進口稅率`, 0, 100) : null,
+    dutiable_value: data.dutiable_value ? validateNumber(data.dutiable_value, `${itemLabel} 完稅價格`, 0) : null,
+    tariff_code: data.tariff_code ? validateString(data.tariff_code, `${itemLabel} 稅則號碼`, 0, 20) : null,
+    import_duty_rate: data.import_duty_rate ? validateNumber(data.import_duty_rate, `${itemLabel} 進口稅率`, 0, 100) : null,
     alc_percentage: data.alc_percentage ? validateNumber(data.alc_percentage, `${itemLabel} 酒精濃度`, 0, 100) : null,
     volume_ml: data.volume_ml ? validateNumber(data.volume_ml, `${itemLabel} 容量(毫升)`, 1, 10000) : null,
-    weight: data.weight ? validateNumber(data.weight, `${itemLabel} 重量(公斤)`, 0.001, 10000) : null
+    weight_kg: data.weight_kg ? validateNumber(data.weight_kg, `${itemLabel} 重量(公斤)`, 0.001, 10000) : null
   }
 }
 
@@ -256,49 +256,49 @@ function validateDate(value: unknown, fieldName: string): Date {
 
 // 🔒 銷售驗證 Schema - 強化版
 export function validateSaleData(data: Record<string, unknown>) {
-  const validated = {
+  const validated: any = {
     customer_id: validateRequired(data.customer_id, '客戶ID'),
-    saleNumber: data.saleNumber ? validateString(data.saleNumber, '銷售單號', 1, 30) : null,
+    sale_number: data.sale_number ? validateString(data.sale_number, '銷售單號', 1, 30) : null,
 
     // 💰 價格相關 (雙重價格機制核心)
     total_amount: validateNumber(data.total_amount, '總金額', 0, 100000000),
-    actualTotalAmount: validateNumber(data.actualTotalAmount, '實際金額', 0, 100000000),
-    discountAmount: data.discountAmount ? validateNumber(data.discountAmount, '折扣金額', 0, 10000000) : 0,
-    taxAmount: data.taxAmount ? validateNumber(data.taxAmount, '稅額', 0, 10000000) : 0,
+    actual_total_amount: validateNumber(data.actual_total_amount, '實際金額', 0, 100000000),
+    discount_amount: data.discount_amount ? validateNumber(data.discount_amount, '折扣金額', 0, 10000000) : 0,
+    tax_amount: data.tax_amount ? validateNumber(data.tax_amount, '稅額', 0, 10000000) : 0,
     commission: data.commission ? validateNumber(data.commission, '傭金', 0, 10000000) : 0,
 
     // 📅 日期相關
-    saleDate: data.saleDate ? validateDate(data.saleDate, '銷售日期') : new Date(),
-    deliveryDate: data.deliveryDate ? validateDate(data.deliveryDate, '交貨日期') : null,
-    dueDate: data.dueDate ? validateDate(data.dueDate, '到期日期') : null,
+    sale_date: data.sale_date ? validateDate(data.sale_date, '銷售日期') : new Date(),
+    delivery_date: data.delivery_date ? validateDate(data.delivery_date, '交貨日期') : null,
+    due_date: data.due_date ? validateDate(data.due_date, '到期日期') : null,
 
     // 📋 狀態管理
-    status: validateEnum(data.status || 'PENDING', ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'], '訂單狀態'),
-    paymentStatus: validateEnum(data.paymentStatus || 'PENDING', ['PENDING', 'PARTIAL', 'PAID', 'OVERDUE'], '付款狀態'),
+    status: validateEnum(String(data.status || 'PENDING'), ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'], '訂單狀態'),
+    payment_status: validateEnum(String(data.payment_status || 'PENDING'), ['PENDING', 'PARTIAL', 'PAID', 'OVERDUE'], '付款狀態'),
 
     // 📄 發票相關
-    invoiceNumber: data.invoiceNumber ? validateString(data.invoiceNumber, '發票號碼', 0, 30) : null,
-    requiresInvoice: Boolean(data.requiresInvoice),
+    invoice_number: data.invoice_number ? validateString(data.invoice_number, '發票號碼', 0, 30) : null,
+    requires_invoice: Boolean(data.requires_invoice),
 
     // 📝 備註
     notes: validateString(data.notes || '', '備註', 0, 1000),
-    internalNotes: validateString(data.internalNotes || '', '內部備註', 0, 1000)
+    internal_notes: validateString(data.internal_notes || '', '內部備註', 0, 1000)
   }
 
   // 🔒 商業邏輯驗證 (雙重價格核心安全)
-  if (validated.actualTotalAmount < validated.total_amount) {
+  if (validated.actual_total_amount < validated.total_amount) {
     throw new Error('實際金額不能小於顯示金額 (商業邏輯錯誤)')
   }
 
-  if (validated.discountAmount > validated.total_amount) {
+  if (validated.discount_amount > validated.total_amount) {
     throw new Error('折扣金額不能大於總金額')
   }
 
-  if (validated.deliveryDate && validated.saleDate && validated.deliveryDate < validated.saleDate) {
+  if (validated.delivery_date && validated.sale_date && validated.delivery_date < validated.sale_date) {
     throw new Error('交貨日期不能早於銷售日期')
   }
 
-  if (validated.dueDate && validated.saleDate && validated.dueDate < validated.saleDate) {
+  if (validated.due_date && validated.sale_date && validated.due_date < validated.sale_date) {
     throw new Error('到期日期不能早於銷售日期')
   }
 
@@ -316,13 +316,13 @@ export function validateSaleData(data: Record<string, unknown>) {
 function validateSaleItemData(data: Record<string, unknown>, itemLabel: string) {
   return {
     product_id: validateRequired(data.product_id, `${itemLabel} 產品ID`),
-    variantId: data.variantId ? validateString(data.variantId, `${itemLabel} 變體ID`, 1, 50) : null,
+    variant_id: data.variant_id ? validateString(data.variant_id, `${itemLabel} 變體ID`, 1, 50) : null,
     quantity: validateNumber(data.quantity, `${itemLabel} 數量`, 0.01, 999999),
     unit_price: validateNumber(data.unit_price, `${itemLabel} 單價`, 0, 999999),
     actual_unit_price: validateNumber(data.actual_unit_price || data.unit_price, `${itemLabel} 實際單價`, 0, 999999),
     total_price: validateNumber(data.total_price, `${itemLabel} 小計`, 0, 999999999),
     actual_total_price: validateNumber(data.actual_total_price || data.total_price, `${itemLabel} 實際小計`, 0, 999999999),
-    discountRate: data.discountRate ? validateNumber(data.discountRate, `${itemLabel} 折扣率`, 0, 100) : 0,
+    discount_rate: data.discount_rate ? validateNumber(data.discount_rate, `${itemLabel} 折扣率`, 0, 100) : 0,
     notes: validateString(data.notes || '', `${itemLabel} 備註`, 0, 500)
   }
 }

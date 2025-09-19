@@ -8,14 +8,14 @@ import { Role, PermissionContext } from '@/types/auth'
 
 export interface AuditLogData {
   action: 'READ' | 'CREATE' | 'UPDATE' | 'DELETE'
-  tableName: string
-  recordId?: string
-  sensitiveFields?: Record<string, any>
-  ipAddress?: string
-  userAgent?: string
-  accessedActualPrice?: boolean
-  accessedCommission?: boolean
-  accessedPersonalData?: boolean
+  table_name: string
+  record_id?: string
+  sensitive_fields?: Record<string, any>
+  ip_address?: string
+  user_agent?: string
+  accessed_actual_price?: boolean
+  accessed_commission?: boolean
+  accessed_personal_data?: boolean
 }
 
 /**
@@ -28,25 +28,25 @@ export async function createAuditLog(
   try {
     await prisma.auditLog.create({
       data: {
-        userId: context.userId,
-        userEmail: '', // 需要從context或session獲取
-        userRole: context.role,
+        user_id: context.userId,
+        user_email: '', // 需要從context或session獲取
+        user_role: context.role,
         action: data.action,
-        tableName: data.tableName,
-        recordId: data.recordId,
-        sensitiveFields: data.sensitiveFields,
-        ipAddress: data.ipAddress,
-        userAgent: data.userAgent,
-        accessedActualPrice: data.accessedActualPrice || false,
-        accessedCommission: data.accessedCommission || false,
-        accessedPersonalData: data.accessedPersonalData || false
+        table_name: data.table_name,
+        record_id: data.record_id,
+        sensitive_fields: data.sensitive_fields,
+        ip_address: data.ip_address,
+        user_agent: data.user_agent,
+        accessed_actual_price: data.accessed_actual_price || false,
+        accessed_commission: data.accessed_commission || false,
+        accessed_personal_data: data.accessed_personal_data || false
       }
     })
 
     // 如果是投資方存取敏感資料，額外記錄警告
     if (context.role === Role.INVESTOR) {
-      if (data.accessedActualPrice || data.accessedCommission || data.accessedPersonalData) {
-        console.warn(`🚨 SECURITY ALERT: Investor ${context.userId} attempted to access sensitive data in ${data.tableName}`)
+      if (data.accessed_actual_price || data.accessed_commission || data.accessed_personal_data) {
+        console.warn(`🚨 SECURITY ALERT: Investor ${context.userId} attempted to access sensitive data in ${data.table_name}`)
       }
     }
 
@@ -77,10 +77,10 @@ export function auditSensitiveAccess(
         // 記錄存取行為
         await createAuditLog(context, {
           action: 'READ',
-          tableName,
-          accessedActualPrice: options.checkActualPrice,
-          accessedCommission: options.checkCommission,
-          accessedPersonalData: options.checkPersonalData
+          table_name: tableName,
+          accessed_actual_price: options.checkActualPrice,
+          accessed_commission: options.checkCommission,
+          accessed_personal_data: options.checkPersonalData
         })
       }
 
@@ -95,11 +95,11 @@ export function auditSensitiveAccess(
 export async function getAuditLogs(
   context: PermissionContext,
   filters: {
-    userId?: string
-    userRole?: Role
-    tableName?: string
-    dateFrom?: Date
-    dateTo?: Date
+    user_id?: string
+    user_role?: Role
+    table_name?: string
+    date_from?: Date
+    date_to?: Date
     sensitiveOnly?: boolean
     page?: number
     limit?: number
@@ -111,11 +111,11 @@ export async function getAuditLogs(
   }
 
   const {
-    userId,
-    userRole,
-    tableName,
-    dateFrom,
-    dateTo,
+    user_id,
+    user_role,
+    table_name,
+    date_from,
+    date_to,
     sensitiveOnly = false,
     page = 1,
     limit = 50
@@ -123,21 +123,21 @@ export async function getAuditLogs(
 
   const where: any = {}
 
-  if (userId) where.userId = userId
-  if (userRole) where.userRole = userRole
-  if (tableName) where.tableName = tableName
-  if (dateFrom || dateTo) {
+  if (user_id) where.user_id = user_id
+  if (user_role) where.user_role = user_role
+  if (table_name) where.table_name = table_name
+  if (date_from || date_to) {
     where.timestamp = {}
-    if (dateFrom) where.timestamp.gte = dateFrom
-    if (dateTo) where.timestamp.lte = dateTo
+    if (date_from) where.timestamp.gte = date_from
+    if (date_to) where.timestamp.lte = date_to
   }
 
   // 只顯示敏感資料存取
   if (sensitiveOnly) {
     where.OR = [
-      { accessedActualPrice: true },
-      { accessedCommission: true },
-      { accessedPersonalData: true }
+      { accessed_actual_price: true },
+      { accessed_commission: true },
+      { accessed_personal_data: true }
     ]
   }
 
@@ -166,11 +166,11 @@ export async function monitorInvestorAccess(): Promise<any[]> {
   // 查找投資方嘗試存取敏感資料的記錄
   const suspiciousActivities = await prisma.auditLog.findMany({
     where: {
-      userRole: Role.INVESTOR,
+      user_role: Role.INVESTOR,
       OR: [
-        { accessedActualPrice: true },
-        { accessedCommission: true },
-        { accessedPersonalData: true }
+        { accessed_actual_price: true },
+        { accessed_commission: true },
+        { accessed_personal_data: true }
       ],
       timestamp: {
         gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // 最近24小時
@@ -213,7 +213,7 @@ export async function generateSecurityReport(
     }),
     prisma.auditLog.count({
       where: {
-        userRole: Role.INVESTOR,
+        user_role: Role.INVESTOR,
         timestamp: { gte: startDate }
       }
     }),
@@ -221,20 +221,20 @@ export async function generateSecurityReport(
       where: {
         timestamp: { gte: startDate },
         OR: [
-          { accessedActualPrice: true },
-          { accessedCommission: true },
-          { accessedPersonalData: true }
+          { accessed_actual_price: true },
+          { accessed_commission: true },
+          { accessed_personal_data: true }
         ]
       }
     }),
     prisma.auditLog.count({
       where: {
-        userRole: Role.INVESTOR,
+        user_role: Role.INVESTOR,
         timestamp: { gte: startDate },
         OR: [
-          { accessedActualPrice: true },
-          { accessedCommission: true },
-          { accessedPersonalData: true }
+          { accessed_actual_price: true },
+          { accessed_commission: true },
+          { accessed_personal_data: true }
         ]
       }
     })
@@ -242,14 +242,14 @@ export async function generateSecurityReport(
 
   // 按用戶統計
   const userActivity = await prisma.auditLog.groupBy({
-    by: ['userId', 'userRole'],
+    by: ['user_id', 'user_role'],
     where: { timestamp: { gte: startDate } },
     _count: { id: true }
   })
 
   // 按表格統計
   const tableActivity = await prisma.auditLog.groupBy({
-    by: ['tableName'],
+    by: ['table_name'],
     where: { timestamp: { gte: startDate } },
     _count: { id: true },
     orderBy: { _count: { id: 'desc' } }

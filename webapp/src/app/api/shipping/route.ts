@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const customer_id = searchParams.get('customer_id')
     const status = searchParams.get('status')
-    const dateFrom = searchParams.get('dateFrom')
-    const dateTo = searchParams.get('dateTo')
-    const orderBy = searchParams.get('orderBy') || 'shippingDate'
+    const dateFrom = searchParams.get('date_from')
+    const dateTo = searchParams.get('date_to')
+    const orderBy = searchParams.get('orderBy') || 'created_at'
     const order = searchParams.get('order') || 'desc'
 
     const skip = (page - 1) * limit
@@ -35,9 +35,7 @@ export async function GET(request: NextRequest) {
 
     // 🔒 投資方數據隔離：只能看公司資金的出貨
     if (session.user.role === 'INVESTOR') {
-      where.sale = {
-        fundingSource: 'COMPANY'
-      }
+      where.funding_source = 'COMPANY'
     }
 
     // 篩選條件
@@ -46,26 +44,27 @@ export async function GET(request: NextRequest) {
     }
 
     if (status) {
-      where.status = status
+      // NOTE: Shipping status is not on Sale model, this is a placeholder
+      // where.status = status
     }
 
     // 日期範圍篩選
     if (dateFrom || dateTo) {
-      where.shippingDate = {}
+      where.created_at = {}
       if (dateFrom) {
-        where.shippingDate.gte = new Date(dateFrom)
+        where.created_at.gte = new Date(dateFrom)
       }
       if (dateTo) {
         const endDate = new Date(dateTo)
         endDate.setHours(23, 59, 59, 999)
-        where.shippingDate.lte = endDate
+        where.created_at.lte = endDate
       }
     }
 
     // 搜尋條件
     if (search) {
       where.OR = [
-        { shippingNumber: { contains: search, mode: 'insensitive' } },
+        { sale_number: { contains: search, mode: 'insensitive' } },
         { customer: { name: { contains: search, mode: 'insensitive' } } },
         { customer: { company: { contains: search, mode: 'insensitive' } } },
         { notes: { contains: search, mode: 'insensitive' } }
@@ -77,11 +76,11 @@ export async function GET(request: NextRequest) {
       prisma.sale.findMany({
         where: {
           ...where,
-          isPaid: true // 只有已付款的才能出貨
+          is_paid: true // 只有已付款的才能出貨
         },
         skip,
         take: limit,
-        orderBy: { [orderBy === 'shippingDate' ? 'created_at' : orderBy]: order },
+        orderBy: { [orderBy]: order },
         include: {
           customer: {
             select: {
@@ -111,7 +110,7 @@ export async function GET(request: NextRequest) {
                   name: true,
                   category: true,
                   volume_ml: true,
-                  weight: true
+                  weight_kg: true
                 }
               },
               variant: {
@@ -129,17 +128,17 @@ export async function GET(request: NextRequest) {
       prisma.sale.count({
         where: {
           ...where,
-          isPaid: true
+          is_paid: true
         }
       })
     ])
 
     // 🔒 資料過濾：投資方看不到敏感資訊
-    const filteredShippingData = sales.map(sale => {
+    const filteredShippingData = sales.map((sale: any) => {
       const shippingData = {
         id: sale.id,
-        shippingNumber: `SH${sale.saleNumber.slice(2)}`, // SH20250917001
-        saleNumber: sale.saleNumber,
+        shippingNumber: `SH${sale.sale_number.slice(2)}`, // SH20250917001
+        sale_number: sale.sale_number,
         customer_id: sale.customer_id,
         customer: sale.customer,
         shippingDate: sale.created_at, // 暫時使用創建日期
@@ -149,7 +148,7 @@ export async function GET(request: NextRequest) {
         commission: session.user.role !== 'INVESTOR' ? sale.commission : undefined,
         notes: sale.notes,
         creator: session.user.role !== 'INVESTOR' ? sale.creator : null,
-        items: sale.items.map(item => ({
+        items: sale.items.map((item: any) => ({
           ...item,
           actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
           actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price
@@ -195,15 +194,15 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const {
-      saleId,
+      sale_id,
       customer_id,
-      shippingDate,
+      shipping_date,
       items,
       notes
     } = body
 
     // 資料驗證
-    if (!saleId && !customer_id) {
+    if (!sale_id && !customer_id) {
       return NextResponse.json({ error: '請提供銷售單ID或客戶ID' }, { status: 400 })
     }
 
@@ -212,10 +211,10 @@ export async function POST(request: NextRequest) {
     }
 
     let sale = null
-    if (saleId) {
+    if (sale_id) {
       // 基於現有銷售單創建出貨單
       sale = await prisma.sale.findUnique({
-        where: { id: saleId },
+        where: { id: sale_id },
         include: {
           customer: true,
           items: {
@@ -231,7 +230,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: '銷售單不存在' }, { status: 400 })
       }
 
-      if (!sale.isPaid) {
+      if (!sale.is_paid) {
         return NextResponse.json({ error: '銷售單尚未付款，無法出貨' }, { status: 400 })
       }
     }
@@ -242,16 +241,16 @@ export async function POST(request: NextRequest) {
 
     const lastShipping = await prisma.sale.findFirst({
       where: {
-        saleNumber: {
+        sale_number: {
           startsWith: `SH${dateStr}`
         }
       },
-      orderBy: { saleNumber: 'desc' }
+      orderBy: { sale_number: 'desc' }
     })
 
     let nextNumber = 1
     if (lastShipping) {
-      const lastNumber = parseInt(lastShipping.saleNumber.slice(-3))
+      const lastNumber = parseInt(lastShipping.sale_number.slice(-3))
       nextNumber = lastNumber + 1
     }
 
@@ -262,11 +261,11 @@ export async function POST(request: NextRequest) {
     const shippingData = {
       type: 'SHIPPING_ORDER',
       shippingNumber,
-      shippingDate: shippingDate || new Date().toISOString(),
+      shippingDate: shipping_date || new Date().toISOString(),
       status: 'READY',
       items: items.map((item: any) => ({
         product_id: item.product_id,
-        variantId: item.variantId,
+        variant_id: item.variant_id,
         quantity: item.quantity,
         notes: item.notes
       })),

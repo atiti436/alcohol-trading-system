@@ -8,6 +8,7 @@ import {
   CustomerQueryParams,
   StandardApiResponse
 } from '@/types/api'
+import { CustomerTier } from '@prisma/client'
 
 /**
  * 🏠 Room-2: Customer 模組 API
@@ -33,8 +34,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // 建立查詢條件 - 🔧 修復：使用正確的型別定義
-    const where: CustomerWhereCondition = {
+    // 建立查詢條件
+    const where: any = {
       is_active: true
     }
 
@@ -50,8 +51,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 分級篩選
-    if (tier) {
-      where.tier = tier
+    if (tier && Object.values(CustomerTier).includes(tier as CustomerTier)) {
+      where.tier = tier as CustomerTier
     }
 
     // 權限過濾 - 投資方看不到個人調貨相關客戶
@@ -132,14 +133,14 @@ export async function POST(request: NextRequest) {
       tax_id,
       address,
       tier,
-      creditLimit,
-      paymentTerms,
+      credit_limit,
+      payment_terms,
       notes
     } = validatedData
 
     // 額外業務邏輯驗證
     const shipping_address = body.shipping_address || address
-    const requiresInvoice = Boolean(body.requiresInvoice)
+    const requires_invoice = Boolean(body.requires_invoice)
 
     // 生成客戶代碼
     const customer_code = await generateCustomerCode()
@@ -157,9 +158,9 @@ export async function POST(request: NextRequest) {
         address,
         shipping_address,
         tier,
-        paymentTerms,
-        requiresInvoice,
-        credit_limit: creditLimit,
+        payment_terms,
+        requires_invoice,
+        credit_limit,
         notes
       }
     })

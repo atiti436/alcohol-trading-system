@@ -25,11 +25,11 @@ export async function POST(
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
     }
 
-    const { id: saleId } = params
+    const { id: sale_id } = params
     const body = await request.json()
     const {
       product_id,
-      variantId,
+      variant_id,
       quantity,
       unit_price,        // 顯示單價（投資方看到的）
       actual_unit_price   // 實際單價（只有SUPER_ADMIN能設定）
@@ -46,7 +46,7 @@ export async function POST(
 
     // 檢查銷售訂單是否存在
     const sale = await prisma.sale.findUnique({
-      where: { id: saleId },
+      where: { id: sale_id },
       include: { items: true }
     })
 
@@ -55,7 +55,7 @@ export async function POST(
     }
 
     // 🔒 權限檢查：員工不能操作個人調貨訂單
-    if (sale.fundingSource === 'PERSONAL' && session.user.role === 'EMPLOYEE') {
+    if (sale.funding_source === 'PERSONAL' && session.user.role === 'EMPLOYEE') {
       return NextResponse.json({ error: '員工無權限操作個人調貨訂單' }, { status: 403 })
     }
 
@@ -63,8 +63,8 @@ export async function POST(
     const product = await prisma.product.findUnique({
       where: { id: product_id },
       include: {
-        variants: variantId ? {
-          where: { id: variantId }
+        variants: variant_id ? {
+          where: { id: variant_id }
         } : false
       }
     })
@@ -73,9 +73,9 @@ export async function POST(
       return NextResponse.json({ error: '商品不存在' }, { status: 400 })
     }
 
-    if (variantId) {
+    if (variant_id) {
       const variant = await prisma.productVariant.findUnique({
-        where: { id: variantId }
+        where: { id: variant_id }
       })
       if (!variant) {
         return NextResponse.json({ error: '商品變體不存在' }, { status: 400 })
@@ -96,15 +96,15 @@ export async function POST(
     // 新增銷售明細
     const saleItem = await prisma.saleItem.create({
       data: {
-        saleId,
+        sale_id,
         product_id,
-        variantId,
+        variant_id,
         quantity,
         unit_price,                                    // 顯示單價
         actual_unit_price: finalActualUnitPrice,        // 實際單價
         total_price,                                   // 顯示總價
         actual_total_price,                            // 實際總價
-        isPersonalPurchase: sale.fundingSource === 'PERSONAL'
+        is_personal_purchase: sale.funding_source === 'PERSONAL'
       },
       include: {
         product: {
@@ -121,7 +121,7 @@ export async function POST(
           select: {
             id: true,
             variant_code: true,
-            variantType: true,
+            variant_type: true,
             description: true
           }
         }
@@ -130,16 +130,16 @@ export async function POST(
 
     // 重新計算銷售訂單總金額
     const updatedItems = await prisma.saleItem.findMany({
-      where: { saleId }
+      where: { sale_id }
     })
 
     const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.total_price, 0)
-    const newActualAmount = updatedItems.reduce((sum, item) => sum + item.actual_total_price, 0)
+    const newActualAmount = updatedItems.reduce((sum, item) => sum + (item.actual_total_price || 0), 0)
     const newCommission = newActualAmount - newTotalAmount
 
     // 更新銷售訂單總金額
     await prisma.sale.update({
-      where: { id: saleId },
+      where: { id: sale_id },
       data: {
         total_amount: newTotalAmount,
         actual_amount: newActualAmount,
@@ -152,7 +152,7 @@ export async function POST(
       ...saleItem,
       actual_unit_price: session.user.role === 'INVESTOR' ? undefined : saleItem.actual_unit_price,
       actual_total_price: session.user.role === 'INVESTOR' ? undefined : saleItem.actual_total_price,
-      isPersonalPurchase: session.user.role === 'INVESTOR' ? undefined : saleItem.isPersonalPurchase
+      is_personal_purchase: session.user.role === 'INVESTOR' ? undefined : saleItem.is_personal_purchase
     }
 
     return NextResponse.json({
@@ -182,11 +182,11 @@ export async function GET(
       return NextResponse.json({ error: '未登入' }, { status: 401 })
     }
 
-    const { id: saleId } = params
+    const { id: sale_id } = params
 
     // 檢查銷售訂單是否存在且有權限查看
     const sale = await prisma.sale.findUnique({
-      where: { id: saleId }
+      where: { id: sale_id }
     })
 
     if (!sale) {
@@ -194,13 +194,13 @@ export async function GET(
     }
 
     // 🔒 投資方權限檢查
-    if (session.user.role === 'INVESTOR' && sale.fundingSource === 'PERSONAL') {
+    if (session.user.role === 'INVESTOR' && sale.funding_source === 'PERSONAL') {
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
     }
 
     // 查詢銷售明細
     const items = await prisma.saleItem.findMany({
-      where: { saleId },
+      where: { sale_id },
       include: {
         product: {
           select: {
@@ -217,7 +217,7 @@ export async function GET(
           select: {
             id: true,
             variant_code: true,
-            variantType: true,
+            variant_type: true,
             description: true,
             cost_price: true // 只有超級管理員能看到
           }
@@ -231,7 +231,7 @@ export async function GET(
       ...item,
       actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
       actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
-      isPersonalPurchase: session.user.role === 'INVESTOR' ? undefined : item.isPersonalPurchase,
+      is_personal_purchase: session.user.role === 'INVESTOR' ? undefined : item.is_personal_purchase,
       product: {
         ...item.product,
         cost_price: session.user.role === 'SUPER_ADMIN' ? item.product.cost_price : undefined
@@ -252,8 +252,8 @@ export async function GET(
           total_amount: items.reduce((sum, item) => sum + item.total_price, 0),
           // 實際金額只有非投資方能看到
           ...(session.user.role !== 'INVESTOR' && {
-            actualTotalAmount: items.reduce((sum, item) => sum + item.actual_total_price, 0),
-            commission: items.reduce((sum, item) => sum + (item.actual_total_price - item.total_price), 0)
+            actual_total_amount: items.reduce((sum, item) => sum + (item.actual_total_price || 0), 0),
+            commission: items.reduce((sum, item) => sum + ((item.actual_total_price || 0) - item.total_price), 0)
           })
         }
       }

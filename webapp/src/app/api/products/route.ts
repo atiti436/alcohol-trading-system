@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { validateProductData } from '@/lib/validation'
 import { DatabaseWhereCondition } from '@/types/business'
+import { AlcoholCategory } from '@prisma/client'
 
 /**
  * 🏠 Room-2: Product 模組 API
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // 建立查詢條件
-    const where: DatabaseWhereCondition = {}
+    const where: any = {}
 
     // 只顯示活躍商品
     if (active) {
@@ -43,14 +44,13 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { product_code: { contains: search, mode: 'insensitive' } },
-        { code: { contains: search, mode: 'insensitive' } },
         { supplier: { contains: search, mode: 'insensitive' } }
       ]
     }
 
     // 分類篩選
-    if (category) {
-      where.category = category
+    if (category && Object.values(AlcoholCategory).includes(category as AlcoholCategory)) {
+      where.category = category as AlcoholCategory
     }
 
     // 執行查詢
@@ -65,18 +65,18 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               variant_code: true,
-              variantType: true,
+              variant_type: true,
               description: true,
               current_price: true,
-              stock_quantity: true, // 🔧 修正：使用統一命名規範
-              available_stock: true, // 🔧 增加：顯示可售庫存
+              stock_quantity: true,
+              available_stock: true,
               condition: true
             }
           },
           _count: {
             select: {
               variants: true,
-              saleItems: true
+              sale_items: true
             }
           }
         }
@@ -131,33 +131,23 @@ export async function POST(request: NextRequest) {
 
     const {
       name,
-      product_code: inputProductCode,
       category,
-      brand,
       supplier,
-      description,
-      specifications
-      // 注意：庫存相關欄位已移除，庫存在ProductVariant層級管理
-      // 價格欄位從body中直接取得（下方處理）
-    } = validatedData
-
-    // 從body中提取產品特有欄位（validation後處理）
-    const {
       volume_ml,
       alc_percentage,
-      weight,
-      packageWeight,
-      hasBox = false,
-      hasAccessories = false,
-      accessoryWeight,
+      weight_kg,
+      package_weight_kg,
+      has_box = false,
+      has_accessories = false,
+      accessory_weight_kg,
       accessories = [],
       hs_code,
-      manufacturingDate,
-      expiryDate,
+      manufacturing_date,
+      expiry_date,
       standard_price,
       current_price,
       min_price,
-      createDefaultVariant = true
+      create_default_variant = true
     } = body
 
     // 商品特有驗證
@@ -172,28 +162,27 @@ export async function POST(request: NextRequest) {
     const product_code = await generateProductCode()
 
     // 計算總重量
-    const totalWeight = weight + (packageWeight || 0) + (accessoryWeight || 0)
+    const total_weight_kg = (weight_kg || 0) + (package_weight_kg || 0) + (accessory_weight_kg || 0)
 
     // 創建商品
     const product = await prisma.product.create({
       data: {
         product_code,
-        code: product_code, // 向後相容性
         name,
         category,
         volume_ml,
         alc_percentage,
-        weight,
-        packageWeight,
-        totalWeight,
-        hasBox,
-        hasAccessories,
-        accessoryWeight,
+        weight_kg: weight_kg || 0,
+        package_weight_kg,
+        total_weight_kg,
+        has_box,
+        has_accessories,
+        accessory_weight_kg,
         accessories,
         hs_code,
         supplier,
-        manufacturingDate,
-        expiryDate,
+        manufacturing_date,
+        expiry_date,
         standard_price,
         current_price,
         cost_price: 0, // 初始成本為0，等進貨後更新
@@ -203,15 +192,17 @@ export async function POST(request: NextRequest) {
 
     // 自動創建預設變體（一般版）
     let defaultVariant = null
-    if (createDefaultVariant) {
+    if (create_default_variant) {
       const variant_code = `${product_code}-A`
+      const sku = `${product_code}-A-700` // Example SKU
       defaultVariant = await prisma.productVariant.create({
         data: {
           product_id: product.id,
           variant_code,
-          variantType: 'A',
+          sku,
+          variant_type: 'A',
           description: '一般版',
-          basePrice: standard_price,
+          base_price: standard_price,
           current_price: current_price
         }
       })

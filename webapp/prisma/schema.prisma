@@ -39,18 +39,18 @@ model User {
   name          String
   image         String?
   role          Role     @default(EMPLOYEE)
-  investor_id   String?  // 投資方關聯ID - 統一命名規範
-  is_active     Boolean  @default(true)  // 統一命名規範
-  preferences   Json?    // 個人偏好設定
-  created_at    DateTime @default(now())  // 統一命名規範
-  updated_at    DateTime @updatedAt      // 統一命名規範
+  investor_id   String?
+  is_active     Boolean  @default(true)
+  preferences   Json?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
-  // 關聯表
-  createdPurchases        Purchase[]
-  createdSales           Sale[]
-  createdAccountingEntries AccountingEntry[]
-  createdAccountsReceivable AccountsReceivable[]
-  createdPaymentRecords   PaymentRecord[]
+  // Relations
+  created_purchases         Purchase[]
+  created_sales             Sale[]
+  created_accounting_entries AccountingEntry[]
+  created_accounts_receivable AccountsReceivable[]
+  created_payment_records   PaymentRecord[]
 
   @@map("users")
 }
@@ -63,103 +63,104 @@ enum CustomerTier {
 }
 
 model Customer {
-  id              String       @id @default(cuid())
-  customer_code   String       @unique // C00001, C00002 等
-  name            String
-  contact_person  String?      // 主要聯絡人
-  phone           String?
-  email           String?
-  company         String?      // 公司名稱
-  tax_id          String?      // 統一編號
-  address         String?      // 聯絡地址
-  shipping_address String?     // 送貨地址
-  tier            CustomerTier @default(REGULAR)
-  payment_terms   PaymentTerms @default(CASH)  // 統一命名規範
-  requires_invoice Boolean     @default(false) // 統一命名規範
-  credit_limit    Float?       // 信用額度
-  notes           String?
-  is_active       Boolean      @default(true)  // 統一命名規範
-  created_at      DateTime     @default(now()) // 統一命名規範
-  updated_at      DateTime     @updatedAt     // 統一命名規範
+  id                String       @id @default(cuid())
+  customer_code     String       @unique
+  name              String
+  contact_person    String?
+  phone             String?
+  email             String?
+  company           String?
+  tax_id            String?
+  address           String?
+  shipping_address  String?
+  tier              CustomerTier @default(REGULAR)
+  payment_terms     PaymentTerms @default(CASH)
+  requires_invoice  Boolean      @default(false)
+  credit_limit      Float?
+  notes             String?
+  is_active         Boolean      @default(true)
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
 
-  // 關聯表
-  sales Sale[]
-  specialPrices CustomerSpecialPrice[]
-  accountsReceivable AccountsReceivable[]
+  // Relations
+  sales                 Sale[]
+  special_prices        CustomerSpecialPrice[]
+  accounts_receivables  AccountsReceivable[]
 
   @@map("customers")
 }
 
 model Product {
-  id               String           @id @default(cuid())
-  product_code     String           @unique // P00001, P00002 等
-  name             String
-  category         AlcoholCategory
-  volume_ml        Int              // 容量(ml) - 統一命名規範
-  alc_percentage   Float            // 酒精度(%) - 統一命名規範
-  weight_kg        Float            // 商品重量(kg) - 統一命名規範
-  package_weight_kg Float?          // 外盒重量(kg) - 統一命名規範
-  total_weight_kg  Float?           // 總重量(kg) - 統一命名規範
-  has_box          Boolean          @default(false)  // 統一命名規範
-  has_accessories  Boolean          @default(false)  // 統一命名規範
-  accessory_weight_kg Float?        // 附件重量(kg) - 統一命名規範
-  accessories      String[]         // 附件清單
-  hs_code          String?          // 稅則號列 - 統一命名規範
-  supplier         String?
-  manufacturing_date String?        // 統一命名規範
-  expiry_date      String?          // 統一命名規範
-  standard_price   Float            // 標準售價 - 統一命名規範
-  current_price    Float            // 目前售價 - 統一命名規範
-  cost_price       Float            @default(0) // 平均成本價 - 統一命名規範
-  min_price        Float            // 最低售價限制 - 統一命名規範
-  is_active        Boolean          @default(true)  // 統一命名規範
-  created_at       DateTime         @default(now())  // 統一命名規範
-  updated_at       DateTime         @updatedAt      // 統一命名規範
+  id                   String           @id @default(cuid())
+  product_code         String           @unique
+  name                 String
+  category             AlcoholCategory
+  volume_ml            Int
+  alc_percentage       Float
+  weight_kg            Float
+  package_weight_kg    Float?
+  total_weight_kg      Float?
+  has_box              Boolean          @default(false)
+  has_accessories      Boolean          @default(false)
+  accessory_weight_kg  Float?
+  accessories          String[]
+  hs_code              String?
+  supplier             String?
+  manufacturing_date   String?
+  expiry_date          String?
+  standard_price       Float
+  current_price        Float
+  cost_price           Float            @default(0)
+  min_price            Float
+  is_active            Boolean          @default(true)
+  created_at           DateTime         @default(now())
+  updated_at           DateTime         @updatedAt
 
-  // 關聯表
-  variants         ProductVariant[]
-  purchaseItems    PurchaseItem[]
-  saleItems        SaleItem[]
-  specialPrices    CustomerSpecialPrice[]
+  // Relations
+  variants       ProductVariant[]
+  purchase_items PurchaseItem[]
+  sale_items     SaleItem[]
+  special_prices CustomerSpecialPrice[]
 
   @@map("products")
 }
 
 enum VariantType {
-  A  // 一般版
-  B  // 年度限定版
-  C  // 紀念版
-  D  // 特殊限定版
-  X  // 損傷品
+  A // Normal
+  B // Annual Limited
+  C // Commemorative
+  D // Special Limited
+  X // Damaged
 }
 
 model ProductVariant {
-  id              String      @id @default(cuid())
-  productId       String
-  variant_code    String      @unique // P00001-A, P00001-C, P00001-X
-  variantType     VariantType // A, B, C, D, X
-  description     String      // "一般版", "100周年紀念版", "損傷品"
-  basePrice       Float       // 基礎售價
-  currentPrice    Float       // 目前售價
-  discountRate    Float?      // 折扣率 (損傷品用)
-  limitedEdition  Boolean     @default(false)
-  productionYear  Int?
-  serialNumber    String?
-  condition       String      @default("正常") // 商品狀況
-  stock_quantity    Int         @default(0)    // 總庫存
-  reserved_stock    Int         @default(0)    // 預留庫存
-  available_stock   Int         @default(0)    // 可售庫存
-  cost_price        Float       @default(0)    // 實際成本
-  weight_kg         Float       @default(0)    // 商品重量(kg) - 遵循DATA_MODELS.md規範
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  product_id        String
+  variant_code      String      @unique
+  sku               String      @unique
+  variant_type      VariantType
+  description       String
+  base_price        Float
+  current_price     Float
+  discount_rate     Float?
+  limited_edition   Boolean     @default(false)
+  production_year   Int?
+  serial_number     String?
+  condition         String      @default("Normal")
+  stock_quantity    Int         @default(0)
+  reserved_stock    Int         @default(0)
+  available_stock   Int         @default(0)
+  cost_price        Float       @default(0)
+  weight_kg         Float       @default(0)
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
 
-  // 關聯
-  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
-  saleItems          SaleItem[]
-  inventoryMovements InventoryMovement[]
+  // Relations
+  product             Product             @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  sale_items          SaleItem[]
+  inventory_movements InventoryMovement[]
 
-  @@unique([productId, variantType])
+  @@unique([product_id, variant_type])
   @@map("product_variants")
 }
 
@@ -167,20 +168,20 @@ model CustomerSpecialPrice {
   id              String   @id @default(cuid())
   customer_id     String
   product_id      String
-  standard_price  Float    // 標準價格
-  special_price   Float    // 專屬價格
-  discount_amount Float    // 折扣金額
-  discount_rate   Float    // 折扣率
-  reason          String   // 調價原因
-  effective_date  DateTime // 生效日期
-  expiry_date     DateTime? // 到期日期
+  standard_price  Float
+  special_price   Float
+  discount_amount Float
+  discount_rate   Float
+  reason          String
+  effective_date  DateTime
+  expiry_date     DateTime?
   is_active       Boolean  @default(true)
   notes           String?
-  created_by      String   // 建立者
+  created_by      String
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  // 關聯
+  // Relations
   customer Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
@@ -190,44 +191,44 @@ model CustomerSpecialPrice {
 
 model InventoryMovement {
   id              String   @id @default(cuid())
-  variantId       String
-  movementType    String   // 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'TRANSFER'
-  adjustmentType  String?  // 'ADD' | 'SUBTRACT' | 'SET' (只有ADJUSTMENT時使用)
-  quantity        Int      // 異動數量
-  previousStock   Int      // 異動前庫存
-  newStock        Int      // 異動後庫存
-  reason          String   // 異動原因
-  notes           String?  // 備註
-  referenceId     String?  // 關聯單據ID (採購單、銷售單等)
-  referenceType   String?  // 關聯單據類型
-  createdBy       String   // 操作者
+  variant_id      String
+  movement_type   String   // 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'TRANSFER'
+  adjustment_type String?  // 'ADD' | 'SUBTRACT' | 'SET'
+  quantity        Int
+  previous_stock  Int
+  new_stock       Int
+  reason          String
+  notes           String?
+  reference_id    String?
+  reference_type  String?
+  created_by      String
   created_at      DateTime @default(now())
 
-  // 關聯
-  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  // Relations
+  variant ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
 
   @@map("inventory_movements")
 }
 
 model Purchase {
-  id            String         @id @default(cuid())
-  purchaseNumber String        @unique // PO20250917001
-  fundingSource String         // 'COMPANY' | 'PERSONAL'
-  supplier      String
-  currency      String         @default("JPY")
-  exchangeRate  Float
-  totalAmount   Float
-  status        String         @default("PENDING") // PENDING, RECEIVED, COMPLETED
-  declarationNumber String?    // 報單號碼
-  declarationDate   DateTime?  // 報關日期
-  receivedDate      DateTime?  // 到貨日期
-  notes         String?
-  createdBy     String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                  String         @id @default(cuid())
+  purchase_number     String         @unique
+  funding_source      String         // 'COMPANY' | 'PERSONAL'
+  supplier            String
+  currency            String         @default("JPY")
+  exchange_rate       Float
+  total_amount        Float
+  status              String         @default("PENDING")
+  declaration_number  String?
+  declaration_date    DateTime?
+  received_date       DateTime?
+  notes               String?
+  created_by          String
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
 
-  // 關聯
-  creator   User           @relation(fields: [createdBy], references: [id])
+  // Relations
+  creator   User           @relation(fields: [created_by], references: [id])
   items     PurchaseItem[]
   receipts  GoodsReceipt[]
 
@@ -236,213 +237,207 @@ model Purchase {
 
 model PurchaseItem {
   id                String   @id @default(cuid())
-  purchaseId        String
-  productId         String?  // 可能是新商品
-  productName       String
+  purchase_id       String
+  product_id        String?
+  product_name      String
   quantity          Int
-  unitPrice         Float
-  totalPrice        Float
-  dutiableValue     Float?   // 完稅價格
-  tariffCode        String?  // 稅則號列
-  importDutyRate    Float?   // 進口稅率
-  alc_percentage    Float?   // 酒精度 - 統一命名規範
-  volume_ml         Int?     // 容量 - 統一命名規範
-  weightKg          Float?   // 重量
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  unit_price        Float
+  total_price       Float
+  dutiable_value    Float?
+  tariff_code       String?
+  import_duty_rate  Float?
+  alc_percentage    Float?
+  volume_ml         Int?
+  weight_kg         Float?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
-  // 關聯
-  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  product  Product? @relation(fields: [productId], references: [id])
+  // Relations
+  purchase Purchase @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  product  Product? @relation(fields: [product_id], references: [id])
 
   @@map("purchase_items")
 }
 
 model GoodsReceipt {
-  id               String  @id @default(cuid())
-  purchaseId       String
-  actualQuantity   Int     // 實際到貨數量
-  exchangeRate     Float   // 實際匯率
-  lossType         String  // 'NONE' | 'INSPECTION' | 'RADIATION' | 'DAMAGE'
-  lossQuantity     Int     @default(0) // 損失數量
-  inspectionFee    Float?  // 抽驗費
-  allocationMethod String  // 'VALUE' | 'QUANTITY' | 'WEIGHT'
-  totalCost        Float   // 總成本
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  purchase_id         String
+  actual_quantity     Int
+  exchange_rate       Float
+  loss_type           String
+  loss_quantity       Int      @default(0)
+  inspection_fee      Float?
+  allocation_method   String
+  total_cost          Float
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 
-  // 關聯
-  purchase         Purchase            @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  additionalCosts  AdditionalCost[]
+  // Relations
+  purchase         Purchase         @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  additional_costs AdditionalCost[]
 
   @@map("goods_receipts")
 }
 
 model AdditionalCost {
-  id              String @id @default(cuid())
-  goodsReceiptId  String
-  type            String // 'SHIPPING' | 'INSPECTION' | 'DECLARATION' | 'PORT_SERVICE'
-  amount          Float
-  description     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(cuid())
+  goods_receipt_id  String
+  type              String
+  amount            Float
+  description       String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
-  // 關聯
-  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  // Relations
+  goods_receipt GoodsReceipt @relation(fields: [goods_receipt_id], references: [id], onDelete: Cascade)
 
   @@map("additional_costs")
 }
 
 model Sale {
   id              String       @id @default(cuid())
-  saleNumber      String       @unique // SA20250917001
-  customerId      String
-  totalAmount     Float        // 顯示金額（投資方看到的）
-  actualAmount    Float?       // 實際收取金額（僅超級管理員）
-  commission      Float?       // 老闆傭金（僅超級管理員）
-  fundingSource   String       // 'COMPANY' | 'PERSONAL'
-  paymentTerms    PaymentTerms @default(CASH)
-  isPaid          Boolean      @default(false)
-  paidAt          DateTime?
-  dueDate         DateTime?
+  sale_number     String       @unique
+  customer_id     String
+  total_amount    Float
+  actual_amount   Float?
+  commission      Float?
+  funding_source  String
+  payment_terms   PaymentTerms @default(CASH)
+  is_paid         Boolean      @default(false)
+  paid_at         DateTime?
+  due_date        DateTime?
   notes           String?
-  createdBy       String
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  created_by      String
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
 
-  // 關聯
-  customer Customer   @relation(fields: [customerId], references: [id])
-  creator  User       @relation(fields: [createdBy], references: [id])
-  items    SaleItem[]
-  accountsReceivable AccountsReceivable[]
+  // Relations
+  customer              Customer             @relation(fields: [customer_id], references: [id])
+  creator               User                 @relation(fields: [created_by], references: [id])
+  items                 SaleItem[]
+  accounts_receivables  AccountsReceivable[]
 
   @@map("sales")
 }
 
 model SaleItem {
-  id                  String  @id @default(cuid())
-  saleId              String
-  productId           String
-  variantId           String?
-  quantity            Int
-  unitPrice           Float   // 顯示單價
-  actualUnitPrice     Float?  // 實際單價（僅超級管理員）
-  totalPrice          Float   // 顯示總價
-  actualTotalPrice    Float?  // 實際總價（僅超級管理員）
-  isPersonalPurchase  Boolean @default(false) // 是否為個人調貨
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  sale_id               String
+  product_id            String
+  variant_id            String?
+  quantity              Int
+  unit_price            Float
+  actual_unit_price     Float?
+  total_price           Float
+  actual_total_price    Float?
+  is_personal_purchase  Boolean  @default(false)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
 
-  // 關聯
-  sale    Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  product Product        @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
+  // Relations
+  sale     Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [product_id], references: [id])
+  variant  ProductVariant? @relation(fields: [variant_id], references: [id])
 
   @@map("sale_items")
 }
 
-// 審計日誌表 - 記錄敏感資料存取
 model AuditLog {
-  id              String   @id @default(cuid())
-  userId          String   // 操作使用者ID
-  userEmail       String   // 使用者Email
-  userRole        Role     // 使用者角色
-  action          String   // 操作類型 (READ, CREATE, UPDATE, DELETE)
-  tableName       String   // 操作的表格
-  recordId        String?  // 記錄ID
-  sensitiveFields Json?    // 存取的敏感欄位
-  ipAddress       String?  // IP位址
-  userAgent       String?  // 瀏覽器資訊
-  timestamp       DateTime @default(now())
-
-  // 商業敏感資料存取記錄
-  accessedActualPrice   Boolean @default(false) // 是否存取真實價格
-  accessedCommission    Boolean @default(false) // 是否存取傭金資料
-  accessedPersonalData  Boolean @default(false) // 是否存取個人調貨資料
+  id                      String   @id @default(cuid())
+  user_id                 String
+  user_email              String
+  user_role               Role
+  action                  String
+  table_name              String
+  record_id               String?
+  sensitive_fields        Json?
+  ip_address              String?
+  user_agent              String?
+  timestamp               DateTime @default(now())
+  accessed_actual_price   Boolean  @default(false)
+  accessed_commission     Boolean  @default(false)
+  accessed_personal_data  Boolean  @default(false)
 
   @@map("audit_logs")
 }
 
-// 🧮 會計系統模型 - Room-4 擴展
-
 model AccountingEntry {
   id              String   @id @default(cuid())
-  entryNumber     String   @unique // AE20250917001
-  entryDate       DateTime // 入帳日期
-  entryType       String   // 'SALE' | 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT'
-  referenceId     String?  // 關聯單據ID (銷售單、採購單等)
-  referenceType   String?  // 關聯單據類型
-  description     String   // 摘要說明
-  totalAmount     Float    // 合計金額
-  isPosted        Boolean  @default(false) // 是否過帳
+  entry_number    String   @unique
+  entry_date      DateTime
+  entry_type      String
+  reference_id    String?
+  reference_type  String?
+  description     String
+  total_amount    Float
+  is_posted       Boolean  @default(false)
   notes           String?
-  createdBy       String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  created_by      String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
-  // 關聯
-  creator         User              @relation(fields: [createdBy], references: [id])
-  journalEntries  JournalEntry[]
+  // Relations
+  creator          User           @relation(fields: [created_by], references: [id])
+  journal_entries  JournalEntry[]
 
   @@map("accounting_entries")
 }
 
 model JournalEntry {
-  id                String   @id @default(cuid())
-  accountingEntryId String
-  accountCode       String   // 會科代碼 (1101, 4101 etc.)
-  accountName       String   // 會科名稱 (現金, 銷貨收入 etc.)
-  debitAmount       Float    @default(0) // 借方金額
-  creditAmount      Float    @default(0) // 貸方金額
-  description       String?  // 明細說明
-  createdAt         DateTime @default(now())
+  id                  String   @id @default(cuid())
+  accounting_entry_id String
+  account_code        String
+  account_name        String
+  debit_amount        Float    @default(0)
+  credit_amount       Float    @default(0)
+  description         String?
+  created_at          DateTime @default(now())
 
-  // 關聯
-  accountingEntry   AccountingEntry @relation(fields: [accountingEntryId], references: [id], onDelete: Cascade)
+  // Relations
+  accounting_entry AccountingEntry @relation(fields: [accounting_entry_id], references: [id], onDelete: Cascade)
 
   @@map("journal_entries")
 }
 
-// 應收帳款管理
 model AccountsReceivable {
-  id              String       @id @default(cuid())
-  arNumber        String       @unique // AR20250917001
-  customerId      String
-  saleId          String       // 關聯銷售單
-  originalAmount  Float        // 原始應收金額
-  remainingAmount Float        // 剩餘應收金額
-  dueDate         DateTime     // 到期日
-  status          String       @default("OUTSTANDING") // OUTSTANDING, OVERDUE, PAID, PARTIAL
-  daysPastDue     Int          @default(0) // 逾期天數
-  notes           String?
-  createdBy       String
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                String   @id @default(cuid())
+  ar_number         String   @unique
+  customer_id       String
+  sale_id           String
+  original_amount   Float
+  remaining_amount  Float
+  due_date          DateTime
+  status            String   @default("OUTSTANDING")
+  days_past_due     Int      @default(0)
+  notes             String?
+  created_by        String
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
-  // 關聯
-  customer        Customer            @relation(fields: [customerId], references: [id])
-  sale            Sale                @relation(fields: [saleId], references: [id])
-  creator         User                @relation(fields: [createdBy], references: [id])
-  payments        PaymentRecord[]
+  // Relations
+  customer  Customer        @relation(fields: [customer_id], references: [id])
+  sale      Sale            @relation(fields: [sale_id], references: [id])
+  creator   User            @relation(fields: [created_by], references: [id])
+  payments  PaymentRecord[]
 
   @@map("accounts_receivable")
 }
 
 model PaymentRecord {
-  id                     String   @id @default(cuid())
-  paymentNumber          String   @unique // PMT20250917001
-  accountsReceivableId   String
-  paymentAmount          Float    // 付款金額
-  paymentDate            DateTime // 付款日期
-  paymentMethod          String   // 'CASH' | 'TRANSFER' | 'CHECK' | 'CREDIT_CARD'
-  referenceNumber        String?  // 支票號碼、轉帳序號等
-  notes                  String?
-  createdBy              String
-  createdAt              DateTime @default(now())
+  id                      String   @id @default(cuid())
+  payment_number          String   @unique
+  accounts_receivable_id  String
+  payment_amount          Float
+  payment_date            DateTime
+  payment_method          String
+  reference_number        String?
+  notes                   String?
+  created_by              String
+  created_at              DateTime @default(now())
 
-  // 關聯
-  accountsReceivable     AccountsReceivable @relation(fields: [accountsReceivableId], references: [id])
-  creator                User               @relation(fields: [createdBy], references: [id])
+  // Relations
+  accounts_receivable AccountsReceivable @relation(fields: [accounts_receivable_id], references: [id])
+  creator             User             @relation(fields: [created_by], references: [id])
 
   @@map("payment_records")
 }

@@ -4,7 +4,6 @@
  */
 
 import { PrismaClient, Role } from '@prisma/client'
-import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -91,17 +90,17 @@ async function createTestCustomers() {
       customer_code: 'C00001',
       name: '測試客戶A',
       email: 'customer-a@test.com',
-      paymentTerms: 'MONTHLY' as const,
+      payment_terms: 'MONTHLY' as const,
       tier: 'VIP' as const,
-      requiresInvoice: true
+      requires_invoice: true
     },
     {
       customer_code: 'C00002',
       name: '測試客戶B',
       email: 'customer-b@test.com',
-      paymentTerms: 'CASH' as const,
+      payment_terms: 'CASH' as const,
       tier: 'REGULAR' as const,
-      requiresInvoice: false
+      requires_invoice: false
     }
   ]
 
@@ -125,7 +124,6 @@ async function createTestProducts() {
   const products = [
     {
       product_code: 'W001',
-      code: 'W001',  // 向後相容性
       name: '山崎18年威士忌',
       category: 'WHISKY' as const,
       volume_ml: 700,
@@ -145,7 +143,6 @@ async function createTestProducts() {
     },
     {
       product_code: 'W002',
-      code: 'W002',  // 向後相容性
       name: '響21年威士忌',
       category: 'WHISKY' as const,
       volume_ml: 700,
@@ -196,25 +193,25 @@ async function createTestSales() {
   // 🔑 投資項目銷售 (雙重價格機制)
   const investmentSale = await prisma.sale.create({
     data: {
-      saleNumber: 'SA20250917001',
-      customerId: customer.id,
-      totalAmount: 20000,        // 🔒 投資方看到的價格
-      actualAmount: 24000,       // 🔒 實際收取價格 (僅超級管理員)
+      sale_number: 'SA20250917001',
+      customer_id: customer.id,
+      total_amount: 20000,        // 🔒 投資方看到的價格
+      actual_amount: 24000,       // 🔒 實際收取價格 (僅超級管理員)
       commission: 4000,          // 🔒 老闆傭金 (24000 - 20000)
-      fundingSource: 'COMPANY',  // 投資項目
-      paymentTerms: 'MONTHLY',
+      funding_source: 'COMPANY',  // 投資項目
+      payment_terms: 'MONTHLY',
       notes: '測試投資項目銷售 - 雙重價格機制',
-      createdBy: admin.id,
+      created_by: admin.id,
       items: {
         create: [
           {
-            productId:product.id,
+            product_id:product.id,
             quantity: 1,
-            unitPrice:20000,        // 顯示單價
-            actualUnitPrice:24000,  // 實際單價 (敏感)
-            totalPrice:20000,       // 顯示總價
-            actualTotalPrice:24000, // 實際總價 (敏感)
-            isPersonalPurchase: false
+            unit_price:20000,        // 顯示單價
+            actual_unit_price:24000,  // 實際單價 (敏感)
+            total_price:20000,       // 顯示總價
+            actual_total_price:24000, // 實際總價 (敏感)
+            is_personal_purchase: false
           }
         ]
       }
@@ -224,25 +221,25 @@ async function createTestSales() {
   // 🔑 個人調貨銷售 (投資方不能看到)
   const personalSale = await prisma.sale.create({
     data: {
-      saleNumber: 'SA20250917002',
-      customerId: customer.id,
-      totalAmount: 18000,        // 個人調貨沒有雙重價格
-      actualAmount: 18000,
+      sale_number: 'SA20250917002',
+      customer_id: customer.id,
+      total_amount: 18000,        // 個人調貨沒有雙重價格
+      actual_amount: 18000,
       commission: 0,             // 個人調貨沒有傭金
-      fundingSource: 'PERSONAL', // 🔒 個人調貨 (投資方看不到)
-      paymentTerms: 'CASH',
+      funding_source: 'PERSONAL', // 🔒 個人調貨 (投資方看不到)
+      payment_terms: 'CASH',
       notes: '測試個人調貨銷售 - 投資方不可見',
-      createdBy: admin.id,
+      created_by: admin.id,
       items: {
         create: [
           {
-            productId:product.id,
+            product_id:product.id,
             quantity: 1,
-            unitPrice:18000,
-            actualUnitPrice:18000,
-            totalPrice:18000,
-            actualTotalPrice:18000,
-            isPersonalPurchase: true
+            unit_price:18000,
+            actual_unit_price:18000,
+            total_price:18000,
+            actual_total_price:18000,
+            is_personal_purchase: true
           }
         ]
       }
@@ -254,25 +251,25 @@ async function createTestSales() {
   if (response) {
     await prisma.sale.create({
       data: {
-        saleNumber: 'SA20250917003',
-        customerId: customer.id,
-        totalAmount: 32000,        // 顯示價格
-        actualAmount: 38000,       // 實際價格
+        sale_number: 'SA20250917003',
+        customer_id: customer.id,
+        total_amount: 32000,        // 顯示價格
+        actual_amount: 38000,       // 實際價格
         commission: 6000,          // 傭金
-        fundingSource: 'COMPANY',
-        paymentTerms: 'WEEKLY',
+        funding_source: 'COMPANY',
+        payment_terms: 'WEEKLY',
         notes: '測試投資項目銷售2 - 更高差價',
-        createdBy: admin.id,
+        created_by: admin.id,
         items: {
           create: [
             {
-              productId:response.id,
+              product_id:response.id,
               quantity: 1,
-              unitPrice:32000,
-              actualUnitPrice:38000,
-              totalPrice:32000,
-              actualTotalPrice:38000,
-              isPersonalPurchase: false
+              unit_price:32000,
+              actual_unit_price:38000,
+              total_price:32000,
+              actual_total_price:38000,
+              is_personal_purchase: false
             }
           ]
         }
@@ -297,7 +294,7 @@ export async function cleanTestData() {
   await prisma.saleItem.deleteMany({
     where: {
       sale: {
-        saleNumber: {
+        sale_number: {
           startsWith: 'SA20250917'
         }
       }
@@ -306,7 +303,7 @@ export async function cleanTestData() {
 
   await prisma.sale.deleteMany({
     where: {
-      saleNumber: {
+      sale_number: {
         startsWith: 'SA20250917'
       }
     }
@@ -348,7 +345,7 @@ export async function verifyDataIsolation() {
   // 查詢所有測試銷售資料
   const allSales = await prisma.sale.findMany({
     where: {
-      saleNumber: {
+      sale_number: {
         startsWith: 'SA20250917'
       }
     },
@@ -358,8 +355,8 @@ export async function verifyDataIsolation() {
   })
 
   // 統計資料
-  const investmentSales = allSales.filter(sale => sale.fundingSource === 'COMPANY')
-  const personalSales = allSales.filter(sale => sale.fundingSource === 'PERSONAL')
+  const investmentSales = allSales.filter(sale => sale.funding_source === 'COMPANY')
+  const personalSales = allSales.filter(sale => sale.funding_source === 'PERSONAL')
 
   console.log('📊 測試資料統計:')
   console.log(`   總銷售記錄: ${allSales.length}`)
@@ -368,7 +365,7 @@ export async function verifyDataIsolation() {
 
   // 檢查雙重價格機制
   const doublePriceSales = investmentSales.filter(sale =>
-    sale.actualAmount && sale.actualAmount > sale.totalAmount
+    sale.actual_amount && sale.actual_amount > sale.total_amount
   )
 
   console.log(`   雙重價格記錄: ${doublePriceSales.length}`)
@@ -376,9 +373,9 @@ export async function verifyDataIsolation() {
   if (doublePriceSales.length > 0) {
     const sale = doublePriceSales[0]
     console.log('🔑 雙重價格驗證:')
-    console.log(`   顯示金額: ${sale.totalAmount} (投資方看到)`)
-    console.log(`   實際金額: ${sale.actualAmount} (僅超級管理員)`)
-    console.log(`   老闆傭金: ${sale.commission} (${sale.actualAmount} - ${sale.totalAmount})`)
+    console.log(`   顯示金額: ${sale.total_amount} (投資方看到)`)
+    console.log(`   實際金額: ${sale.actual_amount} (僅超級管理員)`)
+    console.log(`   老闆傭金: ${sale.commission} (${sale.actual_amount} - ${sale.total_amount})`)
   }
 
   return {

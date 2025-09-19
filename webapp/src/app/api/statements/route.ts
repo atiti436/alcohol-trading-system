@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const customer_id = searchParams.get('customer_id')
-    const dateFrom = searchParams.get('dateFrom')
-    const dateTo = searchParams.get('dateTo')
+    const dateFrom = searchParams.get('date_from')
+    const dateTo = searchParams.get('date_to')
     const statementType = searchParams.get('type') || 'monthly' // monthly, custom
 
     if (!customer_id) {
@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
     // 🔒 投資方數據隔離：只能看公司資金的交易
     const saleWhere: any = {
       customer_id,
-      isPaid: true
+      is_paid: true
     }
 
     if (session.user.role === 'INVESTOR') {
-      saleWhere.fundingSource = 'COMPANY'
+      saleWhere.funding_source = 'COMPANY'
     }
 
     // 日期範圍篩選
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         phone: true,
         email: true,
         address: true,
-        paymentTerms: true
+        payment_terms: true
       }
     })
 
@@ -126,31 +126,31 @@ export async function GET(request: NextRequest) {
         sale: {
           select: {
             id: true,
-            saleNumber: true,
+            sale_number: true,
             created_at: true
           }
         },
         payments: {
-          orderBy: { paymentDate: 'asc' }
+          orderBy: { payment_date: 'asc' }
         }
       },
       orderBy: { created_at: 'asc' }
     })
 
     // 🔒 資料過濾：投資方看不到敏感資訊
-    const filteredSales = sales.map(sale => {
+    const filteredSales = sales.map((sale: any) => {
       const saleData = {
         id: sale.id,
-        saleNumber: sale.saleNumber,
+        sale_number: sale.sale_number,
         total_amount: sale.total_amount,
         actual_amount: session.user.role !== 'INVESTOR' ? sale.actual_amount : undefined,
         commission: session.user.role !== 'INVESTOR' ? sale.commission : undefined,
-        fundingSource: sale.fundingSource,
-        isPaid: sale.isPaid,
-        paidAt: sale.paidAt,
+        funding_source: sale.funding_source,
+        is_paid: sale.is_paid,
+        paid_at: sale.paid_at,
         created_at: sale.created_at,
         creator: session.user.role !== 'INVESTOR' ? sale.creator : null,
-        items: sale.items.map(item => ({
+        items: sale.items.map((item: any) => ({
           ...item,
           actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
           actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price
@@ -160,18 +160,18 @@ export async function GET(request: NextRequest) {
     })
 
     // 計算統計資訊
-    const totalSalesAmount = filteredSales.reduce((sum, sale) => sum + sale.total_amount, 0)
-    const totalActualAmount = session.user.role === 'INVESTOR'
-      ? totalSalesAmount
+    const total_sales_amount = filteredSales.reduce((sum, sale) => sum + sale.total_amount, 0)
+    const total_actual_amount = session.user.role === 'INVESTOR'
+      ? total_sales_amount
       : filteredSales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
-    const totalCommission = session.user.role === 'INVESTOR'
+    const total_commission = session.user.role === 'INVESTOR'
       ? 0
-      : totalActualAmount - totalSalesAmount
+      : total_actual_amount - total_sales_amount
 
-    const totalReceivableAmount = receivables.reduce((sum, rec) => sum + rec.originalAmount, 0)
-    const totalPaidAmount = receivables.reduce((sum, rec) =>
-      sum + rec.payments.reduce((paySum, pay) => paySum + pay.paymentAmount, 0), 0)
-    const totalOutstandingAmount = totalReceivableAmount - totalPaidAmount
+    const total_receivable_amount = receivables.reduce((sum, rec) => sum + rec.original_amount, 0)
+    const total_paid_amount = receivables.reduce((sum, rec) =>
+      sum + rec.payments.reduce((paySum, pay) => paySum + pay.payment_amount, 0), 0)
+    const total_outstanding_amount = total_receivable_amount - total_paid_amount
 
     return NextResponse.json({
       success: true,
@@ -189,12 +189,12 @@ export async function GET(request: NextRequest) {
         })),
         summary: {
           totalSales: filteredSales.length,
-          totalSalesAmount,
-          totalActualAmount: session.user.role !== 'INVESTOR' ? totalActualAmount : undefined,
-          totalCommission: session.user.role !== 'INVESTOR' ? totalCommission : undefined,
-          totalReceivableAmount,
-          totalPaidAmount,
-          totalOutstandingAmount
+          total_sales_amount,
+          total_actual_amount: session.user.role !== 'INVESTOR' ? total_actual_amount : undefined,
+          total_commission: session.user.role !== 'INVESTOR' ? total_commission : undefined,
+          total_receivable_amount,
+          total_paid_amount,
+          total_outstanding_amount
         }
       }
     })
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { customer_id, periodStart, periodEnd, notes } = body
+    const { customer_id, period_start, period_end, notes } = body
 
     // 這裡可以實現對帳單歷史記錄的創建
     // 暫時返回成功訊息

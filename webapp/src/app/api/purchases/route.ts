@@ -29,21 +29,21 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const status = searchParams.get('status') // 狀態篩選
-    const fundingSource = searchParams.get('fundingSource') // 資金來源篩選
+    const funding_source = searchParams.get('funding_source') // 資金來源篩選
     const orderBy = searchParams.get('orderBy') || 'created_at'
     const order = searchParams.get('order') || 'desc'
 
     const skip = (page - 1) * limit
 
-    // 建立查詢條件 - 🔧 修復：使用正確的型別定義
-    const where: PurchaseWhereCondition = {}
+    // 建立查詢條件
+    const where: any = {}
 
     // 搜尋條件 - 支援採購單號、供應商的模糊搜尋
     if (search) {
       where.OR = [
-        { purchaseNumber: { contains: search, mode: 'insensitive' } },
+        { purchase_number: { contains: search, mode: 'insensitive' } },
         { supplier: { contains: search, mode: 'insensitive' } },
-        { declarationNumber: { contains: search, mode: 'insensitive' } }
+        { declaration_number: { contains: search, mode: 'insensitive' } }
       ]
     }
 
@@ -53,16 +53,16 @@ export async function GET(request: NextRequest) {
     }
 
     // 資金來源篩選
-    if (fundingSource) {
-      where.fundingSource = fundingSource
+    if (funding_source) {
+      where.funding_source = funding_source
     }
 
     // 🔒 權限過濾 - 投資方不能看到個人調貨
     if (session.user.role === 'INVESTOR') {
-      where.fundingSource = 'COMPANY' // 只能看公司資金的採購
+      where.funding_source = 'COMPANY' // 只能看公司資金的採購
       // 進一步過濾：只能看投資方相關的採購
       if (session.user.investor_id) {
-        where.investor_id = session.user.investor_id
+        where.creator = { investor_id: session.user.investor_id }
       }
     }
 
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
           items: {
             select: {
               id: true,
-              productName: true,
+              product_name: true,
               quantity: true,
               unit_price: true,
               total_price: true
@@ -96,14 +96,12 @@ export async function GET(request: NextRequest) {
     // 🔒 數據過濾 - 針對投資方隱藏敏感資訊
     const filteredPurchases = purchases.map(purchase => {
       if (session.user.role === 'INVESTOR') {
-        // 投資方看到的是調整後的金額，隱藏真實成本
         return {
           ...purchase,
-          total_amount: purchase.displayAmount || purchase.total_amount * 0.8, // 假設顯示80%
+          // 投資方不應該看到可能被調整的金額
+          total_amount: purchase.total_amount,
           items: purchase.items.map(item => ({
             ...item,
-            unit_price: item.displayPrice || item.unit_price * 0.8,
-            total_price: item.displayTotal || item.total_price * 0.8
           }))
         }
       }
@@ -145,11 +143,10 @@ export async function POST(request: NextRequest) {
     let validatedData
     try {
       const purchaseData = {
-        supplierId: body.supplierId || 'temp-supplier', // 兼容舊格式
+        supplier: body.supplier || 'temp-supplier',
         total_amount: body.total_amount || 0, // 將在後面重新計算
         status: body.status || 'DRAFT',
         notes: body.notes || '',
-        expectedDate: body.expectedDate
       }
       validatedData = validatePurchaseData(purchaseData)
     } catch (validationError) {
@@ -163,12 +160,13 @@ export async function POST(request: NextRequest) {
     }
 
     const {
-      fundingSource = 'COMPANY',
+      funding_source = 'COMPANY',
       supplier,
       currency = 'JPY',
-      exchangeRate,
-      declarationNumber,
-      declarationDate,
+      exchange_rate,
+      declaration_number,
+      declaration_date,
+      notes,
       items = [] // 採購明細
     } = body
 
@@ -177,7 +175,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '供應商為必填' }, { status: 400 })
     }
 
-    if (!exchangeRate || exchangeRate <= 0) {
+    if (!exchange_rate || exchange_rate <= 0) {
       return NextResponse.json({ error: '匯率必須大於0' }, { status: 400 })
     }
 
@@ -186,14 +184,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 生成採購單號
-    const purchaseNumber = await generatePurchaseNumber()
+    const purchase_number = await generatePurchaseNumber()
 
     // 計算總金額
     let total_amount = 0
-    const validatedItems = []
+    const validatedItems: any[] = []
 
     for (const item of items) {
-      if (!item.productName || !item.quantity || !item.unit_price) {
+      if (!item.product_name || !item.quantity || !item.unit_price) {
         return NextResponse.json({
           error: '採購項目缺少必要資訊：產品名稱、數量、單價'
         }, { status: 400 })
@@ -204,34 +202,33 @@ export async function POST(request: NextRequest) {
 
       validatedItems.push({
         product_id: item.product_id || null,
-        productName: item.productName,
+        product_name: item.product_name,
         quantity: parseInt(item.quantity),
         unit_price: parseFloat(item.unit_price),
         total_price: itemTotal,
-        dutiableValue: item.dutiableValue ? parseFloat(item.dutiableValue) : null,
-        tariffCode: item.tariffCode || null,
-        importDutyRate: item.importDutyRate ? parseFloat(item.importDutyRate) : null,
+        dutiable_value: item.dutiable_value ? parseFloat(item.dutiable_value) : null,
+        tariff_code: item.tariff_code || null,
+        import_duty_rate: item.import_duty_rate ? parseFloat(item.import_duty_rate) : null,
         alc_percentage: item.alc_percentage ? parseFloat(item.alc_percentage) : null,
         volume_ml: item.volume_ml ? parseInt(item.volume_ml) : null,
-        weight: item.weight ? parseFloat(item.weight) : null
+        weight_kg: item.weight_kg ? parseFloat(item.weight_kg) : null
       })
     }
 
     // 創建採購單和採購明細
     const purchase = await prisma.purchase.create({
       data: {
-        purchaseNumber,
-        fundingSource,
+        purchase_number,
+        funding_source,
         supplier,
         currency,
-        exchangeRate: parseFloat(exchangeRate),
+        exchange_rate: parseFloat(exchange_rate),
         total_amount,
         status: 'DRAFT', // 預設為草稿狀態
-        declarationNumber,
-        declarationDate: declarationDate ? new Date(declarationDate) : null,
+        declaration_number,
+        declaration_date: declaration_date ? new Date(declaration_date) : null,
         notes,
-        createdBy: session.user.id,
-        investor_id: fundingSource === 'COMPANY' ? session.user.investor_id : null,
+        created_by: session.user.id,
         items: {
           create: validatedItems
         }
@@ -271,18 +268,18 @@ async function generatePurchaseNumber(): Promise<string> {
   // 查找今天最後一個採購單號
   const lastPurchase = await prisma.purchase.findFirst({
     where: {
-      purchaseNumber: {
+      purchase_number: {
         startsWith: `PO-${dateStr}-`
       }
     },
     orderBy: {
-      purchaseNumber: 'desc'
+      purchase_number: 'desc'
     }
   })
 
   let sequence = 1
-  if (lastPurchase?.purchaseNumber) {
-    const lastSequence = lastPurchase.purchaseNumber.split('-')[2]
+  if (lastPurchase?.purchase_number) {
+    const lastSequence = lastPurchase.purchase_number.split('-')[2]
     sequence = parseInt(lastSequence) + 1
   }
 

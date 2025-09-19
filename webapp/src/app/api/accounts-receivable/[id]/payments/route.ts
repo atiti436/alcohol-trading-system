@@ -36,8 +36,8 @@ export async function GET(
         },
         sale: {
           select: {
-            saleNumber: true,
-            fundingSource: true
+            sale_number: true,
+            funding_source: true
           }
         }
       }
@@ -48,13 +48,13 @@ export async function GET(
     }
 
     // 🔒 投資方權限檢查 - 只能查看投資項目
-    if (session.user.role === 'INVESTOR' && accountsReceivable.sale.fundingSource !== 'COMPANY') {
+    if (session.user.role === 'INVESTOR' && accountsReceivable.sale.funding_source !== 'COMPANY') {
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
     }
 
     // 查詢收款記錄
     const payments = await prisma.paymentRecord.findMany({
-      where: { accountsReceivableId: arId },
+      where: { accounts_receivable_id: arId },
       include: {
         creator: {
           select: {
@@ -64,15 +64,15 @@ export async function GET(
           }
         }
       },
-      orderBy: { paymentDate: 'desc' }
+      orderBy: { payment_date: 'desc' }
     })
 
     // 🔒 數據過濾 - 投資方看到調整後的金額
     const filteredPayments = payments.map(payment => ({
       ...payment,
-      paymentAmount: session.user.role === 'INVESTOR'
-        ? payment.paymentAmount * 0.8
-        : payment.paymentAmount
+      payment_amount: session.user.role === 'INVESTOR'
+        ? payment.payment_amount * 0.8
+        : payment.payment_amount
     }))
 
     return NextResponse.json({
@@ -80,12 +80,12 @@ export async function GET(
       data: {
         accountsReceivable: {
           ...accountsReceivable,
-          originalAmount: session.user.role === 'INVESTOR'
-            ? accountsReceivable.originalAmount * 0.8
-            : accountsReceivable.originalAmount,
-          remainingAmount: session.user.role === 'INVESTOR'
-            ? accountsReceivable.remainingAmount * 0.8
-            : accountsReceivable.remainingAmount
+          original_amount: session.user.role === 'INVESTOR'
+            ? accountsReceivable.original_amount * 0.8
+            : accountsReceivable.original_amount,
+          remaining_amount: session.user.role === 'INVESTOR'
+            ? accountsReceivable.remaining_amount * 0.8
+            : accountsReceivable.remaining_amount
         },
         payments: filteredPayments
       }
@@ -115,21 +115,21 @@ export async function POST(
     const arId = params.id
     const body = await request.json()
     const {
-      paymentAmount,
-      paymentDate,
-      paymentMethod,
-      referenceNumber,
+      payment_amount,
+      payment_date,
+      payment_method,
+      reference_number,
       notes
     } = body
 
     // 基本驗證
-    if (!paymentAmount || !paymentDate || !paymentMethod) {
+    if (!payment_amount || !payment_date || !payment_method) {
       return NextResponse.json({
         error: '付款金額、付款日期和付款方式為必填欄位'
       }, { status: 400 })
     }
 
-    if (paymentAmount <= 0) {
+    if (payment_amount <= 0) {
       return NextResponse.json({
         error: '付款金額必須大於0'
       }, { status: 400 })
@@ -149,47 +149,47 @@ export async function POST(
     }
 
     // 檢查付款金額是否超過剩餘應收金額
-    if (paymentAmount > accountsReceivable.remainingAmount) {
+    if (payment_amount > accountsReceivable.remaining_amount) {
       return NextResponse.json({
-        error: `付款金額不能超過剩餘應收金額 NT$${accountsReceivable.remainingAmount.toLocaleString()}`
+        error: `付款金額不能超過剩餘應收金額 NT$${accountsReceivable.remaining_amount.toLocaleString()}`
       }, { status: 400 })
     }
 
     // 產生收款編號
-    const paymentNumber = await generatePaymentNumber()
+    const payment_number = await generatePaymentNumber()
 
     // 開始交易處理
     const result = await prisma.$transaction(async (tx) => {
       // 1. 建立收款記錄
       const paymentRecord = await tx.paymentRecord.create({
         data: {
-          paymentNumber,
-          accountsReceivableId: arId,
-          paymentAmount,
-          paymentDate: new Date(paymentDate),
-          paymentMethod,
-          referenceNumber,
+          payment_number,
+          accounts_receivable_id: arId,
+          payment_amount,
+          payment_date: new Date(payment_date),
+          payment_method,
+          reference_number,
           notes,
-          createdBy: session.user.id
+          created_by: session.user.id
         }
       })
 
       // 2. 更新應收帳款剩餘金額和狀態
-      const newRemainingAmount = accountsReceivable.remainingAmount - paymentAmount
+      const newRemainingAmount = accountsReceivable.remaining_amount - payment_amount
       let newStatus = accountsReceivable.status
 
       if (newRemainingAmount === 0) {
         newStatus = 'PAID' // 已全額收款
-      } else if (newRemainingAmount < accountsReceivable.originalAmount) {
+      } else if (newRemainingAmount < accountsReceivable.original_amount) {
         newStatus = 'PARTIAL' // 部分收款
       }
 
       const updatedAR = await tx.accountsReceivable.update({
         where: { id: arId },
         data: {
-          remainingAmount: newRemainingAmount,
+          remaining_amount: newRemainingAmount,
           status: newStatus,
-          updatedAt: new Date()
+          updated_at: new Date()
         }
       })
 
@@ -197,7 +197,7 @@ export async function POST(
       if (newStatus === 'PAID') {
         await tx.accountsReceivable.update({
           where: { id: arId },
-          data: { daysPastDue: 0 }
+          data: { days_past_due: 0 }
         })
       }
 
@@ -213,12 +213,12 @@ export async function POST(
           'Cookie': request.headers.get('Cookie') || ''
         },
         body: JSON.stringify({
-          entryType: 'PAYMENT',
-          referenceId: result.paymentRecord.id,
-          referenceType: 'PAYMENT',
-          entryDate: paymentDate,
+          entry_type: 'PAYMENT',
+          reference_id: result.paymentRecord.id,
+          reference_type: 'PAYMENT',
+          entry_date: payment_date,
           description: `收款 - ${accountsReceivable.customer.name}`,
-          notes: `收款記錄：${paymentNumber}`
+          notes: `收款記錄：${payment_number}`
         })
       })
     } catch (error) {
@@ -252,18 +252,18 @@ async function generatePaymentNumber(): Promise<string> {
   // 查找今日最後一筆收款記錄
   const lastPayment = await prisma.paymentRecord.findFirst({
     where: {
-      paymentNumber: {
+      payment_number: {
         startsWith: `PMT${dateString}`
       }
     },
     orderBy: {
-      paymentNumber: 'desc'
+      payment_number: 'desc'
     }
   })
 
   let sequence = 1
   if (lastPayment) {
-    const lastSequence = parseInt(lastPayment.paymentNumber.slice(-3))
+    const lastSequence = parseInt(lastPayment.payment_number.slice(-3))
     sequence = lastSequence + 1
   }
 

@@ -21,8 +21,8 @@ export function filterSalesData<T extends Record<string, any>>(
     const filteredData = data
       .filter(item => {
         // 🔒 核心邏輯：只顯示投資項目，隱藏個人調貨
-        return item.fundingSource === 'COMPANY' &&
-               (!item.investor_id || item.investor_id === context.investor_id)
+        return item.funding_source === 'COMPANY' &&
+               (!item.creator?.investor_id || item.creator.investor_id === context.investor_id)
       })
       .map(item => {
         // 🚨 關鍵：完全移除所有真實價格相關欄位
@@ -31,33 +31,26 @@ export function filterSalesData<T extends Record<string, any>>(
         // 移除所有包含 'actual' 的欄位 (真實價格)
         Object.keys(filtered).forEach(key => {
           if (key.toLowerCase().includes('actual')) {
-            delete filtered[key]
+            delete (filtered as any)[key]
           }
         })
 
-        // 🔒 移除老闆傣金和個人調貨相關欄位
-        delete filtered.commission
-        delete filtered.personalPurchases
-        delete filtered.ownerProfit
-        delete filtered.actualPrice
-        delete filtered.actual_amount
-        delete filtered.actual_total_price
-        delete filtered.actual_unit_price
-        delete filtered.realPrice
-        delete filtered.trueAmount
+        // 🔒 移除老闆傭金和個人調貨相關欄位
+        delete (filtered as any).commission
+        delete (filtered as any).is_personal_purchase
 
         // ✅ 只保留投資方應該看到的顯示價格
         return {
           ...filtered,
           // 確保只顯示調整後的價格 (如投資方看到的1000)
-          total_amount: item.total_amount || item.displayAmount, // 顯示價格
-          unit_price: item.unit_price || item.displayPrice,     // 顯示單價
+          total_amount: item.total_amount, // 顯示價格
+          unit_price: item.unit_price,     // 顯示單價
           // 基於顯示價格計算獲利 (1000 - 800 = 200)
-          profit: (item.total_amount || item.displayAmount || 0) - (item.cost || 0),
+          profit: (item.total_amount || 0) - (item.cost || 0),
           // 確保資金來源標記
-          fundingSource: 'COMPANY',
+          funding_source: 'COMPANY',
           // 投資方可見的利潤率
-          profitMargin: item.total_amount ?
+          profit_margin: item.total_amount ?
             ((item.total_amount - (item.cost || 0)) / item.total_amount * 100) : 0
         }
       })
@@ -71,12 +64,12 @@ export function filterSalesData<T extends Record<string, any>>(
   return data.map(item => {
     const filtered = { ...item }
     // 移除所有財務敏感欄位
-    delete filtered.actualPrice
-    delete filtered.actual_amount
-    delete filtered.commission
-    delete filtered.profit
-    delete filtered.cost
-    delete filtered.margin
+    delete (filtered as any).actual_amount
+    delete (filtered as any).actual_total_price
+    delete (filtered as any).actual_unit_price
+    delete (filtered as any).commission
+    delete (filtered as any).profit
+    delete (filtered as any).cost_price
     return filtered
   })
 }
@@ -96,10 +89,10 @@ function logSensitiveAccess(
   // TODO: 整合到資料庫審計日誌
   // await prisma.auditLog.create({
   //   data: {
-  //     userId,
-  //     userRole: role,
-  //     dataType,
-  //     recordCount,
+  //     user_id: userId,
+  //     user_role: role,
+  //     data_type: dataType,
+  //     record_count: recordCount,
   //     timestamp: new Date()
   //   }
   // })
@@ -121,9 +114,7 @@ export function filterProductData<T extends Record<string, any>>(
     const filtered = { ...item }
 
     if (context.role !== Role.SUPER_ADMIN) {
-      delete filtered.cost_price      // 成本價
-      delete filtered.commission     // 傭金設定
-      delete filtered.actualMargin   // 實際毛利
+      delete (filtered as any).cost_price      // 成本價
     }
 
     return filtered
@@ -147,8 +138,7 @@ export function filterCustomerData<T extends Record<string, any>>(
 
     if (context.role === Role.INVESTOR) {
       // 投資方不能看到客戶的特殊報價策略
-      delete filtered.specialPricing
-      delete filtered.discountStrategy
+      delete (filtered as any).special_prices
     }
 
     return filtered
@@ -171,26 +161,24 @@ export function filterReportData<T extends Record<string, any>>(
     const filtered = { ...data }
 
     // 🔒 關鍵：移除所有真實收入和個人調貨資料
-    delete filtered.actualTotalRevenue
-    delete filtered.personalRevenue
-    delete filtered.totalCommission
-    delete filtered.actualProfit
+    delete (filtered as any).actual_total_amount
+    delete (filtered as any).total_commission
 
     // 重新計算投資方可見的數據
     return {
       ...filtered,
-      revenue: data.displayRevenue || 0,           // 顯示收入
-      profit: (data.displayRevenue || 0) - (data.cost || 0), // 基於顯示收入計算獲利
-      profitMargin: data.displayRevenue ?
-        ((data.displayRevenue - data.cost) / data.displayRevenue * 100) : 0
+      revenue: data.total_amount || 0,           // 顯示收入
+      profit: (data.total_amount || 0) - (data.cost || 0), // 基於顯示收入計算獲利
+      profit_margin: data.total_amount ?
+        ((data.total_amount - data.cost) / data.total_amount * 100) : 0
     }
   }
 
   // 員工看到基本營運數據但不含財務細節
   const filtered = { ...data }
-  delete filtered.revenue
-  delete filtered.profit
-  delete filtered.commission
+  delete (filtered as any).revenue
+  delete (filtered as any).profit
+  delete (filtered as any).commission
   return filtered
 }
 
@@ -208,13 +196,13 @@ export function filterDashboardData<T extends Record<string, any>>(
   if (context.role === Role.INVESTOR) {
     // 投資方Dashboard：只顯示投資項目的調整後數據
     return {
-      investmentRevenue: data.displayRevenue || 0,
-      investmentProfit: (data.displayRevenue || 0) - (data.cost || 0),
+      investmentRevenue: data.total_amount || 0,
+      investmentProfit: (data.total_amount || 0) - (data.cost || 0),
       investmentStock: data.investmentStock || 0,
       monthlyTrend: data.monthlyTrend?.map((trend: any) => ({
         ...trend,
-        revenue: trend.displayRevenue || 0,
-        profit: (trend.displayRevenue || 0) - (trend.cost || 0)
+        revenue: trend.total_amount || 0,
+        profit: (trend.total_amount || 0) - (trend.cost || 0)
       })) || [],
       investmentItems: data.investmentItems || []
     }

@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const status = searchParams.get('status')
-    const customerId = searchParams.get('customer_id')
-    const overdueDays = searchParams.get('overdueDays')
+    const customer_id = searchParams.get('customer_id')
+    const overdue_days = searchParams.get('overdue_days')
     const summary = searchParams.get('summary') === 'true'
 
     const skip = (page - 1) * limit
@@ -34,18 +34,18 @@ export async function GET(request: NextRequest) {
     const where: DatabaseWhereCondition = {}
 
     if (status) where.status = status
-    if (customerId) where.customerId = customerId
+    if (customer_id) where.customer_id = customer_id
 
     // 逾期天數篩選
-    if (overdueDays) {
-      const days = parseInt(overdueDays)
-      where.daysPastDue = { gte: days }
+    if (overdue_days) {
+      const days = parseInt(overdue_days)
+      where.days_past_due = { gte: days }
     }
 
     // 🔒 投資方數據過濾 - 只能看到投資項目相關的應收帳款
     if (session.user.role === 'INVESTOR') {
       where.sale = {
-        fundingSource: 'COMPANY'
+        funding_source: 'COMPANY'
       }
     }
 
@@ -70,33 +70,33 @@ export async function GET(request: NextRequest) {
               name: true,
               company: true,
               tier: true,
-              paymentTerms: true
+              payment_terms: true
             }
           },
           sale: {
             select: {
               id: true,
-              saleNumber: true,
-              totalAmount: true,
-              actualAmount: session.user.role === 'SUPER_ADMIN',
-              fundingSource: true,
-              createdAt: true
+              sale_number: true,
+              total_amount: true,
+              actual_amount: session.user.role === 'SUPER_ADMIN',
+              funding_source: true,
+              created_at: true
             }
           },
           payments: {
             select: {
               id: true,
-              paymentAmount: true,
-              paymentDate: true,
-              paymentMethod: true,
-              referenceNumber: true
+              payment_amount: true,
+              payment_date: true,
+              payment_method: true,
+              reference_number: true
             },
-            orderBy: { paymentDate: 'desc' }
+            orderBy: { payment_date: 'desc' }
           }
         },
         orderBy: [
           { status: 'asc' },
-          { dueDate: 'asc' }
+          { due_date: 'asc' }
         ],
         skip,
         take: limit
@@ -108,15 +108,15 @@ export async function GET(request: NextRequest) {
     const filteredData = accountsReceivable.map(ar => ({
       ...ar,
       // 投資方看到調整後的金額
-      originalAmount: session.user.role === 'INVESTOR'
-        ? ar.originalAmount * 0.8
-        : ar.originalAmount,
-      remainingAmount: session.user.role === 'INVESTOR'
-        ? ar.remainingAmount * 0.8
-        : ar.remainingAmount,
+      original_amount: session.user.role === 'INVESTOR'
+        ? ar.original_amount * 0.8
+        : ar.original_amount,
+      remaining_amount: session.user.role === 'INVESTOR'
+        ? ar.remaining_amount * 0.8
+        : ar.remaining_amount,
       sale: {
         ...ar.sale,
-        actualAmount: session.user.role === 'SUPER_ADMIN' ? ar.sale.actualAmount : undefined
+        actual_amount: session.user.role === 'SUPER_ADMIN' ? ar.sale.actual_amount : undefined
       }
     }))
 
@@ -151,15 +151,15 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const {
-      saleId,
-      customerId,
-      originalAmount,
-      dueDate,
+      sale_id,
+      customer_id,
+      original_amount,
+      due_date,
       notes
     } = body
 
     // 基本驗證
-    if (!saleId || !customerId || !originalAmount) {
+    if (!sale_id || !customer_id || !original_amount) {
       return NextResponse.json({
         error: '銷售單ID、客戶ID和金額為必填欄位'
       }, { status: 400 })
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     // 檢查銷售單是否存在
     const sale = await prisma.sale.findUnique({
-      where: { id: saleId },
+      where: { id: sale_id },
       include: { customer: true }
     })
 
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
 
     // 檢查是否已存在應收帳款
     const existingAR = await prisma.accountsReceivable.findFirst({
-      where: { saleId }
+      where: { sale_id }
     })
 
     if (existingAR) {
@@ -185,22 +185,22 @@ export async function POST(request: NextRequest) {
     }
 
     // 計算到期日（如果未提供）
-    const calculatedDueDate = dueDate ? new Date(dueDate) : calculateDueDate(sale.customer.paymentTerms)
+    const calculatedDueDate = due_date ? new Date(due_date) : calculateDueDate(sale.customer.payment_terms)
 
     // 產生應收帳款編號
-    const arNumber = await generateARNumber()
+    const ar_number = await generateARNumber()
 
     // 建立應收帳款
     const accountsReceivable = await prisma.accountsReceivable.create({
       data: {
-        arNumber,
-        customerId,
-        saleId,
-        originalAmount,
-        remainingAmount: originalAmount,
-        dueDate: calculatedDueDate,
+        ar_number,
+        customer_id,
+        sale_id,
+        original_amount,
+        remaining_amount: original_amount,
+        due_date: calculatedDueDate,
         notes,
-        createdBy: session.user.id
+        created_by: session.user.id
       },
       include: {
         customer: {
@@ -212,8 +212,8 @@ export async function POST(request: NextRequest) {
         },
         sale: {
           select: {
-            saleNumber: true,
-            totalAmount: true
+            sale_number: true,
+            total_amount: true
           }
         }
       }
@@ -241,19 +241,19 @@ async function getAccountsReceivableSummary(where: DatabaseWhereCondition, userR
     // 未收金額
     prisma.accountsReceivable.aggregate({
       where: { ...where, status: { in: ['OUTSTANDING', 'PARTIAL'] } },
-      _sum: { remainingAmount: true },
+      _sum: { remaining_amount: true },
       _count: { id: true }
     }),
     // 逾期金額
     prisma.accountsReceivable.aggregate({
       where: { ...where, status: 'OVERDUE' },
-      _sum: { remainingAmount: true },
+      _sum: { remaining_amount: true },
       _count: { id: true }
     }),
     // 已收金額
     prisma.accountsReceivable.aggregate({
       where: { ...where, status: 'PAID' },
-      _sum: { originalAmount: true },
+      _sum: { original_amount: true },
       _count: { id: true }
     }),
     // 帳齡分析
@@ -265,15 +265,15 @@ async function getAccountsReceivableSummary(where: DatabaseWhereCondition, userR
 
   return {
     totalOutstanding: {
-      amount: (totalOutstanding._sum.remainingAmount || 0) * multiplier,
+      amount: (totalOutstanding._sum.remaining_amount || 0) * multiplier,
       count: totalOutstanding._count
     },
     totalOverdue: {
-      amount: (totalOverdue._sum.remainingAmount || 0) * multiplier,
+      amount: (totalOverdue._sum.remaining_amount || 0) * multiplier,
       count: totalOverdue._count
     },
     totalPaid: {
-      amount: (totalPaid._sum.originalAmount || 0) * multiplier,
+      amount: (totalPaid._sum.original_amount || 0) * multiplier,
       count: totalPaid._count
     },
     ageingAnalysis: ageingAnalysis.map(age => ({
@@ -304,29 +304,29 @@ async function getAgeingAnalysis(where: DatabaseWhereCondition) {
     }
 
     if (bracket.min > -999) {
-      if (bracketWhere.daysPastDue && typeof bracketWhere.daysPastDue === 'object') {
-        bracketWhere.daysPastDue = { ...bracketWhere.daysPastDue, gte: bracket.min }
+      if (bracketWhere.days_past_due && typeof bracketWhere.days_past_due === 'object') {
+        bracketWhere.days_past_due = { ...bracketWhere.days_past_due, gte: bracket.min }
       } else {
-        bracketWhere.daysPastDue = { gte: bracket.min }
+        bracketWhere.days_past_due = { gte: bracket.min }
       }
     }
     if (bracket.max < 9999) {
-      if (bracketWhere.daysPastDue && typeof bracketWhere.daysPastDue === 'object') {
-        bracketWhere.daysPastDue = { ...bracketWhere.daysPastDue, lte: bracket.max }
+      if (bracketWhere.days_past_due && typeof bracketWhere.days_past_due === 'object') {
+        bracketWhere.days_past_due = { ...bracketWhere.days_past_due, lte: bracket.max }
       } else {
-        bracketWhere.daysPastDue = { lte: bracket.max }
+        bracketWhere.days_past_due = { lte: bracket.max }
       }
     }
 
     const result = await prisma.accountsReceivable.aggregate({
       where: bracketWhere,
-      _sum: { remainingAmount: true },
+      _sum: { remaining_amount: true },
       _count: { id: true }
     })
 
     results.push({
       period: bracket.name,
-      amount: result._sum.remainingAmount || 0,
+      amount: result._sum.remaining_amount || 0,
       count: result._count
     })
   }
@@ -335,10 +335,10 @@ async function getAgeingAnalysis(where: DatabaseWhereCondition) {
 }
 
 // 計算到期日
-function calculateDueDate(paymentTerms: string): Date {
+function calculateDueDate(payment_terms: string): Date {
   const today = new Date()
 
-  switch (paymentTerms) {
+  switch (payment_terms) {
     case 'CASH':
       return today // 現金立即到期
     case 'WEEKLY':
@@ -360,18 +360,18 @@ async function generateARNumber(): Promise<string> {
   // 查找今日最後一筆應收帳款
   const lastAR = await prisma.accountsReceivable.findFirst({
     where: {
-      arNumber: {
+      ar_number: {
         startsWith: `AR${dateString}`
       }
     },
     orderBy: {
-      arNumber: 'desc'
+      ar_number: 'desc'
     }
   })
 
   let sequence = 1
   if (lastAR) {
-    const lastSequence = parseInt(lastAR.arNumber.slice(-3))
+    const lastSequence = parseInt(lastAR.ar_number.slice(-3))
     sequence = lastSequence + 1
   }
 

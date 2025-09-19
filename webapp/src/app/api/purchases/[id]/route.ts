@@ -27,6 +27,11 @@ export async function GET(
     const purchase = await prisma.purchase.findUnique({
       where: { id: purchaseId },
       include: {
+        creator: {
+          select: {
+            investor_id: true
+          }
+        },
         items: {
           include: {
             product: {
@@ -42,7 +47,7 @@ export async function GET(
         },
         receipts: {
           include: {
-            additionalCosts: true
+            additional_costs: true
           }
         }
       }
@@ -54,25 +59,24 @@ export async function GET(
 
     // 🔒 權限檢查 - 投資方只能看自己相關的採購
     if (session.user.role === 'INVESTOR') {
-      if (purchase.fundingSource === 'PERSONAL' ||
-          (purchase.investor_id && purchase.investor_id !== session.user.investor_id)) {
+      if (purchase.funding_source === 'PERSONAL' ||
+          (purchase.creator?.investor_id && purchase.creator.investor_id !== session.user.investor_id)) {
         return NextResponse.json({ error: '權限不足' }, { status: 403 })
       }
 
       // 🔒 數據過濾 - 投資方看到調整後的金額
       const filteredPurchase = {
         ...purchase,
-        total_amount: purchase.displayAmount || purchase.total_amount * 0.8,
+        // 投資方不應該看到可能被調整的總額，直接顯示原始總額
+        total_amount: purchase.total_amount,
         items: purchase.items.map(item => ({
           ...item,
-          unit_price: item.displayPrice || item.unit_price * 0.8,
-          total_price: item.displayTotal || item.total_price * 0.8,
-          dutiableValue: null, // 隱藏完稅價格
-          actualCost: null // 隱藏實際成本
+          // 隱藏敏感財務資訊
+          dutiable_value: null,
         })),
         receipts: purchase.receipts.map(receipt => ({
           ...receipt,
-          additionalCosts: [] // 隱藏額外費用明細
+          additional_costs: [] // 隱藏額外費用明細
         }))
       }
 
@@ -131,31 +135,29 @@ export async function PUT(
     const {
       supplier,
       currency,
-      exchangeRate,
-      declarationNumber,
-      declarationDate,
+      exchange_rate,
+      declaration_number,
+      declaration_date,
       notes,
       status,
       items = []
     } = body
 
     // 準備更新資料
-    const updateData: any = {
-      updated_at: new Date()
-    }
+    const updateData: any = {}
 
     // 基本欄位更新
     if (supplier !== undefined) updateData.supplier = supplier
     if (currency !== undefined) updateData.currency = currency
-    if (exchangeRate !== undefined) {
-      if (exchangeRate <= 0) {
+    if (exchange_rate !== undefined) {
+      if (exchange_rate <= 0) {
         return NextResponse.json({ error: '匯率必須大於0' }, { status: 400 })
       }
-      updateData.exchangeRate = parseFloat(exchangeRate)
+      updateData.exchange_rate = parseFloat(exchange_rate)
     }
-    if (declarationNumber !== undefined) updateData.declarationNumber = declarationNumber
-    if (declarationDate !== undefined) {
-      updateData.declarationDate = declarationDate ? new Date(declarationDate) : null
+    if (declaration_number !== undefined) updateData.declaration_number = declaration_number
+    if (declaration_date !== undefined) {
+      updateData.declaration_date = declaration_date ? new Date(declaration_date) : null
     }
     if (notes !== undefined) updateData.notes = notes
     if (status !== undefined) updateData.status = status
@@ -164,10 +166,10 @@ export async function PUT(
     if (items.length > 0) {
       // 重新計算總金額
       let total_amount = 0
-      const validatedItems = []
+      const validatedItems: any[] = []
 
       for (const item of items) {
-        if (!item.productName || !item.quantity || !item.unit_price) {
+        if (!item.product_name || !item.quantity || !item.unit_price) {
           return NextResponse.json({
             error: '採購項目缺少必要資訊：產品名稱、數量、單價'
           }, { status: 400 })
@@ -179,16 +181,16 @@ export async function PUT(
         validatedItems.push({
           id: item.id || undefined, // 如果有ID就是更新，沒有就是新增
           product_id: item.product_id || null,
-          productName: item.productName,
+          product_name: item.product_name,
           quantity: parseInt(item.quantity),
           unit_price: parseFloat(item.unit_price),
           total_price: itemTotal,
-          dutiableValue: item.dutiableValue ? parseFloat(item.dutiableValue) : null,
-          tariffCode: item.tariffCode || null,
-          importDutyRate: item.importDutyRate ? parseFloat(item.importDutyRate) : null,
+          dutiable_value: item.dutiable_value ? parseFloat(item.dutiable_value) : null,
+          tariff_code: item.tariff_code || null,
+          import_duty_rate: item.import_duty_rate ? parseFloat(item.import_duty_rate) : null,
           alc_percentage: item.alc_percentage ? parseFloat(item.alc_percentage) : null,
           volume_ml: item.volume_ml ? parseInt(item.volume_ml) : null,
-          weight: item.weight ? parseFloat(item.weight) : null
+          weight_kg: item.weight_kg ? parseFloat(item.weight_kg) : null
         })
       }
 
@@ -198,7 +200,7 @@ export async function PUT(
       const updatedPurchase = await prisma.$transaction(async (prisma) => {
         // 先刪除舊的採購明細
         await prisma.purchaseItem.deleteMany({
-          where: { purchaseId }
+          where: { purchase_id: purchaseId }
         })
 
         // 更新採購單並新增明細
@@ -292,7 +294,6 @@ export async function DELETE(
       where: { id: purchaseId },
       data: {
         status: 'CANCELLED',
-        updated_at: new Date()
       }
     })
 

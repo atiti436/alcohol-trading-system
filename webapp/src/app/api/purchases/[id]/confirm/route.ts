@@ -80,7 +80,7 @@ export async function POST(
         }, { status: 400 })
       }
 
-      if (!existingPurchase.exchangeRate || existingPurchase.exchangeRate <= 0) {
+      if (!existingPurchase.exchange_rate || existingPurchase.exchange_rate <= 0) {
         return NextResponse.json({
           error: '匯率資訊不正確，無法確認'
         }, { status: 400 })
@@ -88,9 +88,9 @@ export async function POST(
 
       // 檢查每個採購項目的必要資訊
       for (const item of existingPurchase.items) {
-        if (!item.productName || item.quantity <= 0 || item.unit_price <= 0) {
+        if (!item.product_name || item.quantity <= 0 || item.unit_price <= 0) {
           return NextResponse.json({
-            error: `採購項目 "${item.productName}" 資訊不完整，無法確認`
+            error: `採購項目 "${item.product_name}" 資訊不完整，無法確認`
           }, { status: 400 })
         }
       }
@@ -101,9 +101,6 @@ export async function POST(
       where: { id: purchaseId },
       data: {
         status: newStatus,
-        confirmedAt: action === 'confirm' ? new Date() : null,
-        confirmedBy: action === 'confirm' ? session.user.id : null,
-        updated_at: new Date()
       },
       include: {
         items: {
@@ -171,10 +168,8 @@ export async function GET(
       where: { id: purchaseId },
       select: {
         id: true,
-        purchaseNumber: true,
+        purchase_number: true,
         status: true,
-        confirmedAt: true,
-        confirmedBy: true,
         created_at: true,
         updated_at: true
       }
@@ -188,11 +183,11 @@ export async function GET(
     if (session.user.role === 'INVESTOR') {
       const fullPurchase = await prisma.purchase.findUnique({
         where: { id: purchaseId },
-        select: { fundingSource: true, investor_id: true }
+        select: { funding_source: true, creator: { select: { investor_id: true } } }
       })
 
-      if (fullPurchase?.fundingSource === 'PERSONAL' ||
-          (fullPurchase?.investor_id && fullPurchase.investor_id !== session.user.investor_id)) {
+      if (fullPurchase?.funding_source === 'PERSONAL' ||
+          (fullPurchase?.creator?.investor_id && fullPurchase.creator.investor_id !== session.user.investor_id)) {
         return NextResponse.json({ error: '權限不足' }, { status: 403 })
       }
     }

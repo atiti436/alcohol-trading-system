@@ -175,8 +175,8 @@ export default function CustomersPage() {
     },
     {
       title: '付款條件',
-      dataIndex: 'paymentTerms',
-      key: 'paymentTerms',
+      dataIndex: 'payment_terms',
+      key: 'payment_terms',
       width: 100,
       render: (terms: PaymentTerms) => {
         const termNames = {
@@ -460,7 +460,7 @@ export default function CustomersPage() {
                 <Option value="NEW">新客戶</Option>
               </Select>
             </Form.Item>
-            <Form.Item name="paymentTerms" label="付款條件" style={{ flex: 1 }}>
+            <Form.Item name="payment_terms" label="付款條件" style={{ flex: 1 }}>
               <Select placeholder="選擇付款條件">
                 <Option value="CASH">現金</Option>
                 <Option value="WEEKLY">週結</Option>
@@ -491,8 +491,8 @@ export default function CustomersPage() {
       {selectedCustomer && (
         <SpecialPriceManager
           customer_id={selectedCustomer.id}
-          customerName={selectedCustomer.name}
-          customerTier={selectedCustomer.tier}
+          customer_name={selectedCustomer.name}
+          customer_tier={selectedCustomer.tier}
           isVisible={specialPriceVisible}
           onClose={() => {
             setSpecialPriceVisible(false)

@@ -22,26 +22,26 @@ export const GET = withAppAuth(async (
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const customer_id = searchParams.get('customer_id')
-    const dateFrom = searchParams.get('dateFrom')
-    const dateTo = searchParams.get('dateTo')
-    const fundingSource = searchParams.get('fundingSource')
+    const dateFrom = searchParams.get('date_from')
+    const dateTo = searchParams.get('date_to')
+    const funding_source = searchParams.get('funding_source')
 
     // 建立基礎查詢條件
-    const where: DatabaseWhereCondition = {}
+    const where: any = {}
 
     // 🔒 投資方只能看到投資項目
     if (context.role === Role.INVESTOR) {
-      where.fundingSource = 'COMPANY'
+      where.funding_source = 'COMPANY'
       if (context.investor_id) {
         // 如果有投資方ID，只顯示該投資方的項目
-        // 這裡可以根據業務邏輯調整
+        where.creator = { investor_id: context.investor_id }
       }
     }
 
     // 其他篩選條件
     if (customer_id) where.customer_id = customer_id
-    if (fundingSource && context.role === Role.SUPER_ADMIN) {
-      where.fundingSource = fundingSource
+    if (funding_source && context.role === Role.SUPER_ADMIN) {
+      where.funding_source = funding_source
     }
     if (dateFrom || dateTo) {
       where.created_at = {}
@@ -58,7 +58,7 @@ export const GET = withAppAuth(async (
             select: {
               id: true,
               name: true,
-              customerTier: true
+              tier: true
             }
           },
           items: {
@@ -88,10 +88,10 @@ export const GET = withAppAuth(async (
     ])
 
     // 🔒 關鍵：套用資料過濾器
-    const filteredSales = filterSalesData(sales, context)
+    const filteredSales = filterSalesData(sales as any, context)
 
     // 計算匯總資料（也要過濾）
-    const summary = calculateSalesSummary(sales, context)
+    const summary = calculateSalesSummary(sales as any, context)
 
     return NextResponse.json({
       success: true,
@@ -143,7 +143,7 @@ export const POST = withAppAuth(async (
       }, { status: 403 })
     }
 
-    const body = await req.json()
+    const body = await request.json()
 
     // 🔒 嚴格輸入驗證 - 修復安全漏洞
     let validatedData
@@ -151,9 +151,8 @@ export const POST = withAppAuth(async (
       const saleData = {
         customer_id: body.customer_id,
         total_amount: body.total_amount || 0, // 將在後面重新計算
-        actualTotalAmount: body.actualTotalAmount || 0, // 將在後面重新計算
+        actual_amount: body.actual_amount || 0, // 將在後面重新計算
         status: body.status || 'PENDING',
-        paymentStatus: body.paymentStatus || 'PENDING',
         notes: body.notes || ''
       }
       validatedData = validateSaleData(saleData)
@@ -173,9 +172,9 @@ export const POST = withAppAuth(async (
       items,
       displayPrices,
       actualPrices,
-      paymentTerms,
+      payment_terms,
       notes,
-      fundingSource = 'COMPANY'
+      funding_source = 'COMPANY'
     } = body
 
     // 額外驗證
@@ -226,30 +225,30 @@ export const POST = withAppAuth(async (
     const commission = totalActualAmount - totalDisplayAmount
 
     // 生成銷售單號
-    const saleNumber = await generateSaleNumber()
+    const sale_number = await generateSaleNumber()
 
     // 建立銷售單
     const sale = await prisma.sale.create({
       data: {
-        saleNumber,
+        sale_number,
         customer_id,
         total_amount: totalDisplayAmount,       // 顯示金額 (投資方看到)
         actual_amount: totalActualAmount,       // 實際金額 (僅超級管理員)
         commission: commission,                // 老闆傭金 (僅超級管理員)
-        fundingSource,
-        paymentTerms,
+        funding_source,
+        payment_terms,
         notes,
-        createdBy: context.userId,
+        created_by: context.userId,
         items: {
-          create: items.map((item: SaleItem, index: number) => ({
+          create: items.map((item: any, index: number) => ({
             product_id: item.product_id,
-            variantId: item.variantId,
+            variant_id: item.variant_id,
             quantity: item.quantity,
             unit_price: displayPrices[index],                    // 顯示單價
             actual_unit_price: actualPrices?.[index] || displayPrices[index], // 實際單價
             total_price: displayPrices[index] * item.quantity,   // 顯示總價
             actual_total_price: (actualPrices?.[index] || displayPrices[index]) * item.quantity, // 實際總價
-            isPersonalPurchase: fundingSource === 'PERSONAL'
+            is_personal_purchase: funding_source === 'PERSONAL'
           }))
         }
       },
@@ -265,7 +264,7 @@ export const POST = withAppAuth(async (
     })
 
     // 🔒 回傳前也要過濾敏感資料
-    const filteredSale = filterSalesData([sale], context)[0]
+    const filteredSale = filterSalesData([sale as any], context)[0]
 
     return NextResponse.json({
       success: true,
@@ -294,7 +293,7 @@ function calculateSalesSummary(sales: Sale[], context: PermissionContext) {
     const totalDisplayRevenue = sales.reduce((sum, sale) => sum + sale.total_amount, 0)
     const totalCommission = sales.reduce((sum, sale) => sum + (sale.commission || 0), 0)
     const totalCost = sales.reduce((sum, sale) => {
-      return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
+      return sum + sale.items.reduce((itemSum: number, item: any) =>
         itemSum + (item.product?.cost_price || 0) * item.quantity, 0)
     }, 0)
 
@@ -310,10 +309,10 @@ function calculateSalesSummary(sales: Sale[], context: PermissionContext) {
 
   if (context.role === Role.INVESTOR) {
     // 投資方只看到基於顯示價格的摘要
-    const investmentSales = sales.filter(sale => sale.fundingSource === 'COMPANY')
+    const investmentSales = sales.filter(sale => sale.funding_source === 'COMPANY')
     const totalRevenue = investmentSales.reduce((sum, sale) => sum + sale.total_amount, 0)
     const totalCost = investmentSales.reduce((sum, sale) => {
-      return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
+      return sum + sale.items.reduce((itemSum: number, item: any) =>
         itemSum + (item.product?.cost_price || 0) * item.quantity, 0)
     }, 0)
 
@@ -329,7 +328,7 @@ function calculateSalesSummary(sales: Sale[], context: PermissionContext) {
   return {
     totalOrders: sales.length,
     totalQuantity: sales.reduce((sum, sale) =>
-      sum + sale.items.reduce((itemSum: number, item: SaleItem) => itemSum + item.quantity, 0), 0)
+      sum + sale.items.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0), 0)
   }
 }
 
@@ -342,16 +341,16 @@ async function generateSaleNumber(): Promise<string> {
 
   const lastSale = await prisma.sale.findFirst({
     where: {
-      saleNumber: {
+      sale_number: {
         startsWith: `SA${dateStr}`
       }
     },
-    orderBy: { saleNumber: 'desc' }
+    orderBy: { sale_number: 'desc' }
   })
 
   let sequence = 1
   if (lastSale) {
-    const lastSequence = parseInt(lastSale.saleNumber.slice(-3))
+    const lastSequence = parseInt(lastSale.sale_number.slice(-3))
     sequence = lastSequence + 1
   }
 

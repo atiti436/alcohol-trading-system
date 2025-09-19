@@ -21,10 +21,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const variantId = searchParams.get('variantId') // 特定變體的異動記錄
-    const movementType = searchParams.get('movementType') // 異動類型篩選
-    const dateFrom = searchParams.get('dateFrom') // 起始日期
-    const dateTo = searchParams.get('dateTo') // 結束日期
+    const variant_id = searchParams.get('variant_id') // 特定變體的異動記錄
+    const movement_type = searchParams.get('movement_type') // 異動類型篩選
+    const dateFrom = searchParams.get('date_from') // 起始日期
+    const dateTo = searchParams.get('date_to') // 結束日期
     const orderBy = searchParams.get('orderBy') || 'created_at'
     const order = searchParams.get('order') || 'desc'
 
@@ -34,13 +34,13 @@ export async function GET(request: NextRequest) {
     const where: any = {}
 
     // 特定變體篩選
-    if (variantId) {
-      where.variantId = variantId
+    if (variant_id) {
+      where.variant_id = variant_id
     }
 
     // 異動類型篩選
-    if (movementType) {
-      where.movementType = movementType
+    if (movement_type) {
+      where.movement_type = movement_type
     }
 
     // 日期範圍篩選
@@ -110,9 +110,9 @@ export async function GET(request: NextRequest) {
         // 隱藏敏感資訊
         return {
           ...movement,
-          createdBy: null, // 隱藏操作者
-          referenceId: null, // 隱藏關聯單據
-          notes: movement.movementType === 'ADJUSTMENT' ? null : movement.notes
+          created_by: null, // 隱藏操作者
+          reference_id: null, // 隱藏關聯單據
+          notes: movement.movement_type === 'ADJUSTMENT' ? null : movement.notes
         }
       }
       return movement
@@ -148,22 +148,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { variantId, dateFrom, dateTo } = body
+    const { variant_id, date_from, date_to } = body
 
     // 設定查詢條件
     const where: any = {}
 
-    if (variantId) {
-      where.variantId = variantId
+    if (variant_id) {
+      where.variant_id = variant_id
     }
 
-    if (dateFrom || dateTo) {
+    if (date_from || date_to) {
       where.created_at = {}
-      if (dateFrom) {
-        where.created_at.gte = new Date(dateFrom)
+      if (date_from) {
+        where.created_at.gte = new Date(date_from)
       }
-      if (dateTo) {
-        const endDate = new Date(dateTo)
+      if (date_to) {
+        const endDate = new Date(date_to)
         endDate.setHours(23, 59, 59, 999)
         where.created_at.lte = endDate
       }
@@ -179,16 +179,16 @@ export async function POST(request: NextRequest) {
     ] = await Promise.all([
       prisma.inventoryMovement.count({ where }),
       prisma.inventoryMovement.count({
-        where: { ...where, movementType: 'PURCHASE' }
+        where: { ...where, movement_type: 'PURCHASE' }
       }),
       prisma.inventoryMovement.count({
-        where: { ...where, movementType: 'SALE' }
+        where: { ...where, movement_type: 'SALE' }
       }),
       prisma.inventoryMovement.count({
-        where: { ...where, movementType: 'ADJUSTMENT' }
+        where: { ...where, movement_type: 'ADJUSTMENT' }
       }),
       prisma.inventoryMovement.count({
-        where: { ...where, movementType: 'TRANSFER' }
+        where: { ...where, movement_type: 'TRANSFER' }
       })
     ])
 
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
 
     // 按異動類型統計數量
     const movementTypeStats = await prisma.inventoryMovement.groupBy({
-      by: ['movementType'],
+      by: ['movement_type'],
       where,
       _sum: {
         quantity: true
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
 
     // 近期異動趨勢（最近7天）
     const recentTrend = await prisma.inventoryMovement.groupBy({
-      by: ['movementType'],
+      by: ['movement_type'],
       where: {
         ...where,
         created_at: {
