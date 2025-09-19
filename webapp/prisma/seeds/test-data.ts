@@ -48,7 +48,7 @@ async function createTestUsers() {
       email: 'admin@test.com',
       name: '測試老闆',
       role: Role.SUPER_ADMIN,
-      isActive: true
+      is_active: true
     }
   })
 
@@ -61,7 +61,7 @@ async function createTestUsers() {
       name: '測試投資方',
       role: Role.INVESTOR,
       investorId: 'INV_001',
-      isActive: true
+      is_active: true
     }
   })
 
@@ -73,7 +73,7 @@ async function createTestUsers() {
       email: 'employee@test.com',
       name: '測試員工',
       role: Role.EMPLOYEE,
-      isActive: true
+      is_active: true
     }
   })
 
@@ -197,7 +197,7 @@ async function createTestSales() {
   const investmentSale = await prisma.sale.create({
     data: {
       saleNumber: 'SA20250917001',
-      customerId: customer.id,
+      customer_id: customer.id,
       totalAmount: 20000,        // 🔒 投資方看到的價格
       actualAmount: 24000,       // 🔒 實際收取價格 (僅超級管理員)
       commission: 4000,          // 🔒 老闆傭金 (24000 - 20000)
@@ -225,7 +225,7 @@ async function createTestSales() {
   const personalSale = await prisma.sale.create({
     data: {
       saleNumber: 'SA20250917002',
-      customerId: customer.id,
+      customer_id: customer.id,
       totalAmount: 18000,        // 個人調貨沒有雙重價格
       actualAmount: 18000,
       commission: 0,             // 個人調貨沒有傭金
@@ -255,7 +255,7 @@ async function createTestSales() {
     await prisma.sale.create({
       data: {
         saleNumber: 'SA20250917003',
-        customerId: customer.id,
+        customer_id: customer.id,
         totalAmount: 32000,        // 顯示價格
         actualAmount: 38000,       // 實際價格
         commission: 6000,          // 傭金
