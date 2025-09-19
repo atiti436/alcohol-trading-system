@@ -71,10 +71,24 @@ function checkFile(filePath) {
     return errors;
   }
 
+  // 檢查是否為舊標準模型相關檔案 (SaleItem 等使用 camelCase)
+  const isLegacyModelFile = LEGACY_MODEL_FILES.some(model =>
+    filePath.includes(model) || content.includes(`model ${model}`) || content.includes(`${model}.`)
+  );
+
+  // 特別檢查：seeds檔案中的 SaleItem 建立語法
+  const isSaleItemCreation = content.includes('items: {') && content.includes('create: [');
+
   WRONG_FIELDS.forEach(wrongField => {
     const regex = new RegExp(`\\b${wrongField}\\b`, 'g');
     const matches = content.match(regex);
     if (matches) {
+      // 對於舊標準模型相關檔案或 SaleItem 建立語法，某些 camelCase 欄位是正確的
+      if ((isLegacyModelFile || isSaleItemCreation) && ['productId', 'unitPrice', 'actualUnitPrice', 'totalPrice', 'actualTotalPrice'].includes(wrongField)) {
+        // 這些欄位在舊標準模型中是正確的 camelCase，跳過
+        return;
+      }
+
       const correctField = CORRECT_FIELDS[WRONG_FIELDS.indexOf(wrongField)];
       errors.push({
         file: filePath,
