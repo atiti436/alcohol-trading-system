@@ -208,12 +208,12 @@ async function createTestSales() {
       items: {
         create: [
           {
-            product_id: product.id,
+            productId:product.id,
             quantity: 1,
-            unit_price: 20000,        // 顯示單價
-            actual_unit_price: 24000,  // 實際單價 (敏感)
-            total_price: 20000,       // 顯示總價
-            actual_total_price: 24000, // 實際總價 (敏感)
+            unitPrice:20000,        // 顯示單價
+            actualUnitPrice:24000,  // 實際單價 (敏感)
+            totalPrice:20000,       // 顯示總價
+            actualTotalPrice:24000, // 實際總價 (敏感)
             isPersonalPurchase: false
           }
         ]
@@ -236,12 +236,12 @@ async function createTestSales() {
       items: {
         create: [
           {
-            product_id: product.id,
+            productId:product.id,
             quantity: 1,
-            unit_price: 18000,
-            actual_unit_price: 18000,
-            total_price: 18000,
-            actual_total_price: 18000,
+            unitPrice:18000,
+            actualUnitPrice:18000,
+            totalPrice:18000,
+            actualTotalPrice:18000,
             isPersonalPurchase: true
           }
         ]
@@ -266,12 +266,12 @@ async function createTestSales() {
         items: {
           create: [
             {
-              product_id: response.id,
+              productId:response.id,
               quantity: 1,
-              unit_price: 32000,
-              actual_unit_price: 38000,
-              total_price: 32000,
-              actual_total_price: 38000,
+              unitPrice:32000,
+              actualUnitPrice:38000,
+              totalPrice:32000,
+              actualTotalPrice:38000,
               isPersonalPurchase: false
             }
           ]

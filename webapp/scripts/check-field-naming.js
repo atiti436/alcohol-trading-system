@@ -8,34 +8,35 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// 根據 DATA_MODELS.md 定義的正確欄位名稱 (snake_case)
+// 根據 DATA_MODELS.md 定義的正確欄位名稱
+// 注意：Schema中有兩套標準混用
 const CORRECT_FIELDS = [
-  'is_active',
-  'investor_id',
-  'customer_id',
-  'product_id',
-  'variant_code',
-  'hs_code',
-  'standard_price',
-  'current_price',
-  'cost_price',
-  'min_price',
-  'total_amount',
-  'actual_amount',
-  'unit_price',
-  'actual_unit_price',
-  'total_price',
-  'actual_total_price',
-  'created_at',
-  'updated_at'
+  'is_active',      // 新標準 (有@@map)
+  'investor_id',    // 新標準
+  'customer_id',    // 新標準
+  'product_id',     // 新標準 (除了SaleItem等舊模型)
+  'variant_code',   // 新標準
+  'hs_code',        // 新標準
+  'standard_price', // 新標準
+  'current_price',  // 新標準
+  'cost_price',     // 新標準
+  'min_price',      // 新標準
+  'total_amount',   // 新標準
+  'actual_amount',  // 新標準
+  'unit_price',     // 新標準 (除了SaleItem等舊模型)
+  'actual_unit_price', // 新標準 (除了SaleItem等舊模型)
+  'total_price',    // 新標準 (除了SaleItem等舊模型)
+  'actual_total_price', // 新標準 (除了SaleItem等舊模型)
+  'created_at',     // 新標準
+  'updated_at'      // 新標準
 ];
 
-// 常見錯誤的 camelCase 寫法
+// 常見錯誤的 camelCase 寫法 (僅在新標準模型中是錯誤)
 const WRONG_FIELDS = [
   'isActive',
   'investorId',
   'customerId',
-  'productId',
+  'productId',      // 注意：在SaleItem等舊模型中是正確的
   'variantCode',
   'hsCode',
   'standardPrice',
@@ -44,12 +45,21 @@ const WRONG_FIELDS = [
   'minPrice',
   'totalAmount',
   'actualAmount',
-  'unitPrice',
-  'actualUnitPrice',
-  'totalPrice',
-  'actualTotalPrice',
+  'unitPrice',      // 注意：在SaleItem等舊模型中是正確的
+  'actualUnitPrice', // 注意：在SaleItem等舊模型中是正確的
+  'totalPrice',     // 注意：在SaleItem等舊模型中是正確的
+  'actualTotalPrice', // 注意：在SaleItem等舊模型中是正確的
   'createdAt',
   'updatedAt'
+];
+
+// 舊標準模型檔案 (這些檔案中某些camelCase是正確的)
+const LEGACY_MODEL_FILES = [
+  'SaleItem',
+  'PurchaseItem',
+  'AuditLog',
+  'AccountingEntry',
+  'JournalEntry'
 ];
 
 function checkFile(filePath) {
