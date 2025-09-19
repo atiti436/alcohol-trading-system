@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test": "jest",
     "test:security": "jest src/tests/security/",
+    "check:fields": "node scripts/check-field-naming.js",
+    "prebuild": "npm run check:fields",
     "seed:test": "npx tsx prisma/seeds/test-data.ts",
     "verify:isolation": "npx tsx -e \"import {verifyDataIsolation} from './prisma/seeds/test-data'; verifyDataIsolation().then(console.log).catch(console.error)\""
   },
