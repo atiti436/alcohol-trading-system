@@ -77,7 +77,11 @@ function checkFile(filePath) {
   );
 
   // 特別檢查：seeds檔案中的 SaleItem 建立語法
-  const isSaleItemCreation = content.includes('items: {') && content.includes('create: [');
+  const isSaleItemCreation = (
+    (filePath.includes('seeds') || filePath.includes('/prisma/')) &&
+    content.includes('items: {') &&
+    content.includes('create: [')
+  ) || content.includes('prisma.sale.create');
 
   WRONG_FIELDS.forEach(wrongField => {
     const regex = new RegExp(`\\b${wrongField}\\b`, 'g');
