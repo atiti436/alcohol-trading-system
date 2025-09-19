@@ -55,6 +55,7 @@ const WRONG_FIELDS = [
 
 // 舊標準模型檔案 (這些檔案中某些camelCase是正確的)
 const LEGACY_MODEL_FILES = [
+  'Sale',        // Sale模型使用camelCase
   'SaleItem',
   'PurchaseItem',
   'AuditLog',
@@ -87,8 +88,11 @@ function checkFile(filePath) {
     const regex = new RegExp(`\\b${wrongField}\\b`, 'g');
     const matches = content.match(regex);
     if (matches) {
-      // 對於舊標準模型相關檔案或 SaleItem 建立語法，某些 camelCase 欄位是正確的
-      if ((isLegacyModelFile || isSaleItemCreation) && ['productId', 'unitPrice', 'actualUnitPrice', 'totalPrice', 'actualTotalPrice'].includes(wrongField)) {
+      // 對於舊標準模型相關檔案或 Sale/SaleItem 建立語法，某些 camelCase 欄位是正確的
+      if ((isLegacyModelFile || isSaleItemCreation) && [
+        'customerId', 'totalAmount', 'actualAmount',  // Sale模型欄位
+        'productId', 'unitPrice', 'actualUnitPrice', 'totalPrice', 'actualTotalPrice'  // SaleItem模型欄位
+      ].includes(wrongField)) {
         // 這些欄位在舊標準模型中是正確的 camelCase，跳過
         return;
       }

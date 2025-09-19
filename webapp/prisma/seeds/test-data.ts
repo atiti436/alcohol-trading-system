@@ -197,9 +197,9 @@ async function createTestSales() {
   const investmentSale = await prisma.sale.create({
     data: {
       saleNumber: 'SA20250917001',
-      customer_id: customer.id,
-      total_amount: 20000,        // 🔒 投資方看到的價格
-      actual_amount: 24000,       // 🔒 實際收取價格 (僅超級管理員)
+      customerId: customer.id,
+      totalAmount: 20000,        // 🔒 投資方看到的價格
+      actualAmount: 24000,       // 🔒 實際收取價格 (僅超級管理員)
       commission: 4000,          // 🔒 老闆傭金 (24000 - 20000)
       fundingSource: 'COMPANY',  // 投資項目
       paymentTerms: 'MONTHLY',
@@ -225,9 +225,9 @@ async function createTestSales() {
   const personalSale = await prisma.sale.create({
     data: {
       saleNumber: 'SA20250917002',
-      customer_id: customer.id,
-      total_amount: 18000,        // 個人調貨沒有雙重價格
-      actual_amount: 18000,
+      customerId: customer.id,
+      totalAmount: 18000,        // 個人調貨沒有雙重價格
+      actualAmount: 18000,
       commission: 0,             // 個人調貨沒有傭金
       fundingSource: 'PERSONAL', // 🔒 個人調貨 (投資方看不到)
       paymentTerms: 'CASH',
@@ -255,9 +255,9 @@ async function createTestSales() {
     await prisma.sale.create({
       data: {
         saleNumber: 'SA20250917003',
-        customer_id: customer.id,
-        total_amount: 32000,        // 顯示價格
-        actual_amount: 38000,       // 實際價格
+        customerId: customer.id,
+        totalAmount: 32000,        // 顯示價格
+        actualAmount: 38000,       // 實際價格
         commission: 6000,          // 傭金
         fundingSource: 'COMPANY',
         paymentTerms: 'WEEKLY',
