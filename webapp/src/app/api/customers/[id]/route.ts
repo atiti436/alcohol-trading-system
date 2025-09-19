@@ -27,13 +27,13 @@ export async function GET(
       include: {
         sales: {
           take: 10, // 最近10筆訂單
-          orderBy: { created_at: 'desc' },
+          orderBy: { createdAt: 'desc' },
           select: {
             id: true,
             saleNumber: true,
-            total_amount: true,
-            actual_amount: session.user.role === 'SUPER_ADMIN' ? true : false, // 只有超級管理員看得到實際金額
-            created_at: true,
+            totalAmount: true,
+            actualAmount: session.user.role === 'SUPER_ADMIN' ? true : false, // 只有超級管理員看得到實際金額
+            createdAt: true,
             isPaid: true
           }
         },
@@ -50,10 +50,10 @@ export async function GET(
     }
 
     // 計算客戶統計資料
-    const total_amount = await prisma.sale.aggregate({
-      where: { customer_id: params.id },
+    const totalAmount = await prisma.sale.aggregate({
+      where: { customerId: params.id },
       _sum: {
-        total_amount: true
+        totalAmount: true
       }
     })
 
@@ -63,7 +63,7 @@ export async function GET(
         customer,
         statistics: {
           totalOrders: customer._count.sales,
-          total_amount: total_amount._sum.total_amount || 0
+          totalAmount: totalAmount._sum.totalAmount || 0
         }
       }
     })
