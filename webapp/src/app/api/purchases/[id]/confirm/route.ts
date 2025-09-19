@@ -88,7 +88,7 @@ export async function POST(
 
       // 檢查每個採購項目的必要資訊
       for (const item of existingPurchase.items) {
-        if (!item.productName || item.quantity <= 0 || item.unitPrice <= 0) {
+        if (!item.productName || item.quantity <= 0 || item.unit_price <= 0) {
           return NextResponse.json({
             error: `採購項目 "${item.productName}" 資訊不完整，無法確認`
           }, { status: 400 })
@@ -103,7 +103,7 @@ export async function POST(
         status: newStatus,
         confirmedAt: action === 'confirm' ? new Date() : null,
         confirmedBy: action === 'confirm' ? session.user.id : null,
-        updatedAt: new Date()
+        updated_at: new Date()
       },
       include: {
         items: {
@@ -175,8 +175,8 @@ export async function GET(
         status: true,
         confirmedAt: true,
         confirmedBy: true,
-        createdAt: true,
-        updatedAt: true
+        created_at: true,
+        updated_at: true
       }
     })
 
@@ -188,11 +188,11 @@ export async function GET(
     if (session.user.role === 'INVESTOR') {
       const fullPurchase = await prisma.purchase.findUnique({
         where: { id: purchaseId },
-        select: { fundingSource: true, investorId: true }
+        select: { fundingSource: true, investor_id: true }
       })
 
       if (fullPurchase?.fundingSource === 'PERSONAL' ||
-          (fullPurchase?.investorId && fullPurchase.investorId !== session.user.investorId)) {
+          (fullPurchase?.investor_id && fullPurchase.investor_id !== session.user.investor_id)) {
         return NextResponse.json({ error: '權限不足' }, { status: 403 })
       }
     }

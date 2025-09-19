@@ -189,7 +189,7 @@ export async function POST(
         data: {
           remainingAmount: newRemainingAmount,
           status: newStatus,
-          updatedAt: new Date()
+          updated_at: new Date()
         }
       })
 

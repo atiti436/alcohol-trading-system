@@ -9,7 +9,7 @@
  * 基礎WHERE條件類型
  */
 export interface BaseWhereCondition {
-  isActive?: boolean
+  is_active?: boolean
   [key: string]: any // 保留彈性，但有基礎結構
 }
 
@@ -49,7 +49,7 @@ export interface PurchaseWhereCondition extends BaseWhereCondition {
   }>
   status?: string
   fundingSource?: string
-  investorId?: string
+  investor_id?: string
 }
 
 /**
@@ -72,7 +72,7 @@ export interface CustomerWhereCondition extends BaseWhereCondition {
 export interface ReportsWhereCondition {
   isPaid?: boolean
   fundingSource?: string
-  createdAt?: {
+  created_at?: {
     gte?: Date
     lte?: Date
   }

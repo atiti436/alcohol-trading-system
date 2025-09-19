@@ -50,7 +50,7 @@ export default function ProductsPage() {
     page: 1,
     limit: 20,
     search: '',
-    orderBy: 'createdAt',
+    orderBy: 'created_at',
     order: 'desc',
     active: true
   })
@@ -181,13 +181,13 @@ export default function ProductsPage() {
       render: (record: Product) => (
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontWeight: 'bold' }}>
-            ${record.currentPrice.toLocaleString()}
+            ${record.current_price.toLocaleString()}
           </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            標準: ${record.standardPrice.toLocaleString()}
+            標準: ${record.standard_price.toLocaleString()}
           </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            最低: ${record.minPrice.toLocaleString()}
+            最低: ${record.min_price.toLocaleString()}
           </div>
         </div>
       )
@@ -215,12 +215,12 @@ export default function ProductsPage() {
     },
     {
       title: '狀態',
-      dataIndex: 'isActive',
-      key: 'isActive',
+      dataIndex: 'is_active',
+      key: 'is_active',
       width: 80,
-      render: (isActive: boolean) => (
-        <Tag color={isActive ? 'green' : 'red'}>
-          {isActive ? '啟用' : '停用'}
+      render: (is_active: boolean) => (
+        <Tag color={is_active ? 'green' : 'red'}>
+          {is_active ? '啟用' : '停用'}
         </Tag>
       )
     },
@@ -486,7 +486,7 @@ export default function ProductsPage() {
 
           <div style={{ display: 'flex', gap: '16px' }}>
             <Form.Item
-              name="standardPrice"
+              name="standard_price"
               label="標準價格"
               rules={[{ required: true, message: '請輸入標準價格' }]}
               style={{ flex: 1 }}
@@ -494,7 +494,7 @@ export default function ProductsPage() {
               <InputNumber placeholder="21000" style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item
-              name="currentPrice"
+              name="current_price"
               label="目前價格"
               rules={[{ required: true, message: '請輸入目前價格' }]}
               style={{ flex: 1 }}
@@ -502,7 +502,7 @@ export default function ProductsPage() {
               <InputNumber placeholder="21000" style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item
-              name="minPrice"
+              name="min_price"
               label="最低價格"
               rules={[{ required: true, message: '請輸入最低價格' }]}
               style={{ flex: 1 }}

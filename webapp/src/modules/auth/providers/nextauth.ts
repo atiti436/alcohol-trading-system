@@ -30,7 +30,7 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.id = dbUser.id
           token.role = dbUser.role as Role
-          token.investorId = dbUser.investorId
+          token.investor_id = dbUser.investor_id
         } else {
           // 首次登入的新使用者，預設為員工角色
           const newUser = await prisma.user.create({
@@ -43,7 +43,7 @@ export const authOptions: NextAuthOptions = {
           })
           token.id = newUser.id
           token.role = newUser.role as Role
-          token.investorId = newUser.investorId
+          token.investor_id = newUser.investor_id
         }
       }
 
@@ -54,7 +54,7 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.id as string
         session.user.role = token.role as Role
-        session.user.investorId = token.investorId as string | undefined
+        session.user.investor_id = token.investor_id as string | undefined
       }
       return session
     },
@@ -66,7 +66,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: user.email },
         })
 
-        if (dbUser && !dbUser.isActive) {
+        if (dbUser && !dbUser.is_active) {
           return false // 拒絕登入
         }
       }

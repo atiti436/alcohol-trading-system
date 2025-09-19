@@ -50,8 +50,8 @@ interface Product {
   product_code: string
   name: string
   category: string
-  currentPrice: number
-  standardPrice: number
+  current_price: number
+  standard_price: number
   variants?: ProductVariant[]
 }
 
@@ -60,12 +60,12 @@ interface ProductVariant {
   variant_code: string
   variantType: string
   description: string
-  currentPrice: number
+  current_price: number
 }
 
 interface SaleOrderItem {
   key: string
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
   displayPrice: number
@@ -152,7 +152,7 @@ export function SaleOrderModal({
   useEffect(() => {
     if (editingSale && visible) {
       form.setFieldsValue({
-        customerId: editingSale.customerId,
+        customer_id: editingSale.customer_id,
         fundingSource: editingSale.fundingSource,
         paymentTerms: editingSale.paymentTerms,
         dueDate: editingSale.dueDate ? dayjs(editingSale.dueDate) : null,
@@ -160,19 +160,19 @@ export function SaleOrderModal({
       })
 
       // 設定已選客戶
-      const customer = customers.find(c => c.id === editingSale.customerId)
+      const customer = customers.find(c => c.id === editingSale.customer_id)
       setSelectedCustomer(customer || null)
 
       // 載入已有的訂單明細
       if (editingSale.items) {
         const items = editingSale.items.map((item, index: number) => ({
           key: `item-${index}`,
-          productId: item.productId,
+          product_id: item.product_id,
           variantId: item.variantId,
           quantity: item.quantity,
-          displayPrice: item.unitPrice,
-          actualPrice: item.actualUnitPrice || item.unitPrice,
-          commission: (item.actualUnitPrice || item.unitPrice) - item.unitPrice,
+          displayPrice: item.unit_price,
+          actualPrice: item.actual_unit_price || item.unit_price,
+          commission: (item.actual_unit_price || item.unit_price) - item.unit_price,
           product: item.product,
           variant: item.variant
         }))
@@ -187,8 +187,8 @@ export function SaleOrderModal({
   }, [editingSale, visible, customers])
 
   // 客戶選擇處理
-  const handleCustomerChange = (customerId: string) => {
-    const customer = customers.find(c => c.id === customerId)
+  const handleCustomerChange = (customer_id: string) => {
+    const customer = customers.find(c => c.id === customer_id)
     setSelectedCustomer(customer || null)
 
     if (customer) {
@@ -210,7 +210,7 @@ export function SaleOrderModal({
   const addProduct = () => {
     const newItem: SaleOrderItem = {
       key: `item-${Date.now()}`,
-      productId: '',
+      product_id: '',
       quantity: 1,
       displayPrice: 0,
       actualPrice: 0,
@@ -226,17 +226,17 @@ export function SaleOrderModal({
   }
 
   // 商品選擇處理
-  const handleProductChange = (key: string, productId: string, variantId?: string) => {
-    const product = products.find(p => p.id === productId)
+  const handleProductChange = (key: string, product_id: string, variantId?: string) => {
+    const product = products.find(p => p.id === product_id)
     if (!product) return
 
     const variant = variantId ? product.variants?.find(v => v.id === variantId) : undefined
-    const basePrice = variant ? variant.currentPrice : product.currentPrice
+    const basePrice = variant ? variant.current_price : product.current_price
 
     setOrderItems(orderItems.map(item =>
       item.key === key ? {
         ...item,
-        productId,
+        product_id,
         variantId,
         product,
         variant,
@@ -298,16 +298,16 @@ export function SaleOrderModal({
         ...values,
         dueDate: values.dueDate?.toISOString(),
         items: orderItems.map(item => ({
-          productId: item.productId,
+          product_id: item.product_id,
           variantId: item.variantId,
           quantity: item.quantity,
-          unitPrice: item.displayPrice,
-          actualUnitPrice: item.actualPrice,
-          totalPrice: item.displayPrice * item.quantity,
-          actualTotalPrice: item.actualPrice * item.quantity
+          unit_price: item.displayPrice,
+          actual_unit_price: item.actualPrice,
+          total_price: item.displayPrice * item.quantity,
+          actual_total_price: item.actualPrice * item.quantity
         })),
-        totalAmount: totalDisplayAmount,
-        actualAmount: totalActualAmount
+        total_amount: totalDisplayAmount,
+        actual_amount: totalActualAmount
       }
 
       onSubmit(submitData)
@@ -327,7 +327,7 @@ export function SaleOrderModal({
           <Select
             style={{ width: '100%' }}
             placeholder="選擇商品"
-            value={record.productId || undefined}
+            value={record.product_id || undefined}
             onChange={(value) => handleProductChange(record.key, value)}
             loading={loadingProducts}
             showSearch
@@ -345,7 +345,7 @@ export function SaleOrderModal({
               style={{ width: '100%' }}
               placeholder="選擇變體"
               value={record.variantId || undefined}
-              onChange={(value) => handleProductChange(record.key, record.productId, value)}
+              onChange={(value) => handleProductChange(record.key, record.product_id, value)}
               allowClear
             >
               {record.product.variants.map(variant => (
@@ -376,12 +376,12 @@ export function SaleOrderModal({
       key: 'price',
       width: 300,
       render: (_, record: SaleOrderItem) => (
-        record.productId ? (
+        record.product_id ? (
           <DualPriceManager
-            productId={record.productId}
+            product_id={record.product_id}
             variantId={record.variantId}
             quantity={record.quantity}
-            basePrice={record.variant?.currentPrice || record.product.currentPrice || 0}
+            basePrice={record.variant?.current_price || record.product.current_price || 0}
             onPriceChange={(prices) => handlePriceChange(record.key, prices)}
           />
         ) : null
@@ -444,7 +444,7 @@ export function SaleOrderModal({
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
-              name="customerId"
+              name="customer_id"
               label={
                 <Space>
                   <UserOutlined />

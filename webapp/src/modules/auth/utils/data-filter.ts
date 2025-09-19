@@ -22,7 +22,7 @@ export function filterSalesData<T extends Record<string, any>>(
       .filter(item => {
         // 🔒 核心邏輯：只顯示投資項目，隱藏個人調貨
         return item.fundingSource === 'COMPANY' &&
-               (!item.investorId || item.investorId === context.investorId)
+               (!item.investor_id || item.investor_id === context.investor_id)
       })
       .map(item => {
         // 🚨 關鍵：完全移除所有真實價格相關欄位
@@ -40,9 +40,9 @@ export function filterSalesData<T extends Record<string, any>>(
         delete filtered.personalPurchases
         delete filtered.ownerProfit
         delete filtered.actualPrice
-        delete filtered.actualAmount
-        delete filtered.actualTotalPrice
-        delete filtered.actualUnitPrice
+        delete filtered.actual_amount
+        delete filtered.actual_total_price
+        delete filtered.actual_unit_price
         delete filtered.realPrice
         delete filtered.trueAmount
 
@@ -50,15 +50,15 @@ export function filterSalesData<T extends Record<string, any>>(
         return {
           ...filtered,
           // 確保只顯示調整後的價格 (如投資方看到的1000)
-          totalAmount: item.totalAmount || item.displayAmount, // 顯示價格
-          unitPrice: item.unitPrice || item.displayPrice,     // 顯示單價
+          total_amount: item.total_amount || item.displayAmount, // 顯示價格
+          unit_price: item.unit_price || item.displayPrice,     // 顯示單價
           // 基於顯示價格計算獲利 (1000 - 800 = 200)
-          profit: (item.totalAmount || item.displayAmount || 0) - (item.cost || 0),
+          profit: (item.total_amount || item.displayAmount || 0) - (item.cost || 0),
           // 確保資金來源標記
           fundingSource: 'COMPANY',
           // 投資方可見的利潤率
-          profitMargin: item.totalAmount ?
-            ((item.totalAmount - (item.cost || 0)) / item.totalAmount * 100) : 0
+          profitMargin: item.total_amount ?
+            ((item.total_amount - (item.cost || 0)) / item.total_amount * 100) : 0
         }
       })
 
@@ -72,7 +72,7 @@ export function filterSalesData<T extends Record<string, any>>(
     const filtered = { ...item }
     // 移除所有財務敏感欄位
     delete filtered.actualPrice
-    delete filtered.actualAmount
+    delete filtered.actual_amount
     delete filtered.commission
     delete filtered.profit
     delete filtered.cost
@@ -121,7 +121,7 @@ export function filterProductData<T extends Record<string, any>>(
     const filtered = { ...item }
 
     if (context.role !== Role.SUPER_ADMIN) {
-      delete filtered.costPrice      // 成本價
+      delete filtered.cost_price      // 成本價
       delete filtered.commission     // 傭金設定
       delete filtered.actualMargin   // 實際毛利
     }

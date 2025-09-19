@@ -49,12 +49,12 @@ interface Purchase {
   supplier: string
   currency: string
   exchangeRate: number
-  totalAmount: number
+  total_amount: number
   status: string
   declarationNumber?: string
   declarationDate?: string
   notes?: string
-  createdAt: string
+  created_at: string
   items: PurchaseItem[]
   _count: { items: number }
 }
@@ -63,8 +63,8 @@ interface PurchaseItem {
   id: string
   productName: string
   quantity: number
-  unitPrice: number
-  totalPrice: number
+  unit_price: number
+  total_price: number
   dutiableValue?: number
   tariffCode?: string
   importDutyRate?: number
@@ -93,7 +93,7 @@ export default function PurchasesPage() {
     page: 1,
     limit: 20,
     search: '',
-    orderBy: 'createdAt',
+    orderBy: 'created_at',
     order: 'desc'
   })
   const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({})
@@ -200,7 +200,7 @@ export default function PurchasesPage() {
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            {dayjs(record.createdAt).format('YYYY/MM/DD')}
+            {dayjs(record.created_at).format('YYYY/MM/DD')}
           </div>
         </div>
       )
@@ -235,7 +235,7 @@ export default function PurchasesPage() {
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontWeight: 'bold' }}>
             <SecurePriceDisplay
-              amount={record.totalAmount}
+              amount={record.total_amount}
               currency={record.currency}
               allowedRoles={['SUPER_ADMIN', 'EMPLOYEE']}
               displayMultiplier={0.8}
@@ -531,7 +531,7 @@ export default function PurchasesPage() {
       const requestData = {
         ...values,
         declarationDate: values.declarationDate?.toISOString(),
-        totalAmount: 0, // 初始金額，後續添加商品時計算
+        total_amount: 0, // 初始金額，後續添加商品時計算
         items: [] // 基礎版本暫時不處理採購明細
       }
 
@@ -881,7 +881,7 @@ export default function PurchasesPage() {
                 </div>
                 <div><strong>總金額：</strong>
                   <SecurePriceDisplay
-                    amount={editingPurchase.totalAmount}
+                    amount={editingPurchase.total_amount}
                     currency={editingPurchase.currency}
                     allowedRoles={['SUPER_ADMIN', 'EMPLOYEE']}
                     displayMultiplier={0.8}
@@ -939,16 +939,16 @@ export default function PurchasesPage() {
                     },
                     {
                       title: '單價',
-                      dataIndex: 'unitPrice',
-                      key: 'unitPrice',
+                      dataIndex: 'unit_price',
+                      key: 'unit_price',
                       width: 100,
                       align: 'right',
                       render: (price: number) => price.toLocaleString()
                     },
                     {
                       title: '小計',
-                      dataIndex: 'totalPrice',
-                      key: 'totalPrice',
+                      dataIndex: 'total_price',
+                      key: 'total_price',
                       width: 100,
                       align: 'right',
                       render: (price: number) => price.toLocaleString()

@@ -27,13 +27,13 @@ export async function GET(
       include: {
         sales: {
           take: 10, // 最近10筆訂單
-          orderBy: { createdAt: 'desc' },
+          orderBy: { created_at: 'desc' },
           select: {
             id: true,
             saleNumber: true,
-            totalAmount: true,
-            actualAmount: session.user.role === 'SUPER_ADMIN' ? true : false, // 只有超級管理員看得到實際金額
-            createdAt: true,
+            total_amount: true,
+            actual_amount: session.user.role === 'SUPER_ADMIN' ? true : false, // 只有超級管理員看得到實際金額
+            created_at: true,
             isPaid: true
           }
         },
@@ -50,10 +50,10 @@ export async function GET(
     }
 
     // 計算客戶統計資料
-    const totalAmount = await prisma.sale.aggregate({
-      where: { customerId: params.id },
+    const total_amount = await prisma.sale.aggregate({
+      where: { customer_id: params.id },
       _sum: {
-        totalAmount: true
+        total_amount: true
       }
     })
 
@@ -63,7 +63,7 @@ export async function GET(
         customer,
         statistics: {
           totalOrders: customer._count.sales,
-          totalAmount: totalAmount._sum.totalAmount || 0
+          total_amount: total_amount._sum.total_amount || 0
         }
       }
     })
@@ -104,7 +104,7 @@ export async function PUT(
       requiresInvoice,
       credit_limit,
       notes,
-      isActive
+      is_active
     } = body
 
     // 檢查客戶是否存在
@@ -133,7 +133,7 @@ export async function PUT(
         ...(requiresInvoice !== undefined && { requiresInvoice }),
         ...(credit_limit !== undefined && { credit_limit }),
         ...(notes !== undefined && { notes }),
-        ...(isActive !== undefined && { isActive })
+        ...(is_active !== undefined && { is_active })
       }
     })
 
@@ -185,7 +185,7 @@ export async function DELETE(
       // 有銷售記錄的客戶只能軟刪除
       await prisma.customer.update({
         where: { id: params.id },
-        data: { isActive: false }
+        data: { is_active: false }
       })
 
       return NextResponse.json({

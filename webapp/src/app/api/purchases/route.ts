@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const status = searchParams.get('status') // 狀態篩選
     const fundingSource = searchParams.get('fundingSource') // 資金來源篩選
-    const orderBy = searchParams.get('orderBy') || 'createdAt'
+    const orderBy = searchParams.get('orderBy') || 'created_at'
     const order = searchParams.get('order') || 'desc'
 
     const skip = (page - 1) * limit
@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
     if (session.user.role === 'INVESTOR') {
       where.fundingSource = 'COMPANY' // 只能看公司資金的採購
       // 進一步過濾：只能看投資方相關的採購
-      if (session.user.investorId) {
-        where.investorId = session.user.investorId
+      if (session.user.investor_id) {
+        where.investor_id = session.user.investor_id
       }
     }
 
@@ -79,8 +79,8 @@ export async function GET(request: NextRequest) {
               id: true,
               productName: true,
               quantity: true,
-              unitPrice: true,
-              totalPrice: true
+              unit_price: true,
+              total_price: true
             }
           },
           _count: {
@@ -99,11 +99,11 @@ export async function GET(request: NextRequest) {
         // 投資方看到的是調整後的金額，隱藏真實成本
         return {
           ...purchase,
-          totalAmount: purchase.displayAmount || purchase.totalAmount * 0.8, // 假設顯示80%
+          total_amount: purchase.displayAmount || purchase.total_amount * 0.8, // 假設顯示80%
           items: purchase.items.map(item => ({
             ...item,
-            unitPrice: item.displayPrice || item.unitPrice * 0.8,
-            totalPrice: item.displayTotal || item.totalPrice * 0.8
+            unit_price: item.displayPrice || item.unit_price * 0.8,
+            total_price: item.displayTotal || item.total_price * 0.8
           }))
         }
       }
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     try {
       const purchaseData = {
         supplierId: body.supplierId || 'temp-supplier', // 兼容舊格式
-        totalAmount: body.totalAmount || 0, // 將在後面重新計算
+        total_amount: body.total_amount || 0, // 將在後面重新計算
         status: body.status || 'DRAFT',
         notes: body.notes || '',
         expectedDate: body.expectedDate
@@ -189,25 +189,25 @@ export async function POST(request: NextRequest) {
     const purchaseNumber = await generatePurchaseNumber()
 
     // 計算總金額
-    let totalAmount = 0
+    let total_amount = 0
     const validatedItems = []
 
     for (const item of items) {
-      if (!item.productName || !item.quantity || !item.unitPrice) {
+      if (!item.productName || !item.quantity || !item.unit_price) {
         return NextResponse.json({
           error: '採購項目缺少必要資訊：產品名稱、數量、單價'
         }, { status: 400 })
       }
 
-      const itemTotal = item.quantity * item.unitPrice
-      totalAmount += itemTotal
+      const itemTotal = item.quantity * item.unit_price
+      total_amount += itemTotal
 
       validatedItems.push({
-        productId: item.productId || null,
+        product_id: item.product_id || null,
         productName: item.productName,
         quantity: parseInt(item.quantity),
-        unitPrice: parseFloat(item.unitPrice),
-        totalPrice: itemTotal,
+        unit_price: parseFloat(item.unit_price),
+        total_price: itemTotal,
         dutiableValue: item.dutiableValue ? parseFloat(item.dutiableValue) : null,
         tariffCode: item.tariffCode || null,
         importDutyRate: item.importDutyRate ? parseFloat(item.importDutyRate) : null,
@@ -225,13 +225,13 @@ export async function POST(request: NextRequest) {
         supplier,
         currency,
         exchangeRate: parseFloat(exchangeRate),
-        totalAmount,
+        total_amount,
         status: 'DRAFT', // 預設為草稿狀態
         declarationNumber,
         declarationDate: declarationDate ? new Date(declarationDate) : null,
         notes,
         createdBy: session.user.id,
-        investorId: fundingSource === 'COMPANY' ? session.user.investorId : null,
+        investor_id: fundingSource === 'COMPANY' ? session.user.investor_id : null,
         items: {
           create: validatedItems
         }

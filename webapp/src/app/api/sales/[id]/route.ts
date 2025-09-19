@@ -57,9 +57,9 @@ export async function GET(
                 category: true,
                 volume_ml: true,
                 alc_percentage: true,
-                standardPrice: true,
-                currentPrice: true,
-                costPrice: true // 只有超級管理員能看到
+                standard_price: true,
+                current_price: true,
+                cost_price: true // 只有超級管理員能看到
               }
             },
             variant: {
@@ -68,7 +68,7 @@ export async function GET(
                 variant_code: true,
                 variantType: true,
                 description: true,
-                currentPrice: true,
+                current_price: true,
                 cost_price: true // 只有超級管理員能看到
               }
             }
@@ -93,7 +93,7 @@ export async function GET(
     const filteredSale = {
       ...sale,
       // 投資方看不到真實金額和傭金
-      actualAmount: session.user.role === 'INVESTOR' ? undefined : sale.actualAmount,
+      actual_amount: session.user.role === 'INVESTOR' ? undefined : sale.actual_amount,
       commission: session.user.role === 'INVESTOR' ? undefined : sale.commission,
       // 隱藏創建者資訊（投資方）
       creator: session.user.role === 'INVESTOR' ? null : sale.creator,
@@ -101,13 +101,13 @@ export async function GET(
       items: sale.items.map(item => ({
         ...item,
         // 投資方看不到實際價格
-        actualUnitPrice: session.user.role === 'INVESTOR' ? undefined : item.actualUnitPrice,
-        actualTotalPrice: session.user.role === 'INVESTOR' ? undefined : item.actualTotalPrice,
+        actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
+        actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
         isPersonalPurchase: session.user.role === 'INVESTOR' ? undefined : item.isPersonalPurchase,
         // 過濾產品成本資訊
         product: {
           ...item.product,
-          costPrice: session.user.role === 'SUPER_ADMIN' ? item.product.costPrice : undefined
+          cost_price: session.user.role === 'SUPER_ADMIN' ? item.product.cost_price : undefined
         },
         variant: item.variant ? {
           ...item.variant,
@@ -166,7 +166,7 @@ export async function PUT(
     }
 
     const {
-      customerId,
+      customer_id,
       paymentTerms,
       dueDate,
       notes,
@@ -178,13 +178,13 @@ export async function PUT(
     const updatedSale = await prisma.sale.update({
       where: { id },
       data: {
-        ...(customerId && { customerId }),
+        ...(customer_id && { customer_id }),
         ...(paymentTerms && { paymentTerms }),
         ...(dueDate && { dueDate: new Date(dueDate) }),
         ...(notes !== undefined && { notes }),
         ...(isPaid !== undefined && { isPaid }),
         ...(paidAt && { paidAt: new Date(paidAt) }),
-        updatedAt: new Date()
+        updated_at: new Date()
       },
       include: {
         customer: {
@@ -229,13 +229,13 @@ export async function PUT(
     // 🔒 回傳前過濾敏感資料
     const filteredSale = {
       ...updatedSale,
-      actualAmount: session.user.role === 'INVESTOR' ? undefined : updatedSale.actualAmount,
+      actual_amount: session.user.role === 'INVESTOR' ? undefined : updatedSale.actual_amount,
       commission: session.user.role === 'INVESTOR' ? undefined : updatedSale.commission,
       creator: session.user.role === 'INVESTOR' ? null : updatedSale.creator,
       items: updatedSale.items.map(item => ({
         ...item,
-        actualUnitPrice: session.user.role === 'INVESTOR' ? undefined : item.actualUnitPrice,
-        actualTotalPrice: session.user.role === 'INVESTOR' ? undefined : item.actualTotalPrice,
+        actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
+        actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
         isPersonalPurchase: session.user.role === 'INVESTOR' ? undefined : item.isPersonalPurchase
       }))
     }

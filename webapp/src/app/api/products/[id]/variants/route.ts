@@ -33,7 +33,7 @@ export async function GET(
 
     // 查詢變體列表
     const variants = await prisma.productVariant.findMany({
-      where: { productId: params.id },
+      where: { product_id: params.id },
       orderBy: { variantType: 'asc' },
       include: {
         _count: {
@@ -78,7 +78,7 @@ export async function POST(
       variantType,
       description,
       basePrice,
-      currentPrice,
+      current_price,
       discountRate,
       limitedEdition = false,
       productionYear,
@@ -88,10 +88,10 @@ export async function POST(
     } = body
 
     // 基本驗證
-    if (!variantType || !description || !basePrice || !currentPrice) {
+    if (!variantType || !description || !basePrice || !current_price) {
       return NextResponse.json({
         error: '必填欄位不完整',
-        required: ['variantType', 'description', 'basePrice', 'currentPrice']
+        required: ['variantType', 'description', 'basePrice', 'current_price']
       }, { status: 400 })
     }
 
@@ -109,7 +109,7 @@ export async function POST(
     const existingVariant = await prisma.productVariant.findUnique({
       where: {
         productId_variantType: {
-          productId: params.id,
+          product_id: params.id,
           variantType: variantType
         }
       }
@@ -127,12 +127,12 @@ export async function POST(
     // 創建變體
     const variant = await prisma.productVariant.create({
       data: {
-        productId: params.id,
+        product_id: params.id,
         variant_code,
         variantType,
         description,
         basePrice,
-        currentPrice,
+        current_price,
         discountRate,
         limitedEdition,
         productionYear,

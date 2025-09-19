@@ -45,19 +45,19 @@ interface Sale {
     company?: string
     shipping_address?: string
   }
-  totalAmount: number
-  actualAmount?: number
-  createdAt: string
+  total_amount: number
+  actual_amount?: number
+  created_at: string
   items: SaleItem[]
 }
 
 interface SaleItem {
   id: string
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
-  unitPrice: number
-  actualUnitPrice?: number
+  unit_price: number
+  actual_unit_price?: number
   product: {
     id: string
     product_code: string
@@ -143,7 +143,7 @@ export function ShippingOrderModal({
     if (sale) {
       // 設定預設值
       form.setFieldsValue({
-        customerId: sale.customer.id,
+        customer_id: sale.customer.id,
         shippingDate: dayjs(),
         shippingAddress: sale.customer.shipping_address || ''
       })
@@ -194,7 +194,7 @@ export function ShippingOrderModal({
       const shippingItems = selectedSale.items
         .filter(item => selectedItems.includes(item.id))
         .map(item => ({
-          productId: item.productId,
+          product_id: item.product_id,
           variantId: item.variantId,
           quantity: item.quantity,
           notes: ''
@@ -202,7 +202,7 @@ export function ShippingOrderModal({
 
       const submitData = {
         saleId: selectedSale.id,
-        customerId: selectedSale.customer.id,
+        customer_id: selectedSale.customer.id,
         shippingDate: values.shippingDate?.toISOString(),
         shippingAddress: values.shippingAddress,
         items: shippingItems,
@@ -265,15 +265,15 @@ export function ShippingOrderModal({
                       </div>
                       <div style={{ fontSize: '12px', color: '#666' }}>
                         {sale.customer.company && `${sale.customer.company} | `}
-                        <SecurePriceDisplay price={sale.totalAmount} />
+                        <SecurePriceDisplay price={sale.total_amount} />
                         <SuperAdminOnly>
-                          {sale.actualAmount && sale.actualAmount !== sale.totalAmount && (
+                          {sale.actual_amount && sale.actual_amount !== sale.total_amount && (
                             <span style={{ color: '#52c41a' }}>
-                              {' '}(實收: NT$ {sale.actualAmount.toLocaleString()})
+                              {' '}(實收: NT$ {sale.actual_amount.toLocaleString()})
                             </span>
                           )}
                         </SuperAdminOnly>
-                        {' '}| {dayjs(sale.createdAt).format('YYYY-MM-DD')}
+                        {' '}| {dayjs(sale.created_at).format('YYYY-MM-DD')}
                       </div>
                     </div>
                   </Option>

@@ -31,8 +31,8 @@ interface Product {
   product_code: string
   name: string
   
-  standardPrice: number
-  currentPrice: number
+  standard_price: number
+  current_price: number
 }
 
 interface SpecialPrice {
@@ -40,7 +40,7 @@ interface SpecialPrice {
   customer_id: string
   product_id: string
   product: Product
-  standardPrice: number
+  standard_price: number
   special_price: number
   discount_amount: number
   discount_rate: number
@@ -54,7 +54,7 @@ interface SpecialPrice {
 }
 
 interface SpecialPriceManagerProps {
-  customerId: string
+  customer_id: string
   customerName: string
   customerTier: string
   isVisible: boolean
@@ -62,7 +62,7 @@ interface SpecialPriceManagerProps {
 }
 
 export default function SpecialPriceManager({
-  customerId,
+  customer_id,
   customerName,
   customerTier,
   isVisible,
@@ -77,11 +77,11 @@ export default function SpecialPriceManager({
 
   // 載入客戶專價清單
   const loadSpecialPrices = async () => {
-    if (!customerId) return
+    if (!customer_id) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/customers/${customerId}/special-prices`)
+      const response = await fetch(`/api/customers/${customer_id}/special-prices`)
       const result = await response.json()
 
       if (result.success) {
@@ -112,11 +112,11 @@ export default function SpecialPriceManager({
   }
 
   useEffect(() => {
-    if (isVisible && customerId) {
+    if (isVisible && customer_id) {
       loadSpecialPrices()
       loadProducts()
     }
-  }, [isVisible, customerId])
+  }, [isVisible, customer_id])
 
   // 開啟新增/編輯專價Modal
   const openModal = (price?: SpecialPrice) => {
@@ -155,8 +155,8 @@ export default function SpecialPriceManager({
   const saveSpecialPrice = async (values: any) => {
     try {
       const url = editingPrice
-        ? `/api/customers/${customerId}/special-prices/${editingPrice.id}`
-        : `/api/customers/${customerId}/special-prices`
+        ? `/api/customers/${customer_id}/special-prices/${editingPrice.id}`
+        : `/api/customers/${customer_id}/special-prices`
 
       const method = editingPrice ? 'PUT' : 'POST'
 
@@ -190,7 +190,7 @@ export default function SpecialPriceManager({
   // 刪除/停用專價
   const deleteSpecialPrice = async (priceId: string) => {
     try {
-      const response = await fetch(`/api/customers/${customerId}/special-prices/${priceId}`, {
+      const response = await fetch(`/api/customers/${customer_id}/special-prices/${priceId}`, {
         method: 'DELETE'
       })
 
@@ -231,8 +231,8 @@ export default function SpecialPriceManager({
     },
     {
       title: '標準價格',
-      dataIndex: 'standardPrice',
-      key: 'standardPrice',
+      dataIndex: 'standard_price',
+      key: 'standard_price',
       render: (price: number) => <Text>NT$ {price.toLocaleString()}</Text>
     },
     {
@@ -287,12 +287,12 @@ export default function SpecialPriceManager({
       title: '狀態',
       dataIndex: 'is_active',
       key: 'is_active',
-      render: (isActive: boolean, record: SpecialPrice) => {
+      render: (is_active: boolean, record: SpecialPrice) => {
         const isExpired = record.expiry_date && dayjs().isAfter(dayjs(record.expiry_date))
         if (isExpired) {
           return <Tag color="default">已過期</Tag>
         }
-        return <Tag color={isActive ? 'green' : 'red'}>{isActive ? '生效中' : '已停用'}</Tag>
+        return <Tag color={is_active ? 'green' : 'red'}>{is_active ? '生效中' : '已停用'}</Tag>
       }
     },
     {
@@ -401,7 +401,7 @@ export default function SpecialPriceManager({
             >
               {products.map(product => (
                 <Option key={product.id} value={product.id}>
-                  {product.name} ({product.product_code}) - NT$ {product.standardPrice.toLocaleString()}
+                  {product.name} ({product.product_code}) - NT$ {product.standard_price.toLocaleString()}
                 </Option>
               ))}
             </Select>

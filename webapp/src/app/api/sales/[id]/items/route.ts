@@ -28,19 +28,19 @@ export async function POST(
     const { id: saleId } = params
     const body = await request.json()
     const {
-      productId,
+      product_id,
       variantId,
       quantity,
-      unitPrice,        // 顯示單價（投資方看到的）
-      actualUnitPrice   // 實際單價（只有SUPER_ADMIN能設定）
+      unit_price,        // 顯示單價（投資方看到的）
+      actual_unit_price   // 實際單價（只有SUPER_ADMIN能設定）
     } = body
 
     // 資料驗證
-    if (!productId || !quantity || quantity <= 0) {
+    if (!product_id || !quantity || quantity <= 0) {
       return NextResponse.json({ error: '請提供有效的商品和數量' }, { status: 400 })
     }
 
-    if (!unitPrice || unitPrice <= 0) {
+    if (!unit_price || unit_price <= 0) {
       return NextResponse.json({ error: '請提供有效的單價' }, { status: 400 })
     }
 
@@ -61,7 +61,7 @@ export async function POST(
 
     // 檢查商品是否存在
     const product = await prisma.product.findUnique({
-      where: { id: productId },
+      where: { id: product_id },
       include: {
         variants: variantId ? {
           where: { id: variantId }
@@ -83,27 +83,27 @@ export async function POST(
     }
 
     // 🔒 雙重價格邏輯
-    let finalActualUnitPrice = unitPrice // 預設實際價格等於顯示價格
+    let finalActualUnitPrice = unit_price // 預設實際價格等於顯示價格
 
     // 只有超級管理員能設定不同的實際價格
-    if (session.user.role === 'SUPER_ADMIN' && actualUnitPrice) {
-      finalActualUnitPrice = actualUnitPrice
+    if (session.user.role === 'SUPER_ADMIN' && actual_unit_price) {
+      finalActualUnitPrice = actual_unit_price
     }
 
-    const totalPrice = unitPrice * quantity
-    const actualTotalPrice = finalActualUnitPrice * quantity
+    const total_price = unit_price * quantity
+    const actual_total_price = finalActualUnitPrice * quantity
 
     // 新增銷售明細
     const saleItem = await prisma.saleItem.create({
       data: {
         saleId,
-        productId,
+        product_id,
         variantId,
         quantity,
-        unitPrice,                                    // 顯示單價
-        actualUnitPrice: finalActualUnitPrice,        // 實際單價
-        totalPrice,                                   // 顯示總價
-        actualTotalPrice,                            // 實際總價
+        unit_price,                                    // 顯示單價
+        actual_unit_price: finalActualUnitPrice,        // 實際單價
+        total_price,                                   // 顯示總價
+        actual_total_price,                            // 實際總價
         isPersonalPurchase: sale.fundingSource === 'PERSONAL'
       },
       include: {
@@ -133,16 +133,16 @@ export async function POST(
       where: { saleId }
     })
 
-    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.totalPrice, 0)
-    const newActualAmount = updatedItems.reduce((sum, item) => sum + item.actualTotalPrice, 0)
+    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.total_price, 0)
+    const newActualAmount = updatedItems.reduce((sum, item) => sum + item.actual_total_price, 0)
     const newCommission = newActualAmount - newTotalAmount
 
     // 更新銷售訂單總金額
     await prisma.sale.update({
       where: { id: saleId },
       data: {
-        totalAmount: newTotalAmount,
-        actualAmount: newActualAmount,
+        total_amount: newTotalAmount,
+        actual_amount: newActualAmount,
         commission: newCommission
       }
     })
@@ -150,8 +150,8 @@ export async function POST(
     // 🔒 回傳前過濾敏感資料
     const filteredItem = {
       ...saleItem,
-      actualUnitPrice: session.user.role === 'INVESTOR' ? undefined : saleItem.actualUnitPrice,
-      actualTotalPrice: session.user.role === 'INVESTOR' ? undefined : saleItem.actualTotalPrice,
+      actual_unit_price: session.user.role === 'INVESTOR' ? undefined : saleItem.actual_unit_price,
+      actual_total_price: session.user.role === 'INVESTOR' ? undefined : saleItem.actual_total_price,
       isPersonalPurchase: session.user.role === 'INVESTOR' ? undefined : saleItem.isPersonalPurchase
     }
 
@@ -210,7 +210,7 @@ export async function GET(
             category: true,
             volume_ml: true,
             alc_percentage: true,
-            costPrice: true // 只有超級管理員能看到
+            cost_price: true // 只有超級管理員能看到
           }
         },
         variant: {
@@ -223,18 +223,18 @@ export async function GET(
           }
         }
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { created_at: 'asc' }
     })
 
     // 🔒 資料過濾：根據角色隱藏敏感資訊
     const filteredItems = items.map(item => ({
       ...item,
-      actualUnitPrice: session.user.role === 'INVESTOR' ? undefined : item.actualUnitPrice,
-      actualTotalPrice: session.user.role === 'INVESTOR' ? undefined : item.actualTotalPrice,
+      actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
+      actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
       isPersonalPurchase: session.user.role === 'INVESTOR' ? undefined : item.isPersonalPurchase,
       product: {
         ...item.product,
-        costPrice: session.user.role === 'SUPER_ADMIN' ? item.product.costPrice : undefined
+        cost_price: session.user.role === 'SUPER_ADMIN' ? item.product.cost_price : undefined
       },
       variant: item.variant ? {
         ...item.variant,
@@ -249,11 +249,11 @@ export async function GET(
         summary: {
           totalItems: items.length,
           totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
-          totalAmount: items.reduce((sum, item) => sum + item.totalPrice, 0),
+          total_amount: items.reduce((sum, item) => sum + item.total_price, 0),
           // 實際金額只有非投資方能看到
           ...(session.user.role !== 'INVESTOR' && {
-            actualTotalAmount: items.reduce((sum, item) => sum + item.actualTotalPrice, 0),
-            commission: items.reduce((sum, item) => sum + (item.actualTotalPrice - item.totalPrice), 0)
+            actualTotalAmount: items.reduce((sum, item) => sum + item.actual_total_price, 0),
+            commission: items.reduce((sum, item) => sum + (item.actual_total_price - item.total_price), 0)
           })
         }
       }

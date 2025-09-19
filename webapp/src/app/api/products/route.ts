@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const category = searchParams.get('category') // 分類篩選
-    const orderBy = searchParams.get('orderBy') || 'createdAt'
+    const orderBy = searchParams.get('orderBy') || 'created_at'
     const order = searchParams.get('order') || 'desc'
     const active = searchParams.get('active') !== 'false' // 預設只顯示活躍商品
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // 只顯示活躍商品
     if (active) {
-      where.isActive = true
+      where.is_active = true
     }
 
     // 搜尋條件 - 支援商品名稱、產品編號、品牌的模糊搜尋
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
               variant_code: true,
               variantType: true,
               description: true,
-              currentPrice: true,
+              current_price: true,
               stock_quantity: true, // 🔧 修正：使用統一命名規範
               available_stock: true, // 🔧 增加：顯示可售庫存
               condition: true
@@ -151,20 +151,20 @@ export async function POST(request: NextRequest) {
       hasAccessories = false,
       accessoryWeight,
       accessories = [],
-      hsCode,
+      hs_code,
       manufacturingDate,
       expiryDate,
-      standardPrice,
-      currentPrice,
-      minPrice,
+      standard_price,
+      current_price,
+      min_price,
       createDefaultVariant = true
     } = body
 
     // 商品特有驗證
-    if (!volume_ml || !alc_percentage || !standardPrice || !currentPrice || !minPrice) {
+    if (!volume_ml || !alc_percentage || !standard_price || !current_price || !min_price) {
       return NextResponse.json({
         error: '商品必填欄位不完整',
-        required: ['volume_ml', 'alc_percentage', 'standardPrice', 'currentPrice', 'minPrice']
+        required: ['volume_ml', 'alc_percentage', 'standard_price', 'current_price', 'min_price']
       }, { status: 400 })
     }
 
@@ -190,14 +190,14 @@ export async function POST(request: NextRequest) {
         hasAccessories,
         accessoryWeight,
         accessories,
-        hsCode,
+        hs_code,
         supplier,
         manufacturingDate,
         expiryDate,
-        standardPrice,
-        currentPrice,
-        costPrice: 0, // 初始成本為0，等進貨後更新
-        minPrice
+        standard_price,
+        current_price,
+        cost_price: 0, // 初始成本為0，等進貨後更新
+        min_price
       }
     })
 
@@ -207,12 +207,12 @@ export async function POST(request: NextRequest) {
       const variant_code = `${product_code}-A`
       defaultVariant = await prisma.productVariant.create({
         data: {
-          productId: product.id,
+          product_id: product.id,
           variant_code,
           variantType: 'A',
           description: '一般版',
-          basePrice: standardPrice,
-          currentPrice: currentPrice
+          basePrice: standard_price,
+          current_price: current_price
         }
       })
     }

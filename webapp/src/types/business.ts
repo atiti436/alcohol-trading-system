@@ -15,25 +15,25 @@ export interface Product {
   alc_percentage?: number
   volume_ml?: number
   description?: string
-  costPrice: number
+  cost_price: number
   suggestedPrice: number
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
+  is_active: boolean
+  created_at: Date
+  updated_at: Date
   variants?: ProductVariant[]
 }
 
 export interface ProductVariant {
   id: string
-  productId: string
+  product_id: string
   sku: string
   description: string
   weight_kg?: number
   volume_ml?: number
   stock_quantity: number
-  costPrice: number
+  cost_price: number
   suggestedPrice: number
-  isActive: boolean
+  is_active: boolean
   product?: Product
 }
 
@@ -47,9 +47,9 @@ export interface Customer {
   email?: string
   address?: string
   paymentTerms: string
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
+  is_active: boolean
+  created_at: Date
+  updated_at: Date
 }
 
 // ========== 銷售相關型別 ==========
@@ -57,12 +57,12 @@ export interface Customer {
 export interface SaleItem {
   id: string
   saleId: string
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
-  unitPrice: number
-  totalPrice: number
-  costPrice: number
+  unit_price: number
+  total_price: number
+  cost_price: number
   product: Product
   variant?: ProductVariant
 }
@@ -70,15 +70,15 @@ export interface SaleItem {
 export interface Sale {
   id: string
   saleNumber: string
-  customerId: string
-  totalAmount: number
-  actualAmount?: number // 老闆實際收到的金額 (僅 SUPER_ADMIN 可見)
+  customer_id: string
+  total_amount: number
+  actual_amount?: number // 老闆實際收到的金額 (僅 SUPER_ADMIN 可見)
   commission?: number   // 老闆賺取的差價 (僅 SUPER_ADMIN 可見)
   isPaid: boolean
   paidAt?: Date
   notes?: string
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
   customer: Customer
   items: SaleItem[]
 }
@@ -88,11 +88,11 @@ export interface Sale {
 export interface PurchaseItem {
   id: string
   purchaseId: string
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
-  unitPrice: number
-  totalPrice: number
+  unit_price: number
+  total_price: number
   product: Product
   variant?: ProductVariant
 }
@@ -101,14 +101,14 @@ export interface Purchase {
   id: string
   purchaseNumber: string
   supplierName: string
-  totalAmount: number
+  total_amount: number
   status: 'PENDING' | 'CONFIRMED' | 'RECEIVED' | 'CANCELLED'
   orderDate: Date
   expectedDate?: Date
   receivedDate?: Date
   notes?: string
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
   items: PurchaseItem[]
 }
 
@@ -142,7 +142,7 @@ export interface StatementData {
 
 export interface AccountReceivable {
   id: string
-  customerId: string
+  customer_id: string
   saleId?: string
   amount: number
   paidAmount: number
@@ -150,8 +150,8 @@ export interface AccountReceivable {
   dueDate: Date
   status: 'PENDING' | 'OVERDUE' | 'PAID' | 'PARTIAL'
   description?: string
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
   customer: Customer
   sale?: Sale
 }
@@ -160,14 +160,14 @@ export interface AccountReceivable {
 
 export interface InventoryMovement {
   id: string
-  productId: string
+  product_id: string
   variantId?: string
   type: 'IN' | 'OUT' | 'ADJUSTMENT'
   quantity: number
   reference?: string
   referenceId?: string
   notes?: string
-  createdAt: Date
+  created_at: Date
   product: Product
   variant?: ProductVariant
 }
@@ -189,7 +189,7 @@ export interface DailyTrendData {
 }
 
 export interface ProductSalesData {
-  productId: string
+  product_id: string
   productName: string
   totalQuantity: number
   totalRevenue: number
@@ -275,7 +275,7 @@ export interface DashboardData {
   topCustomers: Array<{
     customer: Customer
     totalPurchases: number
-    totalAmount: number
+    total_amount: number
   }>
   inventoryAlerts: Array<{
     product: Product
@@ -288,13 +288,13 @@ export interface DashboardData {
 // ========== 投資方數據隔離型別 ==========
 
 // 用於標記哪些欄位對投資方隱藏
-export type InvestorHiddenFields = 'actualAmount' | 'commission' | 'actualRevenue' | 'totalProfit'
+export type InvestorHiddenFields = 'actual_amount' | 'commission' | 'actualRevenue' | 'totalProfit'
 
 // 用於過濾投資方數據的工具型別
 export type OmitForInvestor<T> = Omit<T, InvestorHiddenFields>
 
 // 用於根據角色動態過濾數據
-export type RoleFilteredData<T> = T extends { actualAmount?: any }
+export type RoleFilteredData<T> = T extends { actual_amount?: any }
   ? Role extends 'INVESTOR'
     ? OmitForInvestor<T>
     : T

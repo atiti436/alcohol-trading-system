@@ -21,7 +21,7 @@ export const GET = withAppAuth(async (
     const { searchParams } = new URL(req.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
-    const customerId = searchParams.get('customerId')
+    const customer_id = searchParams.get('customer_id')
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const fundingSource = searchParams.get('fundingSource')
@@ -32,21 +32,21 @@ export const GET = withAppAuth(async (
     // 🔒 投資方只能看到投資項目
     if (context.role === Role.INVESTOR) {
       where.fundingSource = 'COMPANY'
-      if (context.investorId) {
+      if (context.investor_id) {
         // 如果有投資方ID，只顯示該投資方的項目
         // 這裡可以根據業務邏輯調整
       }
     }
 
     // 其他篩選條件
-    if (customerId) where.customerId = customerId
+    if (customer_id) where.customer_id = customer_id
     if (fundingSource && context.role === Role.SUPER_ADMIN) {
       where.fundingSource = fundingSource
     }
     if (dateFrom || dateTo) {
-      where.createdAt = {}
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
-      if (dateTo) where.createdAt.lte = new Date(dateTo)
+      where.created_at = {}
+      if (dateFrom) where.created_at.gte = new Date(dateFrom)
+      if (dateTo) where.created_at.lte = new Date(dateTo)
     }
 
     // 查詢銷售資料
@@ -80,7 +80,7 @@ export const GET = withAppAuth(async (
             }
           }
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         skip: (page - 1) * limit,
         take: limit
       }),
@@ -149,8 +149,8 @@ export const POST = withAppAuth(async (
     let validatedData
     try {
       const saleData = {
-        customerId: body.customerId,
-        totalAmount: body.totalAmount || 0, // 將在後面重新計算
+        customer_id: body.customer_id,
+        total_amount: body.total_amount || 0, // 將在後面重新計算
         actualTotalAmount: body.actualTotalAmount || 0, // 將在後面重新計算
         status: body.status || 'PENDING',
         paymentStatus: body.paymentStatus || 'PENDING',
@@ -169,7 +169,7 @@ export const POST = withAppAuth(async (
     }
 
     const {
-      customerId,
+      customer_id,
       items,
       displayPrices,
       actualPrices,
@@ -232,9 +232,9 @@ export const POST = withAppAuth(async (
     const sale = await prisma.sale.create({
       data: {
         saleNumber,
-        customerId,
-        totalAmount: totalDisplayAmount,       // 顯示金額 (投資方看到)
-        actualAmount: totalActualAmount,       // 實際金額 (僅超級管理員)
+        customer_id,
+        total_amount: totalDisplayAmount,       // 顯示金額 (投資方看到)
+        actual_amount: totalActualAmount,       // 實際金額 (僅超級管理員)
         commission: commission,                // 老闆傭金 (僅超級管理員)
         fundingSource,
         paymentTerms,
@@ -242,13 +242,13 @@ export const POST = withAppAuth(async (
         createdBy: context.userId,
         items: {
           create: items.map((item: SaleItem, index: number) => ({
-            productId: item.productId,
+            product_id: item.product_id,
             variantId: item.variantId,
             quantity: item.quantity,
-            unitPrice: displayPrices[index],                    // 顯示單價
-            actualUnitPrice: actualPrices?.[index] || displayPrices[index], // 實際單價
-            totalPrice: displayPrices[index] * item.quantity,   // 顯示總價
-            actualTotalPrice: (actualPrices?.[index] || displayPrices[index]) * item.quantity, // 實際總價
+            unit_price: displayPrices[index],                    // 顯示單價
+            actual_unit_price: actualPrices?.[index] || displayPrices[index], // 實際單價
+            total_price: displayPrices[index] * item.quantity,   // 顯示總價
+            actual_total_price: (actualPrices?.[index] || displayPrices[index]) * item.quantity, // 實際總價
             isPersonalPurchase: fundingSource === 'PERSONAL'
           }))
         }
@@ -290,12 +290,12 @@ export const POST = withAppAuth(async (
 function calculateSalesSummary(sales: Sale[], context: PermissionContext) {
   if (context.role === Role.SUPER_ADMIN) {
     // 超級管理員看到完整的財務摘要
-    const totalRevenue = sales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
-    const totalDisplayRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0)
+    const totalRevenue = sales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
+    const totalDisplayRevenue = sales.reduce((sum, sale) => sum + sale.total_amount, 0)
     const totalCommission = sales.reduce((sum, sale) => sum + (sale.commission || 0), 0)
     const totalCost = sales.reduce((sum, sale) => {
       return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
-        itemSum + (item.product?.costPrice || 0) * item.quantity, 0)
+        itemSum + (item.product?.cost_price || 0) * item.quantity, 0)
     }, 0)
 
     return {
@@ -311,10 +311,10 @@ function calculateSalesSummary(sales: Sale[], context: PermissionContext) {
   if (context.role === Role.INVESTOR) {
     // 投資方只看到基於顯示價格的摘要
     const investmentSales = sales.filter(sale => sale.fundingSource === 'COMPANY')
-    const totalRevenue = investmentSales.reduce((sum, sale) => sum + sale.totalAmount, 0)
+    const totalRevenue = investmentSales.reduce((sum, sale) => sum + sale.total_amount, 0)
     const totalCost = investmentSales.reduce((sum, sale) => {
       return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
-        itemSum + (item.product?.costPrice || 0) * item.quantity, 0)
+        itemSum + (item.product?.cost_price || 0) * item.quantity, 0)
     }, 0)
 
     return {

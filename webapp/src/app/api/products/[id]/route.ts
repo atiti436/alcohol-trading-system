@@ -30,7 +30,7 @@ export async function GET(
         },
         saleItems: {
           take: 10, // 最近10筆銷售記錄
-          orderBy: { createdAt: 'desc' },
+          orderBy: { created_at: 'desc' },
           include: {
             sale: {
               select: {
@@ -69,10 +69,10 @@ export async function GET(
 
     // 計算商品統計資料
     const salesStats = await prisma.saleItem.aggregate({
-      where: { productId: params.id },
+      where: { product_id: params.id },
       _sum: {
         quantity: true,
-        totalPrice: true
+        total_price: true
       }
     })
 
@@ -87,7 +87,7 @@ export async function GET(
           totalVariants: product._count.variants,
           totalSales: product._count.saleItems,
           totalQuantitySold: salesStats._sum.quantity || 0,
-          totalRevenue: salesStats._sum.totalPrice || 0,
+          totalRevenue: salesStats._sum.total_price || 0,
           total_stock_quantity
         }
       }
@@ -126,17 +126,17 @@ export async function PUT(
       hasAccessories,
       accessoryWeight,
       accessories,
-      hsCode,
+      hs_code,
       supplier,
       manufacturingDate,
       expiryDate,
-      standardPrice,
-      currentPrice,
-      costPrice,
-      minPrice,
+      standard_price,
+      current_price,
+      cost_price,
+      min_price,
       // 🔧 移除：庫存字段已遷移至 ProductVariant 層級管理
       // totalStock, availableStock, reservedStock 不在 Product 模型中
-      isActive
+      is_active
     } = body
 
     // 檢查商品是否存在
@@ -168,16 +168,16 @@ export async function PUT(
         ...(hasAccessories !== undefined && { hasAccessories }),
         ...(accessoryWeight !== undefined && { accessoryWeight }),
         ...(accessories && { accessories }),
-        ...(hsCode !== undefined && { hsCode }),
+        ...(hs_code !== undefined && { hs_code }),
         ...(supplier !== undefined && { supplier }),
         ...(manufacturingDate !== undefined && { manufacturingDate }),
         ...(expiryDate !== undefined && { expiryDate }),
-        ...(standardPrice !== undefined && { standardPrice }),
-        ...(currentPrice !== undefined && { currentPrice }),
-        ...(costPrice !== undefined && { costPrice }),
-        ...(minPrice !== undefined && { minPrice }),
+        ...(standard_price !== undefined && { standard_price }),
+        ...(current_price !== undefined && { current_price }),
+        ...(cost_price !== undefined && { cost_price }),
+        ...(min_price !== undefined && { min_price }),
         // 🔧 移除：庫存字段不在 Product 模型中，在 ProductVariant 中管理
-        ...(isActive !== undefined && { isActive })
+        ...(is_active !== undefined && { is_active })
       }
     })
 
@@ -230,7 +230,7 @@ export async function DELETE(
       // 有交易記錄的商品只能軟刪除
       await prisma.product.update({
         where: { id: params.id },
-        data: { isActive: false }
+        data: { is_active: false }
       })
 
       return NextResponse.json({

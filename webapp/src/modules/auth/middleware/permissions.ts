@@ -61,7 +61,7 @@ export function withAuth(
       const context: PermissionContext = {
         userId: session.user.id,
         role: session.user.role,
-        investorId: session.user.investorId
+        investor_id: session.user.investor_id
       }
 
       // 4. 執行原始handler並注入權限上下文
@@ -161,7 +161,7 @@ export function withAppAuth(
       const context: PermissionContext = {
         userId: session.user.id,
         role: session.user.role,
-        investorId: session.user.investorId
+        investor_id: session.user.investor_id
       }
 
       // 4. 執行原始handler並注入權限上下文

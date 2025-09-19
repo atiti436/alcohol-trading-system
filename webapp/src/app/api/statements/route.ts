@@ -18,18 +18,18 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const customerId = searchParams.get('customerId')
+    const customer_id = searchParams.get('customer_id')
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const statementType = searchParams.get('type') || 'monthly' // monthly, custom
 
-    if (!customerId) {
+    if (!customer_id) {
       return NextResponse.json({ error: '請選擇客戶' }, { status: 400 })
     }
 
     // 🔒 投資方數據隔離：只能看公司資金的交易
     const saleWhere: any = {
-      customerId,
+      customer_id,
       isPaid: true
     }
 
@@ -39,21 +39,21 @@ export async function GET(request: NextRequest) {
 
     // 日期範圍篩選
     if (dateFrom || dateTo) {
-      saleWhere.createdAt = {}
+      saleWhere.created_at = {}
       if (dateFrom) {
-        saleWhere.createdAt.gte = new Date(dateFrom)
+        saleWhere.created_at.gte = new Date(dateFrom)
       }
       if (dateTo) {
         const endDate = new Date(dateTo)
         endDate.setHours(23, 59, 59, 999)
-        saleWhere.createdAt.lte = endDate
+        saleWhere.created_at.lte = endDate
       }
     } else {
       // 預設為當月
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-      saleWhere.createdAt = {
+      saleWhere.created_at = {
         gte: startOfMonth,
         lte: endOfMonth
       }
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     // 查詢客戶資料
     const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
+      where: { id: customer_id },
       select: {
         id: true,
         customer_code: true,
@@ -111,15 +111,15 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { created_at: 'asc' }
     })
 
     // 查詢應收帳款記錄
     const receivables = await prisma.accountsReceivable.findMany({
       where: {
-        customerId,
+        customer_id,
         sale: {
-          createdAt: saleWhere.createdAt
+          created_at: saleWhere.created_at
         }
       },
       include: {
@@ -127,14 +127,14 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             saleNumber: true,
-            createdAt: true
+            created_at: true
           }
         },
         payments: {
           orderBy: { paymentDate: 'asc' }
         }
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { created_at: 'asc' }
     })
 
     // 🔒 資料過濾：投資方看不到敏感資訊
@@ -142,28 +142,28 @@ export async function GET(request: NextRequest) {
       const saleData = {
         id: sale.id,
         saleNumber: sale.saleNumber,
-        totalAmount: sale.totalAmount,
-        actualAmount: session.user.role !== 'INVESTOR' ? sale.actualAmount : undefined,
+        total_amount: sale.total_amount,
+        actual_amount: session.user.role !== 'INVESTOR' ? sale.actual_amount : undefined,
         commission: session.user.role !== 'INVESTOR' ? sale.commission : undefined,
         fundingSource: sale.fundingSource,
         isPaid: sale.isPaid,
         paidAt: sale.paidAt,
-        createdAt: sale.createdAt,
+        created_at: sale.created_at,
         creator: session.user.role !== 'INVESTOR' ? sale.creator : null,
         items: sale.items.map(item => ({
           ...item,
-          actualUnitPrice: session.user.role === 'INVESTOR' ? undefined : item.actualUnitPrice,
-          actualTotalPrice: session.user.role === 'INVESTOR' ? undefined : item.actualTotalPrice
+          actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
+          actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price
         }))
       }
       return saleData
     })
 
     // 計算統計資訊
-    const totalSalesAmount = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0)
+    const totalSalesAmount = filteredSales.reduce((sum, sale) => sum + sale.total_amount, 0)
     const totalActualAmount = session.user.role === 'INVESTOR'
       ? totalSalesAmount
-      : filteredSales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
+      : filteredSales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
     const totalCommission = session.user.role === 'INVESTOR'
       ? 0
       : totalActualAmount - totalSalesAmount
@@ -178,8 +178,8 @@ export async function GET(request: NextRequest) {
       data: {
         customer,
         periodInfo: {
-          dateFrom: saleWhere.createdAt?.gte || null,
-          dateTo: saleWhere.createdAt?.lte || null,
+          dateFrom: saleWhere.created_at?.gte || null,
+          dateTo: saleWhere.created_at?.lte || null,
           type: statementType
         },
         sales: filteredSales,
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { customerId, periodStart, periodEnd, notes } = body
+    const { customer_id, periodStart, periodEnd, notes } = body
 
     // 這裡可以實現對帳單歷史記錄的創建
     // 暫時返回成功訊息

@@ -35,22 +35,22 @@ export interface Customer {
   requiresInvoice: boolean
   credit_limit?: number     // 信用額度
   notes?: string
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
+  is_active: boolean
+  created_at: Date
+  updated_at: Date
 }
 
 export interface CustomerWithStats extends Customer {
   _count: {
     sales: number
   }
-  totalAmount?: number
+  total_amount?: number
   recentOrders?: Array<{
     id: string
     saleNumber: string
-    totalAmount: number
-    actualAmount?: number    // 只有SUPER_ADMIN看得到
-    createdAt: Date
+    total_amount: number
+    actual_amount?: number    // 只有SUPER_ADMIN看得到
+    created_at: Date
     isPaid: boolean
   }>
 }
@@ -85,7 +85,7 @@ export interface UpdateCustomerRequest {
   requiresInvoice?: boolean
   credit_limit?: number
   notes?: string
-  isActive?: boolean
+  is_active?: boolean
 }
 
 // ===== Product 相關類型 =====
@@ -123,28 +123,28 @@ export interface Product {
   hasAccessories: boolean
   accessoryWeight?: number // 附件重量(kg)
   accessories: string[]    // 附件清單
-  hsCode?: string         // 稅則號列
+  hs_code?: string         // 稅則號列
   supplier?: string
   manufacturingDate?: string
   expiryDate?: string
-  standardPrice: number   // 標準售價
-  currentPrice: number    // 目前售價
-  costPrice: number       // 平均成本價
-  minPrice: number        // 最低售價限制
+  standard_price: number   // 標準售價
+  current_price: number    // 目前售價
+  cost_price: number       // 平均成本價
+  min_price: number        // 最低售價限制
   // 庫存欄位已移除 - 庫存在ProductVariant層級管理
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
+  is_active: boolean
+  created_at: Date
+  updated_at: Date
 }
 
 export interface ProductVariant {
   id: string
-  productId: string
+  product_id: string
   variant_code: string    // P00001-A
   variantType: VariantType
   description: string     // "一般版", "100周年紀念版"
   basePrice: number       // 基礎售價
-  currentPrice: number    // 目前售價
+  current_price: number    // 目前售價
   discountRate?: number   // 折扣率 (損傷品用)
   limitedEdition: boolean
   productionYear?: number
@@ -152,8 +152,8 @@ export interface ProductVariant {
   condition: string       // 商品狀況
   stock_quantity: number
   cost_price: number     // 實際成本
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
 }
 
 export interface ProductWithVariants extends Product {
@@ -169,9 +169,9 @@ export interface ProductWithVariants extends Product {
 export interface Sale {
   id: string
   saleNumber: string
-  customerId: string
-  totalAmount: number        // 顯示金額（投資方看到的）
-  actualAmount?: number      // 實際收取金額（僅超級管理員）
+  customer_id: string
+  total_amount: number        // 顯示金額（投資方看到的）
+  actual_amount?: number      // 實際收取金額（僅超級管理員）
   commission?: number        // 老闆傭金（僅超級管理員）
   fundingSource: 'COMPANY' | 'PERSONAL'
   paymentTerms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
@@ -180,8 +180,8 @@ export interface Sale {
   dueDate?: Date
   notes?: string
   createdBy: string
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
   items?: SaleItem[]
   customer?: Customer
 }
@@ -189,24 +189,24 @@ export interface Sale {
 export interface SaleItem {
   id: string
   saleId: string
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
-  unitPrice: number          // 顯示單價
-  actualUnitPrice?: number   // 實際單價（僅超級管理員）
-  totalPrice: number         // 顯示總價
-  actualTotalPrice?: number  // 實際總價（僅超級管理員）
+  unit_price: number          // 顯示單價
+  actual_unit_price?: number   // 實際單價（僅超級管理員）
+  total_price: number         // 顯示總價
+  actual_total_price?: number  // 實際總價（僅超級管理員）
   isPersonalPurchase: boolean
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
   product?: Product
   variant?: ProductVariant
 }
 
 export interface CreateSaleRequest {
-  customerId: string
-  totalAmount: number
-  actualAmount?: number
+  customer_id: string
+  total_amount: number
+  actual_amount?: number
   commission?: number
   fundingSource: 'COMPANY' | 'PERSONAL'
   paymentTerms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
@@ -216,13 +216,13 @@ export interface CreateSaleRequest {
 }
 
 export interface CreateSaleItemRequest {
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
-  unitPrice: number
-  actualUnitPrice?: number
-  totalPrice: number
-  actualTotalPrice?: number
+  unit_price: number
+  actual_unit_price?: number
+  total_price: number
+  actual_total_price?: number
   isPersonalPurchase?: boolean
 }
 
@@ -240,35 +240,35 @@ export interface Purchase {
   supplier: string
   currency: 'JPY' | 'USD' | 'TWD'
   exchangeRate: number
-  totalAmount: number
+  total_amount: number
   fundingSource: 'COMPANY' | 'PERSONAL'
   status: 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'RECEIVED' | 'CANCELLED'
   declarationNumber?: string
   declarationDate?: Date
   notes?: string
   createdBy: string
-  investorId?: string
-  createdAt: Date
-  updatedAt: Date
+  investor_id?: string
+  created_at: Date
+  updated_at: Date
   items?: PurchaseItem[]
 }
 
 export interface PurchaseItem {
   id: string
   purchaseId: string
-  productId?: string
+  product_id?: string
   productName: string
   quantity: number
-  unitPrice: number
-  totalPrice: number
+  unit_price: number
+  total_price: number
   dutiableValue?: number
   tariffCode?: string
   importDutyRate?: number
   alc_percentage?: number
   volume_ml?: number
   weight?: number
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
   product?: Product
 }
 
@@ -284,10 +284,10 @@ export interface CreatePurchaseRequest {
 }
 
 export interface CreatePurchaseItemRequest {
-  productId?: string
+  product_id?: string
   productName: string
   quantity: number
-  unitPrice: number
+  unit_price: number
   dutiableValue?: number
   tariffCode?: string
   importDutyRate?: number
@@ -311,13 +311,13 @@ export interface CreateProductRequest {
   hasAccessories?: boolean
   accessoryWeight?: number
   accessories?: string[]
-  hsCode?: string
+  hs_code?: string
   supplier?: string
   manufacturingDate?: string
   expiryDate?: string
-  standardPrice: number
-  currentPrice: number
-  minPrice: number
+  standard_price: number
+  current_price: number
+  min_price: number
   createDefaultVariant?: boolean
 }
 
@@ -332,23 +332,23 @@ export interface UpdateProductRequest {
   hasAccessories?: boolean
   accessoryWeight?: number
   accessories?: string[]
-  hsCode?: string
+  hs_code?: string
   supplier?: string
   manufacturingDate?: string
   expiryDate?: string
-  standardPrice?: number
-  currentPrice?: number
-  costPrice?: number
-  minPrice?: number
+  standard_price?: number
+  current_price?: number
+  cost_price?: number
+  min_price?: number
   // 庫存欄位已移除 - 庫存在ProductVariant層級管理
-  isActive?: boolean
+  is_active?: boolean
 }
 
 export interface CreateVariantRequest {
   variantType: VariantType
   description: string
   basePrice: number
-  currentPrice: number
+  current_price: number
   discountRate?: number
   limitedEdition?: boolean
   productionYear?: number
@@ -360,7 +360,7 @@ export interface CreateVariantRequest {
 export interface UpdateVariantRequest {
   description?: string
   basePrice?: number
-  currentPrice?: number
+  current_price?: number
   discountRate?: number
   limitedEdition?: boolean
   productionYear?: number
@@ -412,7 +412,7 @@ export interface ProductFilters extends SearchFilters {
 
 export interface CustomerStatistics {
   totalOrders: number
-  totalAmount: number
+  total_amount: number
 }
 
 export interface ProductStatistics {

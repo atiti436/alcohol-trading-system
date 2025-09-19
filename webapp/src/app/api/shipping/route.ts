@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const customerId = searchParams.get('customerId')
+    const customer_id = searchParams.get('customer_id')
     const status = searchParams.get('status')
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 篩選條件
-    if (customerId) {
-      where.customerId = customerId
+    if (customer_id) {
+      where.customer_id = customer_id
     }
 
     if (status) {
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         },
         skip,
         take: limit,
-        orderBy: { [orderBy === 'shippingDate' ? 'createdAt' : orderBy]: order },
+        orderBy: { [orderBy === 'shippingDate' ? 'created_at' : orderBy]: order },
         include: {
           customer: {
             select: {
@@ -140,19 +140,19 @@ export async function GET(request: NextRequest) {
         id: sale.id,
         shippingNumber: `SH${sale.saleNumber.slice(2)}`, // SH20250917001
         saleNumber: sale.saleNumber,
-        customerId: sale.customerId,
+        customer_id: sale.customer_id,
         customer: sale.customer,
-        shippingDate: sale.createdAt, // 暫時使用創建日期
+        shippingDate: sale.created_at, // 暫時使用創建日期
         status: 'READY', // 出貨狀態
-        totalAmount: sale.totalAmount,
-        actualAmount: session.user.role !== 'INVESTOR' ? sale.actualAmount : undefined,
+        total_amount: sale.total_amount,
+        actual_amount: session.user.role !== 'INVESTOR' ? sale.actual_amount : undefined,
         commission: session.user.role !== 'INVESTOR' ? sale.commission : undefined,
         notes: sale.notes,
         creator: session.user.role !== 'INVESTOR' ? sale.creator : null,
         items: sale.items.map(item => ({
           ...item,
-          actualUnitPrice: session.user.role === 'INVESTOR' ? undefined : item.actualUnitPrice,
-          actualTotalPrice: session.user.role === 'INVESTOR' ? undefined : item.actualTotalPrice
+          actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
+          actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price
         }))
       }
 
@@ -196,14 +196,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       saleId,
-      customerId,
+      customer_id,
       shippingDate,
       items,
       notes
     } = body
 
     // 資料驗證
-    if (!saleId && !customerId) {
+    if (!saleId && !customer_id) {
       return NextResponse.json({ error: '請提供銷售單ID或客戶ID' }, { status: 400 })
     }
 
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest) {
       shippingDate: shippingDate || new Date().toISOString(),
       status: 'READY',
       items: items.map((item: any) => ({
-        productId: item.productId,
+        product_id: item.product_id,
         variantId: item.variantId,
         quantity: item.quantity,
         notes: item.notes
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
       data: {
         shippingNumber,
         shippingDate: shippingData.shippingDate,
-        customerId: sale?.customerId || customerId,
+        customer_id: sale?.customer_id || customer_id,
         customer: sale?.customer,
         items: shippingData.items,
         totalItems: items.reduce((sum: number, item: any) => sum + item.quantity, 0)

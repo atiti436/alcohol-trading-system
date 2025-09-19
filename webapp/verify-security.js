@@ -12,7 +12,7 @@ function filterSalesData(data, context) {
         const filtered = { ...item }
 
         // 移除所有敏感欄位
-        const sensitiveFields = ['actualAmount', 'actualPrice', 'commission', 'actualUnitPrice', 'actualTotalPrice']
+        const sensitiveFields = ['actual_amount', 'actualPrice', 'commission', 'actual_unit_price', 'actual_total_price']
         sensitiveFields.forEach(field => {
           delete filtered[field]
         })
@@ -36,19 +36,19 @@ const testSalesData = [
   {
     id: 'sale_001',
     fundingSource: 'COMPANY',
-    totalAmount: 1000,        // 投資方看到
-    actualAmount: 1200,       // 🔒 敏感 - 投資方不應看到
+    total_amount: 1000,        // 投資方看到
+    actual_amount: 1200,       // 🔒 敏感 - 投資方不應看到
     commission: 200,          // 🔒 敏感 - 投資方不應看到
     actualPrice: 1200,        // 🔒 敏感
     items: [{
-      actualUnitPrice: 1200   // 🔒 敏感
+      actual_unit_price: 1200   // 🔒 敏感
     }]
   },
   {
     id: 'sale_002',
     fundingSource: 'PERSONAL', // 🔒 個人調貨 - 投資方不應看到
-    totalAmount: 500,
-    actualAmount: 500
+    total_amount: 500,
+    actual_amount: 500
   }
 ]
 
@@ -62,7 +62,7 @@ console.log('🧪 安全測試開始...\n')
 const adminResult = filterSalesData(testSalesData, superAdminContext)
 console.log('✅ 超級管理員測試:')
 console.log(`   可見記錄數: ${adminResult.length} (應為2)`)
-console.log(`   可見敏感資料: ${adminResult[0].actualAmount ? '是' : '否'} (應為是)`)
+console.log(`   可見敏感資料: ${adminResult[0].actual_amount ? '是' : '否'} (應為是)`)
 
 // 測試2: 投資方應該只看到公司項目，且無敏感欄位
 const investorResult = filterSalesData(testSalesData, investorContext)
@@ -71,14 +71,14 @@ console.log(`   可見記錄數: ${investorResult.length} (應為1，個人調�
 
 if (investorResult.length > 0) {
   const sale = investorResult[0]
-  console.log(`   顯示金額: ${sale.totalAmount} (應為1000)`)
+  console.log(`   顯示金額: ${sale.total_amount} (應為1000)`)
 
   // 關鍵檢查：敏感欄位是否完全移除
   const hasSensitiveData =
-    sale.actualAmount !== undefined ||
+    sale.actual_amount !== undefined ||
     sale.commission !== undefined ||
     sale.actualPrice !== undefined ||
-    (sale.items && sale.items[0] && sale.items[0].actualUnitPrice !== undefined)
+    (sale.items && sale.items[0] && sale.items[0].actual_unit_price !== undefined)
 
   console.log(`   包含敏感資料: ${hasSensitiveData ? '是 ❌' : '否 ✅'}`)
 
@@ -99,5 +99,5 @@ console.log(`   個人調貨可見: ${personalSales.length > 0 ? '是 ❌' : '�
 console.log('\n📋 測試總結:')
 console.log('✅ 雙重價格機制: 投資方看1000，實際收1200，差額200為老闆傭金')
 console.log('✅ 數據隔離: 投資方只看投資項目，個人調貨完全隱藏')
-console.log('✅ 敏感欄位保護: actualAmount, commission等欄位完全移除')
+console.log('✅ 敏感欄位保護: actual_amount, commission等欄位完全移除')
 console.log('\n🔒 核心商業機密已受到完整保護！')

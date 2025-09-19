@@ -28,14 +28,14 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const tier = searchParams.get('tier') // 分級篩選
-    const orderBy = searchParams.get('orderBy') || 'createdAt'
+    const orderBy = searchParams.get('orderBy') || 'created_at'
     const order = searchParams.get('order') || 'desc'
 
     const skip = (page - 1) * limit
 
     // 建立查詢條件 - 🔧 修復：使用正確的型別定義
     const where: CustomerWhereCondition = {
-      isActive: true
+      is_active: true
     }
 
     // 搜尋條件 - 支援姓名、電話、公司的模糊搜尋

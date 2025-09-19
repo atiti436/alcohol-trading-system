@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // 建立查詢條件 - 🔧 修復：使用正確的型別定義
     const where: InventoryWhereCondition = {
-      isActive: true
+      is_active: true
     }
 
     // 搜尋條件 - 支援產品名稱、產品編號的模糊搜尋
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
               available_stock: true,
               cost_price: true,
               base_price: true,
-              currentPrice: true
+              current_price: true
             }
           },
           _count: {

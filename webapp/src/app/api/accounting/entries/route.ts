@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     // 根據不同類型產生對應的會計分錄
     let journalEntries = []
-    let totalAmount = 0
+    let total_amount = 0
     let entryDescription = description
 
     switch (entryType) {
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         // 銷售分錄處理
         const saleData = await generateSaleEntry(referenceId, session.user.role)
         journalEntries = saleData.journalEntries
-        totalAmount = saleData.totalAmount
+        total_amount = saleData.total_amount
         entryDescription = entryDescription || `銷售收入 - ${saleData.saleNumber}`
         break
 
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         // 收款分錄處理
         const paymentData = await generatePaymentEntry(referenceId)
         journalEntries = paymentData.journalEntries
-        totalAmount = paymentData.totalAmount
+        total_amount = paymentData.total_amount
         entryDescription = entryDescription || `客戶付款 - ${paymentData.paymentNumber}`
         break
 
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         referenceId,
         referenceType,
         description: entryDescription,
-        totalAmount,
+        total_amount,
         notes,
         createdBy: session.user.id,
         journalEntries: {
@@ -210,15 +210,15 @@ async function generateSaleEntry(saleId: string, userRole: string) {
 
   // 🔒 核心：根據角色決定使用哪個金額
   // 超級管理員看到實際金額，其他角色看到顯示金額
-  const actualAmount = userRole === 'SUPER_ADMIN' && sale.actualAmount
-    ? sale.actualAmount
-    : sale.totalAmount
+  const actual_amount = userRole === 'SUPER_ADMIN' && sale.actual_amount
+    ? sale.actual_amount
+    : sale.total_amount
 
   // 借：現金/應收帳款
   journalEntries.push({
     accountCode: debitAccount.code,
     accountName: debitAccount.name,
-    debitAmount: actualAmount,
+    debitAmount: actual_amount,
     creditAmount: 0,
     description: `銷售 - ${sale.customer.name}`
   })
@@ -228,7 +228,7 @@ async function generateSaleEntry(saleId: string, userRole: string) {
     accountCode: '4101',
     accountName: '銷貨收入',
     debitAmount: 0,
-    creditAmount: sale.totalAmount, // 投資方看到的金額
+    creditAmount: sale.total_amount, // 投資方看到的金額
     description: `銷售收入 - ${sale.customer.name}`
   })
 
@@ -245,7 +245,7 @@ async function generateSaleEntry(saleId: string, userRole: string) {
 
   return {
     journalEntries,
-    totalAmount: actualAmount,
+    total_amount: actual_amount,
     saleNumber: sale.saleNumber
   }
 }
@@ -290,7 +290,7 @@ async function generatePaymentEntry(paymentId: string) {
 
   return {
     journalEntries,
-    totalAmount: payment.paymentAmount,
+    total_amount: payment.paymentAmount,
     paymentNumber: payment.paymentNumber
   }
 }

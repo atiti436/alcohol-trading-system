@@ -91,7 +91,7 @@ export default function StatementsPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({
-        customerId: selectedCustomerId,
+        customer_id: selectedCustomerId,
         dateFrom: dateRange[0].toISOString(),
         dateTo: dateRange[1].toISOString(),
         type: 'custom'
@@ -166,8 +166,8 @@ export default function StatementsPage() {
     },
     {
       title: '銷售日期',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'created_at',
+      key: 'created_at',
       width: 120,
       render: (date: string) => dayjs(date).format('YYYY-MM-DD')
     },
@@ -182,7 +182,7 @@ export default function StatementsPage() {
               {item.variant && <Text type="secondary"> - {item.variant.description}</Text>}
               <br />
               <Text type="secondary" style={{ fontSize: '12px' }}>
-                數量: {item.quantity} | 單價: <SecurePriceDisplay amount={item.unitPrice} />
+                數量: {item.quantity} | 單價: <SecurePriceDisplay amount={item.unit_price} />
               </Text>
             </div>
           ))}
@@ -198,15 +198,15 @@ export default function StatementsPage() {
         <div>
           <div>
             <SecurePriceDisplay
-              amount={record.totalAmount}
+              amount={record.total_amount}
               currency="NT$"
               allowedRoles={['SUPER_ADMIN', 'EMPLOYEE', 'INVESTOR']}
             />
           </div>
           <SuperAdminOnly>
-            {record.actualAmount && record.actualAmount !== record.totalAmount && (
+            {record.actual_amount && record.actual_amount !== record.total_amount && (
               <div style={{ fontSize: '12px', color: '#52c41a' }}>
-                實收: <SecurePriceDisplay amount={record.actualAmount} />
+                實收: <SecurePriceDisplay amount={record.actual_amount} />
               </div>
             )}
           </SuperAdminOnly>

@@ -26,21 +26,21 @@ export async function GET(
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
     }
 
-    const customerId = params.id
+    const customer_id = params.id
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const isActive = searchParams.get('active') !== 'false' // 預設只顯示啟用中的專價
+    const is_active = searchParams.get('active') !== 'false' // 預設只顯示啟用中的專價
 
     const skip = (page - 1) * limit
 
     // 查詢條件
     const where: any = {
-      customer_id: customerId
+      customer_id: customer_id
     }
 
     // 是否只顯示啟用中的專價
-    if (isActive) {
+    if (is_active) {
       where.is_active = true
       where.OR = [
         { expiry_date: null }, // 無到期日
@@ -61,8 +61,8 @@ export async function GET(
               product_code: true,
               name: true,
               
-              standardPrice: true,
-              currentPrice: true
+              standard_price: true,
+              current_price: true
             }
           }
         }
@@ -102,7 +102,7 @@ export async function POST(
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
     }
 
-    const customerId = params.id
+    const customer_id = params.id
     const body = await request.json()
     const {
       product_id,
@@ -122,7 +122,7 @@ export async function POST(
 
     // 驗證客戶是否存在
     const customer = await prisma.customer.findUnique({
-      where: { id: customerId }
+      where: { id: customer_id }
     })
     if (!customer) {
       return NextResponse.json({ error: '客戶不存在' }, { status: 404 })
@@ -131,14 +131,14 @@ export async function POST(
     // 驗證產品是否存在並取得標準價格
     const product = await prisma.product.findUnique({
       where: { id: product_id },
-      select: { id: true, standardPrice: true, currentPrice: true }
+      select: { id: true, standard_price: true, current_price: true }
     })
     if (!product) {
       return NextResponse.json({ error: '產品不存在' }, { status: 404 })
     }
 
     // 計算折扣金額和折扣率
-    const standard_price = product.standardPrice
+    const standard_price = product.standard_price
     const discount_amount = standard_price - special_price
     const discount_rate = discount_amount / standard_price
 
@@ -158,7 +158,7 @@ export async function POST(
     // 檢查是否已有啟用中的專價 (停用舊的專價)
     await prisma.customerSpecialPrice.updateMany({
       where: {
-        customer_id: customerId,
+        customer_id: customer_id,
         product_id: product_id,
         is_active: true
       },
@@ -171,7 +171,7 @@ export async function POST(
     // 創建新的客戶專價
     const specialPrice = await prisma.customerSpecialPrice.create({
       data: {
-        customer_id: customerId,
+        customer_id: customer_id,
         product_id,
         standard_price,
         special_price,
@@ -189,7 +189,7 @@ export async function POST(
           select: {
             product_code: true,
             name: true,
-            standardPrice: true
+            standard_price: true
           }
         }
       }

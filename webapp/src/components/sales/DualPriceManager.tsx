@@ -30,7 +30,7 @@ import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
 const { Title, Text } = Typography
 
 interface DualPriceManagerProps {
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
   basePrice: number // 商品基礎價格
@@ -51,7 +51,7 @@ interface DualPriceManagerProps {
  * - 實際情況: 成本800 → 實收1200 → 投資方1000 + 老闆200
  */
 export function DualPriceManager({
-  productId,
+  product_id,
   variantId,
   quantity,
   basePrice,

@@ -63,7 +63,7 @@ interface CustomerAR {
   dueDate: string
   sale: {
     saleNumber: string
-    createdAt: string
+    created_at: string
   }
 }
 
@@ -91,14 +91,14 @@ export default function AgeingAnalysisReport() {
 
       if (summaryResult.success) {
         // 計算百分比
-        const totalAmount = summaryResult.data.ageingAnalysis.reduce(
+        const total_amount = summaryResult.data.ageingAnalysis.reduce(
           (sum: number, item: AgeingData) => sum + item.amount, 0
         )
 
         const analysisWithPercentage = summaryResult.data.ageingAnalysis.map(
           (item: AgeingData) => ({
             ...item,
-            percentage: totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0
+            percentage: total_amount > 0 ? (item.amount / total_amount) * 100 : 0
           })
         )
 
@@ -114,7 +114,7 @@ export default function AgeingAnalysisReport() {
         params.append('status', selectedPeriod === 'overdue' ? 'OVERDUE' : 'OUTSTANDING')
       }
       if (selectedCustomer) {
-        params.append('customerId', selectedCustomer)
+        params.append('customer_id', selectedCustomer)
       }
 
       const detailResponse = await fetch(`/api/accounts-receivable?${params}`)

@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
         name: true,
         image: true,
         role: true,
-        investorId: true,
-        isActive: true,
+        investor_id: true,
+        is_active: true,
         preferences: true,
-        createdAt: true,
-        updatedAt: true
+        created_at: true,
+        updated_at: true
       }
     })
 
@@ -92,10 +92,10 @@ export async function PUT(request: NextRequest) {
         name: true,
         image: true,
         role: true,
-        investorId: true,
-        isActive: true,
+        investor_id: true,
+        is_active: true,
         preferences: true,
-        updatedAt: true
+        updated_at: true
       }
     })
 

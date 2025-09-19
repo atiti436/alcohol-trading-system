@@ -69,7 +69,7 @@ async function getSuperAdminDashboard(context: PermissionContext) {
         }
       }
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { created_at: 'desc' },
     take: 100 // 最近100筆
   })
 
@@ -78,9 +78,9 @@ async function getSuperAdminDashboard(context: PermissionContext) {
   const investmentSales = sales.filter(sale => sale.fundingSource === 'COMPANY')
 
   // 計算總營收 (真實金額)
-  const totalRevenue = sales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
-  const personalRevenue = personalSales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
-  const investmentRevenue = investmentSales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
+  const totalRevenue = sales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
+  const personalRevenue = personalSales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
+  const investmentRevenue = investmentSales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
 
   // 計算總傭金 (老闆賺的差價)
   const totalCommission = sales.reduce((sum, sale) => sum + (sale.commission || 0), 0)
@@ -89,7 +89,7 @@ async function getSuperAdminDashboard(context: PermissionContext) {
   const stockAggregation = await prisma.productVariant.aggregate({
     where: {
       product: {
-        isActive: true
+        is_active: true
       }
     },
     _sum: {
@@ -113,12 +113,12 @@ async function getSuperAdminDashboard(context: PermissionContext) {
   const unpaidSales = await prisma.sale.findMany({
     where: { isPaid: false },
     select: {
-      actualAmount: true,
-      totalAmount: true
+      actual_amount: true,
+      total_amount: true
     }
   })
   const pendingReceivables = unpaidSales.reduce((sum, sale) =>
-    sum + (sale.actualAmount || sale.totalAmount), 0)
+    sum + (sale.actual_amount || sale.total_amount), 0)
 
   // 低庫存商品 - 🔧 修正：使用優化的批次查詢避免N+1問題
   const lowStockItemsRaw = await prisma.$queryRaw`
@@ -168,8 +168,8 @@ async function getInvestorDashboard(context: PermissionContext) {
   const investmentSales = await prisma.sale.findMany({
     where: {
       fundingSource: 'COMPANY',
-      // 如果有investorId，只顯示該投資方的項目
-      ...(context.investorId && { investorId: context.investorId })
+      // 如果有investor_id，只顯示該投資方的項目
+      ...(context.investor_id && { investor_id: context.investor_id })
     },
     include: {
       items: {
@@ -178,14 +178,14 @@ async function getInvestorDashboard(context: PermissionContext) {
         }
       }
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { created_at: 'desc' }
   })
 
   // 🔒 關鍵：基於顯示價格計算投資方看到的數據
-  const investmentRevenue = investmentSales.reduce((sum, sale) => sum + sale.totalAmount, 0) // 顯示價格
+  const investmentRevenue = investmentSales.reduce((sum, sale) => sum + sale.total_amount, 0) // 顯示價格
   const investmentCost = investmentSales.reduce((sum, sale) => {
     return sum + sale.items.reduce((itemSum: number, item: SaleItem) =>
-      itemSum + (item.product?.costPrice || 0) * item.quantity, 0)
+      itemSum + (item.product?.cost_price || 0) * item.quantity, 0)
   }, 0)
   const investmentProfit = investmentRevenue - investmentCost // 基於顯示價格的獲利
 
@@ -194,7 +194,7 @@ async function getInvestorDashboard(context: PermissionContext) {
     where: {
       product: {
         // 這裡可以根據業務邏輯篩選投資項目相關的商品
-        isActive: true
+        is_active: true
       }
     },
     _sum: {
@@ -217,10 +217,10 @@ async function getInvestorDashboard(context: PermissionContext) {
     investmentItems: investmentSales.slice(0, 10).map(sale => ({
       id: sale.id,
       saleNumber: sale.saleNumber,
-      amount: sale.totalAmount, // 顯示金額
-      profit: sale.totalAmount - (sale.items.reduce((sum: number, item: SaleItem) =>
-        sum + (item.product?.costPrice || 0) * item.quantity, 0)),
-      date: sale.createdAt
+      amount: sale.total_amount, // 顯示金額
+      profit: sale.total_amount - (sale.items.reduce((sum: number, item: SaleItem) =>
+        sum + (item.product?.cost_price || 0) * item.quantity, 0)),
+      date: sale.created_at
     }))
   }
 }
@@ -243,15 +243,15 @@ async function getEmployeeDashboard(context: PermissionContext) {
         select: { id: true, name: true }
       }
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { created_at: 'desc' },
     take: 5,
     select: {
       id: true,
       saleNumber: true,
       customer: true,
-      totalAmount: true, // 顯示金額 (不含實際金額)
+      total_amount: true, // 顯示金額 (不含實際金額)
       isPaid: true,
-      createdAt: true
+      created_at: true
     }
   })
 
@@ -281,7 +281,7 @@ async function getEmployeeDashboard(context: PermissionContext) {
     recentOrders: recentOrders.map(order => ({
       id: order.saleNumber,
       customer: order.customer.name,
-      amount: order.totalAmount, // 只顯示顯示金額
+      amount: order.total_amount, // 只顯示顯示金額
       status: order.isPaid ? 'completed' : 'processing'
     })),
     stockAlerts: stockAlerts.map(product => ({
@@ -301,7 +301,7 @@ function calculateMonthlySalesTrend(sales: any[], includeActualAmount: boolean) 
   const monthlyData: MonthlySalesAccumulator = {}
 
   sales.forEach(sale => {
-    const month = sale.createdAt.toISOString().slice(0, 7) // YYYY-MM
+    const month = sale.created_at.toISOString().slice(0, 7) // YYYY-MM
 
     if (!monthlyData[month]) {
       monthlyData[month] = { revenue: 0, profit: 0, count: 0 }
@@ -309,10 +309,10 @@ function calculateMonthlySalesTrend(sales: any[], includeActualAmount: boolean) 
 
     // 🔒 關鍵：根據角色決定使用真實金額還是顯示金額
     const revenue = includeActualAmount ?
-      (sale.actualAmount || sale.totalAmount) : sale.totalAmount
+      (sale.actual_amount || sale.total_amount) : sale.total_amount
 
     const cost = sale.items.reduce((sum: number, item: SaleItem) =>
-      sum + (item.product?.costPrice || 0) * item.quantity, 0)
+      sum + (item.product?.cost_price || 0) * item.quantity, 0)
 
     monthlyData[month].revenue += revenue
     monthlyData[month].profit += revenue - cost

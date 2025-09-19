@@ -46,7 +46,7 @@ interface ShippingOrder {
   id: string
   shippingNumber: string
   saleNumber: string
-  customerId: string
+  customer_id: string
   customer: {
     id: string
     customer_code: string
@@ -59,8 +59,8 @@ interface ShippingOrder {
   }
   shippingDate: string
   status: string
-  totalAmount: number
-  actualAmount?: number
+  total_amount: number
+  actual_amount?: number
   commission?: number
   notes?: string
   creator?: {
@@ -73,13 +73,13 @@ interface ShippingOrder {
 
 interface ShippingItem {
   id: string
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
-  unitPrice: number
-  actualUnitPrice?: number
-  totalPrice: number
-  actualTotalPrice?: number
+  unit_price: number
+  actual_unit_price?: number
+  total_price: number
+  actual_total_price?: number
   product: {
     id: string
     product_code: string
@@ -404,17 +404,17 @@ export default function ShippingPage() {
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontWeight: 'bold' }}>
             <SecurePriceDisplay
-              amount={record.totalAmount}
+              amount={record.total_amount}
               currency="NT$"
               allowedRoles={['SUPER_ADMIN', 'EMPLOYEE', 'INVESTOR']}
               showFallbackIcon={false}
             />
           </div>
           <HideFromInvestor>
-            {record.actualAmount && record.actualAmount !== record.totalAmount && (
+            {record.actual_amount && record.actual_amount !== record.total_amount && (
               <div style={{ fontSize: '12px', color: '#52c41a' }}>
                 實收: <SecurePriceDisplay
-                  amount={record.actualAmount}
+                  amount={record.actual_amount}
                   currency="NT$"
                   allowedRoles={['SUPER_ADMIN', 'EMPLOYEE']}
                   showFallbackIcon={false}
@@ -598,8 +598,8 @@ export default function ShippingPage() {
               size="small"
               bordered
               summary={(pageData) => {
-                const totalAmount = pageData.reduce(
-                  (sum, record) => sum + (record.quantity * record.unitPrice), 0
+                const total_amount = pageData.reduce(
+                  (sum, record) => sum + (record.quantity * record.unit_price), 0
                 )
                 const totalQuantity = pageData.reduce(
                   (sum, record) => sum + record.quantity, 0
@@ -614,7 +614,7 @@ export default function ShippingPage() {
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={2} />
                     <Table.Summary.Cell index={3}>
-                      <Text strong>NT$ {totalAmount.toLocaleString()}</Text>
+                      <Text strong>NT$ {total_amount.toLocaleString()}</Text>
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
                 )
@@ -645,7 +645,7 @@ export default function ShippingPage() {
                   align: 'right',
                   render: (_, record) => (
                     <SecurePriceDisplay
-                      amount={record.unitPrice}
+                      amount={record.unit_price}
                       currency="NT$"
                       allowedRoles={['SUPER_ADMIN', 'EMPLOYEE', 'INVESTOR']}
                       showFallbackIcon={false}
@@ -658,7 +658,7 @@ export default function ShippingPage() {
                   align: 'right',
                   render: (_, record) => (
                     <SecurePriceDisplay
-                      amount={record.quantity * record.unitPrice}
+                      amount={record.quantity * record.unit_price}
                       currency="NT$"
                       allowedRoles={['SUPER_ADMIN', 'EMPLOYEE', 'INVESTOR']}
                       showFallbackIcon={false}

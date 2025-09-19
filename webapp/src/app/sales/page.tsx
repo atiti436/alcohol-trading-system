@@ -44,7 +44,7 @@ const { TextArea } = Input
 interface Sale {
   id: string
   saleNumber: string
-  customerId: string
+  customer_id: string
   customer: {
     id: string
     customer_code: string
@@ -53,8 +53,8 @@ interface Sale {
     tier: string
     paymentTerms: string
   }
-  totalAmount: number
-  actualAmount?: number
+  total_amount: number
+  actual_amount?: number
   commission?: number
   fundingSource: string
   paymentTerms: string
@@ -63,7 +63,7 @@ interface Sale {
   dueDate?: string
   notes?: string
   createdBy: string
-  createdAt: string
+  created_at: string
   creator?: {
     id: string
     name: string
@@ -75,13 +75,13 @@ interface Sale {
 
 interface SaleItem {
   id: string
-  productId: string
+  product_id: string
   variantId?: string
   quantity: number
-  unitPrice: number
-  actualUnitPrice?: number
-  totalPrice: number
-  actualTotalPrice?: number
+  unit_price: number
+  actual_unit_price?: number
+  total_price: number
+  actual_total_price?: number
   isPersonalPurchase?: boolean
   product: {
     id: string
@@ -103,7 +103,7 @@ interface SaleFilters {
   search: string
   status?: string
   fundingSource?: string
-  customerId?: string
+  customer_id?: string
   orderBy: string
   order: string
 }
@@ -121,7 +121,7 @@ export default function SalesPage() {
     page: 1,
     limit: 20,
     search: '',
-    orderBy: 'createdAt',
+    orderBy: 'created_at',
     order: 'desc'
   })
   const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({})
@@ -226,7 +226,7 @@ export default function SalesPage() {
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            {dayjs(record.createdAt).format('YYYY/MM/DD')}
+            {dayjs(record.created_at).format('YYYY/MM/DD')}
           </div>
         </div>
       )
@@ -273,7 +273,7 @@ export default function SalesPage() {
           {/* 顯示金額（投資方看到的） */}
           <div style={{ fontWeight: 'bold' }}>
             <SecurePriceDisplay
-              amount={record.totalAmount}
+              amount={record.total_amount}
               currency="NT$"
               allowedRoles={['SUPER_ADMIN', 'EMPLOYEE', 'INVESTOR']}
               showFallbackIcon={false}
@@ -282,10 +282,10 @@ export default function SalesPage() {
 
           {/* 實際金額（只有超級管理員和員工能看到） */}
           <HideFromInvestor>
-            {record.actualAmount && record.actualAmount !== record.totalAmount && (
+            {record.actual_amount && record.actual_amount !== record.total_amount && (
               <div style={{ fontSize: '12px', color: '#52c41a' }}>
                 實收: <SecurePriceDisplay
-                  amount={record.actualAmount}
+                  amount={record.actual_amount}
                   currency="NT$"
                   allowedRoles={['SUPER_ADMIN', 'EMPLOYEE']}
                   showFallbackIcon={false}

@@ -35,7 +35,7 @@ export async function GET(
                 product_code: true,
                 name: true,
                 category: true,
-                standardPrice: true
+                standard_price: true
               }
             }
           }
@@ -55,18 +55,18 @@ export async function GET(
     // 🔒 權限檢查 - 投資方只能看自己相關的採購
     if (session.user.role === 'INVESTOR') {
       if (purchase.fundingSource === 'PERSONAL' ||
-          (purchase.investorId && purchase.investorId !== session.user.investorId)) {
+          (purchase.investor_id && purchase.investor_id !== session.user.investor_id)) {
         return NextResponse.json({ error: '權限不足' }, { status: 403 })
       }
 
       // 🔒 數據過濾 - 投資方看到調整後的金額
       const filteredPurchase = {
         ...purchase,
-        totalAmount: purchase.displayAmount || purchase.totalAmount * 0.8,
+        total_amount: purchase.displayAmount || purchase.total_amount * 0.8,
         items: purchase.items.map(item => ({
           ...item,
-          unitPrice: item.displayPrice || item.unitPrice * 0.8,
-          totalPrice: item.displayTotal || item.totalPrice * 0.8,
+          unit_price: item.displayPrice || item.unit_price * 0.8,
+          total_price: item.displayTotal || item.total_price * 0.8,
           dutiableValue: null, // 隱藏完稅價格
           actualCost: null // 隱藏實際成本
         })),
@@ -141,7 +141,7 @@ export async function PUT(
 
     // 準備更新資料
     const updateData: any = {
-      updatedAt: new Date()
+      updated_at: new Date()
     }
 
     // 基本欄位更新
@@ -163,26 +163,26 @@ export async function PUT(
     // 如果有更新採購明細
     if (items.length > 0) {
       // 重新計算總金額
-      let totalAmount = 0
+      let total_amount = 0
       const validatedItems = []
 
       for (const item of items) {
-        if (!item.productName || !item.quantity || !item.unitPrice) {
+        if (!item.productName || !item.quantity || !item.unit_price) {
           return NextResponse.json({
             error: '採購項目缺少必要資訊：產品名稱、數量、單價'
           }, { status: 400 })
         }
 
-        const itemTotal = item.quantity * item.unitPrice
-        totalAmount += itemTotal
+        const itemTotal = item.quantity * item.unit_price
+        total_amount += itemTotal
 
         validatedItems.push({
           id: item.id || undefined, // 如果有ID就是更新，沒有就是新增
-          productId: item.productId || null,
+          product_id: item.product_id || null,
           productName: item.productName,
           quantity: parseInt(item.quantity),
-          unitPrice: parseFloat(item.unitPrice),
-          totalPrice: itemTotal,
+          unit_price: parseFloat(item.unit_price),
+          total_price: itemTotal,
           dutiableValue: item.dutiableValue ? parseFloat(item.dutiableValue) : null,
           tariffCode: item.tariffCode || null,
           importDutyRate: item.importDutyRate ? parseFloat(item.importDutyRate) : null,
@@ -192,7 +192,7 @@ export async function PUT(
         })
       }
 
-      updateData.totalAmount = totalAmount
+      updateData.total_amount = total_amount
 
       // 使用 transaction 確保數據一致性
       const updatedPurchase = await prisma.$transaction(async (prisma) => {
@@ -292,7 +292,7 @@ export async function DELETE(
       where: { id: purchaseId },
       data: {
         status: 'CANCELLED',
-        updatedAt: new Date()
+        updated_at: new Date()
       }
     })
 

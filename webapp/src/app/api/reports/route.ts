@@ -36,20 +36,20 @@ export async function GET(request: NextRequest) {
 
     // 日期範圍篩選
     if (dateFrom || dateTo) {
-      baseWhere.createdAt = {}
+      baseWhere.created_at = {}
       if (dateFrom) {
-        baseWhere.createdAt.gte = new Date(dateFrom)
+        baseWhere.created_at.gte = new Date(dateFrom)
       }
       if (dateTo) {
         const endDate = new Date(dateTo)
         endDate.setHours(23, 59, 59, 999)
-        baseWhere.createdAt.lte = endDate
+        baseWhere.created_at.lte = endDate
       }
     } else {
       // 預設為最近3個月
       const now = new Date()
       const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1)
-      baseWhere.createdAt = {
+      baseWhere.created_at = {
         gte: threeMonthsAgo,
         lte: now
       }
@@ -85,24 +85,24 @@ export async function GET(request: NextRequest) {
 async function getOverviewReport(baseWhere: DatabaseWhereCondition, userRole: string) {
   // 基本統計
   const totalSales = await prisma.sale.count({ where: baseWhere })
-  const totalCustomers = await prisma.customer.count({ where: { isActive: true } })
-  const totalProducts = await prisma.product.count({ where: { isActive: true } })
+  const totalCustomers = await prisma.customer.count({ where: { is_active: true } })
+  const totalProducts = await prisma.product.count({ where: { is_active: true } })
 
   // 銷售金額統計
   const salesData = await prisma.sale.findMany({
     where: baseWhere,
     select: {
-      totalAmount: true,
-      actualAmount: true,
+      total_amount: true,
+      actual_amount: true,
       commission: true,
-      createdAt: true
+      created_at: true
     }
   })
 
-  const totalRevenue = salesData.reduce((sum, sale) => sum + sale.totalAmount, 0)
+  const totalRevenue = salesData.reduce((sum, sale) => sum + sale.total_amount, 0)
   const totalActualRevenue = userRole === 'INVESTOR'
     ? totalRevenue
-    : salesData.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
+    : salesData.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
   const totalCommission = userRole === 'INVESTOR'
     ? 0
     : salesData.reduce((sum, sale) => sum + (sale.commission || 0), 0)
@@ -119,15 +119,15 @@ async function getOverviewReport(baseWhere: DatabaseWhereCondition, userRole: st
   const last7DaysSales = await prisma.sale.findMany({
     where: {
       ...baseWhere,
-      createdAt: {
+      created_at: {
         gte: last7DaysStart,
         lte: last7DaysEnd
       }
     },
     select: {
-      totalAmount: true,
-      actualAmount: true,
-      createdAt: true
+      total_amount: true,
+      actual_amount: true,
+      created_at: true
     }
   })
 
@@ -144,12 +144,12 @@ async function getOverviewReport(baseWhere: DatabaseWhereCondition, userRole: st
 
   // 聚合銷售資料
   last7DaysSales.forEach(sale => {
-    const dateStr = sale.createdAt.toISOString().split('T')[0]
+    const dateStr = sale.created_at.toISOString().split('T')[0]
     if (dailyMap.has(dateStr)) {
       const dayData = dailyMap.get(dateStr)!
       dayData.sales += 1
-      dayData.revenue += sale.totalAmount
-      dayData.actualRevenue += sale.actualAmount || sale.totalAmount
+      dayData.revenue += sale.total_amount
+      dayData.actualRevenue += sale.actual_amount || sale.total_amount
     }
   })
 
@@ -162,13 +162,13 @@ async function getOverviewReport(baseWhere: DatabaseWhereCondition, userRole: st
 
   // 熱銷商品 Top 5 - 🔧 修復N+1查詢問題
   const topProducts = await prisma.saleItem.groupBy({
-    by: ['productId'],
+    by: ['product_id'],
     where: {
       sale: baseWhere
     },
     _sum: {
       quantity: true,
-      totalPrice: true
+      total_price: true
     },
     orderBy: {
       _sum: {
@@ -179,7 +179,7 @@ async function getOverviewReport(baseWhere: DatabaseWhereCondition, userRole: st
   })
 
   // 取得所有熱銷商品的ID
-  const topProductIds = topProducts.map(item => item.productId)
+  const topProductIds = topProducts.map(item => item.product_id)
 
   // 一次性查詢所有熱銷商品資訊 - 解決N+1問題
   const topProductDetails = await prisma.product.findMany({
@@ -198,11 +198,11 @@ async function getOverviewReport(baseWhere: DatabaseWhereCondition, userRole: st
   const topProductMap = new Map(topProductDetails.map(p => [p.id, p]))
 
   const topProductsWithDetails = topProducts.map((item) => {
-    const product = topProductMap.get(item.productId)
+    const product = topProductMap.get(item.product_id)
     return {
       ...product,
       totalQuantity: item._sum.quantity,
-      totalRevenue: item._sum.totalPrice
+      totalRevenue: item._sum.total_price
     }
   }).filter(Boolean) // 移除null值
 
@@ -254,12 +254,12 @@ async function getSalesTrendReport(baseWhere: DatabaseWhereCondition, period: st
   const sales = await prisma.sale.findMany({
     where: baseWhere,
     select: {
-      createdAt: true,
-      totalAmount: true,
-      actualAmount: true,
+      created_at: true,
+      total_amount: true,
+      actual_amount: true,
       commission: true
     },
-    orderBy: { createdAt: 'asc' }
+    orderBy: { created_at: 'asc' }
   })
 
   // 手動分組數據 - 🔧 修復：使用正確的Accumulator型別
@@ -275,7 +275,7 @@ async function getSalesTrendReport(baseWhere: DatabaseWhereCondition, period: st
 
   const groupedData = sales.reduce((acc: SalesTrendAccumulator, sale) => {
     let key: string
-    const date = new Date(sale.createdAt)
+    const date = new Date(sale.created_at)
 
     switch (period) {
       case 'day':
@@ -311,8 +311,8 @@ async function getSalesTrendReport(baseWhere: DatabaseWhereCondition, period: st
     }
 
     acc[key].sales += 1
-    acc[key].revenue += sale.totalAmount
-    acc[key].actualRevenue += sale.actualAmount || sale.totalAmount
+    acc[key].revenue += sale.total_amount
+    acc[key].actualRevenue += sale.actual_amount || sale.total_amount
     acc[key].commission += sale.commission || 0
 
     return acc
@@ -339,14 +339,14 @@ async function getSalesTrendReport(baseWhere: DatabaseWhereCondition, period: st
 async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userRole: string) {
   // 一次性查詢所有商品統計和產品資訊 - 避免N+1問題
   const productStatsWithDetails = await prisma.saleItem.groupBy({
-    by: ['productId'],
+    by: ['product_id'],
     where: {
       sale: baseWhere
     },
     _sum: {
       quantity: true,
-      totalPrice: true,
-      actualTotalPrice: true
+      total_price: true,
+      actual_total_price: true
     },
     _count: {
       id: true
@@ -354,7 +354,7 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
   })
 
   // 取得所有相關產品的ID
-  const productIds = productStatsWithDetails.map(stat => stat.productId)
+  const productIds = productStatsWithDetails.map(stat => stat.product_id)
 
   // 一次性查詢所有產品資訊 - 解決N+1問題
   const products = await prisma.product.findMany({
@@ -366,8 +366,8 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
       name: true,
       product_code: true,
       category: true,
-      currentPrice: true,
-      costPrice: true
+      current_price: true,
+      cost_price: true
     }
   })
 
@@ -375,15 +375,15 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
   const productMap = new Map(products.map(p => [p.id, p]))
 
   const productAnalysis = productStatsWithDetails.map((stat) => {
-    const product = productMap.get(stat.productId)
+    const product = productMap.get(stat.product_id)
 
     if (!product) {
       return null // 跳過不存在的產品
     }
 
-    const revenue = stat._sum.totalPrice || 0
-    const actualRevenue = stat._sum.actualTotalPrice || revenue
-    const profit = userRole === 'INVESTOR' ? 0 : actualRevenue - (product.costPrice || 0) * (stat._sum.quantity || 0)
+    const revenue = stat._sum.total_price || 0
+    const actualRevenue = stat._sum.actual_total_price || revenue
+    const profit = userRole === 'INVESTOR' ? 0 : actualRevenue - (product.cost_price || 0) * (stat._sum.quantity || 0)
 
     return {
       ...product,
@@ -442,8 +442,8 @@ async function getCustomerAnalysisReport(baseWhere: DatabaseWhereCondition, user
       sales: {
         where: baseWhere,
         select: {
-          totalAmount: true,
-          actualAmount: true
+          total_amount: true,
+          actual_amount: true
         }
       }
     }
@@ -455,8 +455,8 @@ async function getCustomerAnalysisReport(baseWhere: DatabaseWhereCondition, user
       const salesCount = customer.sales.length
       if (salesCount === 0) return null
 
-      const revenue = customer.sales.reduce((sum, sale) => sum + sale.totalAmount, 0)
-      const actualRevenue = customer.sales.reduce((sum, sale) => sum + (sale.actualAmount || sale.totalAmount), 0)
+      const revenue = customer.sales.reduce((sum, sale) => sum + sale.total_amount, 0)
+      const actualRevenue = customer.sales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)
 
       return {
         id: customer.id,

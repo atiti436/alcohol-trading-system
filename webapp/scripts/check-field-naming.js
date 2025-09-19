@@ -56,6 +56,11 @@ function checkFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const errors = [];
 
+  // 跳過檢查工具本身
+  if (filePath.includes('check-field-naming.js')) {
+    return errors;
+  }
+
   WRONG_FIELDS.forEach(wrongField => {
     const regex = new RegExp(`\\b${wrongField}\\b`, 'g');
     const matches = content.match(regex);

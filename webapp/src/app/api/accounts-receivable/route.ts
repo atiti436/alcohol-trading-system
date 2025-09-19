@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const status = searchParams.get('status')
-    const customerId = searchParams.get('customerId')
+    const customer_id = searchParams.get('customer_id')
     const overdueDays = searchParams.get('overdueDays')
     const summary = searchParams.get('summary') === 'true'
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const where: DatabaseWhereCondition = {}
 
     if (status) where.status = status
-    if (customerId) where.customerId = customerId
+    if (customer_id) where.customer_id = customer_id
 
     // 逾期天數篩選
     if (overdueDays) {
@@ -77,10 +77,10 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               saleNumber: true,
-              totalAmount: true,
-              actualAmount: session.user.role === 'SUPER_ADMIN',
+              total_amount: true,
+              actual_amount: session.user.role === 'SUPER_ADMIN',
               fundingSource: true,
-              createdAt: true
+              created_at: true
             }
           },
           payments: {
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         : ar.remainingAmount,
       sale: {
         ...ar.sale,
-        actualAmount: session.user.role === 'SUPER_ADMIN' ? ar.sale.actualAmount : undefined
+        actual_amount: session.user.role === 'SUPER_ADMIN' ? ar.sale.actual_amount : undefined
       }
     }))
 
@@ -152,14 +152,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       saleId,
-      customerId,
+      customer_id,
       originalAmount,
       dueDate,
       notes
     } = body
 
     // 基本驗證
-    if (!saleId || !customerId || !originalAmount) {
+    if (!saleId || !customer_id || !originalAmount) {
       return NextResponse.json({
         error: '銷售單ID、客戶ID和金額為必填欄位'
       }, { status: 400 })
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
     const accountsReceivable = await prisma.accountsReceivable.create({
       data: {
         arNumber,
-        customerId,
+        customer_id,
         saleId,
         originalAmount,
         remainingAmount: originalAmount,
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
         sale: {
           select: {
             saleNumber: true,
-            totalAmount: true
+            total_amount: true
           }
         }
       }

@@ -21,12 +21,12 @@ export async function GET(
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
     }
 
-    const { id: customerId, priceId } = params
+    const { id: customer_id, priceId } = params
 
     const specialPrice = await prisma.customerSpecialPrice.findFirst({
       where: {
         id: priceId,
-        customer_id: customerId
+        customer_id: customer_id
       },
       include: {
         product: {
@@ -34,8 +34,8 @@ export async function GET(
             product_code: true,
             name: true,
             
-            standardPrice: true,
-            currentPrice: true
+            standard_price: true,
+            current_price: true
           }
         },
         customer: {
@@ -78,7 +78,7 @@ export async function PUT(
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
     }
 
-    const { id: customerId, priceId } = params
+    const { id: customer_id, priceId } = params
     const body = await request.json()
     const {
       special_price,
@@ -93,11 +93,11 @@ export async function PUT(
     const existingPrice = await prisma.customerSpecialPrice.findFirst({
       where: {
         id: priceId,
-        customer_id: customerId
+        customer_id: customer_id
       },
       include: {
         product: {
-          select: { standardPrice: true }
+          select: { standard_price: true }
         }
       }
     })
@@ -119,7 +119,7 @@ export async function PUT(
         }, { status: 400 })
       }
 
-      const standard_price = existingPrice.product.standardPrice
+      const standard_price = existingPrice.product.standard_price
       if (special_price > standard_price) {
         return NextResponse.json({
           error: '專屬價格不能高於標準價格'
@@ -151,7 +151,7 @@ export async function PUT(
           select: {
             product_code: true,
             name: true,
-            standardPrice: true
+            standard_price: true
           }
         }
       }
@@ -184,13 +184,13 @@ export async function DELETE(
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
     }
 
-    const { id: customerId, priceId } = params
+    const { id: customer_id, priceId } = params
 
     // 驗證專價記錄是否存在
     const existingPrice = await prisma.customerSpecialPrice.findFirst({
       where: {
         id: priceId,
-        customer_id: customerId
+        customer_id: customer_id
       }
     })
 

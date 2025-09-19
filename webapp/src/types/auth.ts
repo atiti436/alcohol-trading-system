@@ -12,11 +12,11 @@ export interface User {
   name: string
   image?: string
   role: Role
-  investorId?: string
-  isActive: boolean
+  investor_id?: string
+  is_active: boolean
   preferences?: Record<string, any>
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
 }
 
 // NextAuth擴展
@@ -28,14 +28,14 @@ declare module "next-auth" {
       name: string
       image?: string
       role: Role
-      investorId?: string
+      investor_id?: string
     }
   }
 
   interface User {
     id: string
     role: Role
-    investorId?: string
+    investor_id?: string
   }
 }
 
@@ -43,7 +43,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string
     role: Role
-    investorId?: string
+    investor_id?: string
   }
 }
 
@@ -51,7 +51,7 @@ declare module "next-auth/jwt" {
 export interface PermissionContext {
   userId: string
   role: Role
-  investorId?: string
+  investor_id?: string
 }
 
 // API回應格式

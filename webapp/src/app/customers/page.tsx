@@ -52,7 +52,7 @@ export default function CustomersPage() {
     page: 1,
     limit: 20,
     search: '',
-    orderBy: 'createdAt',
+    orderBy: 'created_at',
     order: 'desc'
   })
 
@@ -195,9 +195,9 @@ export default function CustomersPage() {
       render: (record: CustomerWithStats) => (
         <div style={{ textAlign: 'center' }}>
           <div>{record._count.sales} 筆</div>
-          {record.totalAmount && (
+          {record.total_amount && (
             <div style={{ fontSize: '12px', color: '#666' }}>
-              ${record.totalAmount.toLocaleString()}
+              ${record.total_amount.toLocaleString()}
             </div>
           )}
         </div>
@@ -490,7 +490,7 @@ export default function CustomersPage() {
       {/* 客戶專價管理Modal */}
       {selectedCustomer && (
         <SpecialPriceManager
-          customerId={selectedCustomer.id}
+          customer_id={selectedCustomer.id}
           customerName={selectedCustomer.name}
           customerTier={selectedCustomer.tier}
           isVisible={specialPriceVisible}

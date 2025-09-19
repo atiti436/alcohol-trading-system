@@ -34,7 +34,7 @@ export async function GET(
         },
         saleItems: {
           take: 10,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { created_at: 'desc' },
           include: {
             sale: {
               select: {
@@ -61,7 +61,7 @@ export async function GET(
     }
 
     // 檢查是否屬於指定的商品
-    if (variant.productId !== params.id) {
+    if (variant.product_id !== params.id) {
       return NextResponse.json({ error: '變體不屬於指定商品' }, { status: 400 })
     }
 
@@ -70,7 +70,7 @@ export async function GET(
       where: { variantId: params.variantId },
       _sum: {
         quantity: true,
-        totalPrice: true
+        total_price: true
       }
     })
 
@@ -81,7 +81,7 @@ export async function GET(
         statistics: {
           totalSales: variant._count.saleItems,
           totalQuantitySold: salesStats._sum.quantity || 0,
-          totalRevenue: salesStats._sum.totalPrice || 0
+          totalRevenue: salesStats._sum.total_price || 0
         }
       }
     })
@@ -111,7 +111,7 @@ export async function PUT(
     const {
       description,
       basePrice,
-      currentPrice,
+      current_price,
       discountRate,
       limitedEdition,
       productionYear,
@@ -130,7 +130,7 @@ export async function PUT(
       return NextResponse.json({ error: '變體不存在' }, { status: 404 })
     }
 
-    if (existingVariant.productId !== params.id) {
+    if (existingVariant.product_id !== params.id) {
       return NextResponse.json({ error: '變體不屬於指定商品' }, { status: 400 })
     }
 
@@ -140,7 +140,7 @@ export async function PUT(
       data: {
         ...(description && { description }),
         ...(basePrice !== undefined && { basePrice }),
-        ...(currentPrice !== undefined && { currentPrice }),
+        ...(current_price !== undefined && { current_price }),
         ...(discountRate !== undefined && { discountRate }),
         ...(limitedEdition !== undefined && { limitedEdition }),
         ...(productionYear !== undefined && { productionYear }),
@@ -194,7 +194,7 @@ export async function DELETE(
       return NextResponse.json({ error: '變體不存在' }, { status: 404 })
     }
 
-    if (existingVariant.productId !== params.id) {
+    if (existingVariant.product_id !== params.id) {
       return NextResponse.json({ error: '變體不屬於指定商品' }, { status: 400 })
     }
 
@@ -207,7 +207,7 @@ export async function DELETE(
 
     // 檢查是否為最後一個變體
     const variantCount = await prisma.productVariant.count({
-      where: { productId: params.id }
+      where: { product_id: params.id }
     })
 
     if (variantCount <= 1) {

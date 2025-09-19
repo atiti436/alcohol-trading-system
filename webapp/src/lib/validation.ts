@@ -150,13 +150,13 @@ export function validateProductData(data: Record<string, unknown>) {
       (data.accessories as string[]).map(acc => validateString(acc, '配件', 0, 100)) : [],
 
     // 🏷️ 稅則和法規
-    hsCode: data.hsCode ? validateString(data.hsCode, 'HS Code', 0, 20) : null,
+    hs_code: data.hs_code ? validateString(data.hs_code, 'HS Code', 0, 20) : null,
 
     // 💰 價格設定
-    standardPrice: validateNumber(data.standardPrice, '標準價格', 0, 999999),
-    currentPrice: validateNumber(data.currentPrice, '目前價格', 0, 999999),
-    minPrice: validateNumber(data.minPrice, '最低價格', 0, 999999),
-    costPrice: data.costPrice ? validateNumber(data.costPrice, '成本價', 0, 999999) : 0,
+    standard_price: validateNumber(data.standard_price, '標準價格', 0, 999999),
+    current_price: validateNumber(data.current_price, '目前價格', 0, 999999),
+    min_price: validateNumber(data.min_price, '最低價格', 0, 999999),
+    cost_price: data.cost_price ? validateNumber(data.cost_price, '成本價', 0, 999999) : 0,
 
     // 📅 日期驗證
     manufacturingDate: data.manufacturingDate ? validateDate(data.manufacturingDate, '製造日期') : null,
@@ -164,11 +164,11 @@ export function validateProductData(data: Record<string, unknown>) {
   }
 
   // 商業邏輯驗證
-  if (validated.minPrice > validated.currentPrice) {
+  if (validated.min_price > validated.current_price) {
     throw new Error('最低價格不能高於目前價格')
   }
 
-  if (validated.currentPrice > validated.standardPrice) {
+  if (validated.current_price > validated.standard_price) {
     throw new Error('目前價格不能高於標準價格')
   }
 
@@ -186,7 +186,7 @@ export function validatePurchaseData(data: Record<string, unknown>) {
   const validatedData = {
     supplierId: validateRequired(data.supplierId, '供應商ID'),
     supplier: validateRequired(data.supplier, '供應商名稱'),
-    totalAmount: validateNumber(data.totalAmount, '總金額', 0, 100000000), // 限制最大1億
+    total_amount: validateNumber(data.total_amount, '總金額', 0, 100000000), // 限制最大1億
     currency: validateEnum(data.currency || 'JPY', ['JPY', 'USD', 'TWD'], '幣別'),
     exchangeRate: validateNumber(data.exchangeRate, '匯率', 0.001, 1000),
     status: validateEnum(data.status || 'DRAFT', ['DRAFT', 'PENDING', 'CONFIRMED', 'RECEIVED', 'CANCELLED'], '狀態'),
@@ -210,10 +210,10 @@ export function validatePurchaseData(data: Record<string, unknown>) {
 // 🔒 採購項目驗證
 function validatePurchaseItemData(data: Record<string, unknown>, itemLabel: string) {
   return {
-    productId: data.productId ? validateString(data.productId, `${itemLabel} 產品ID`, 1, 50) : null,
+    product_id: data.product_id ? validateString(data.product_id, `${itemLabel} 產品ID`, 1, 50) : null,
     productName: validateRequired(data.productName, `${itemLabel} 產品名稱`),
     quantity: validateNumber(data.quantity, `${itemLabel} 數量`, 0.01, 999999),
-    unitPrice: validateNumber(data.unitPrice, `${itemLabel} 單價`, 0, 999999),
+    unit_price: validateNumber(data.unit_price, `${itemLabel} 單價`, 0, 999999),
     dutiableValue: data.dutiableValue ? validateNumber(data.dutiableValue, `${itemLabel} 完稅價格`, 0) : null,
     tariffCode: data.tariffCode ? validateString(data.tariffCode, `${itemLabel} 稅則號碼`, 0, 20) : null,
     importDutyRate: data.importDutyRate ? validateNumber(data.importDutyRate, `${itemLabel} 進口稅率`, 0, 100) : null,
@@ -257,11 +257,11 @@ function validateDate(value: unknown, fieldName: string): Date {
 // 🔒 銷售驗證 Schema - 強化版
 export function validateSaleData(data: Record<string, unknown>) {
   const validated = {
-    customerId: validateRequired(data.customerId, '客戶ID'),
+    customer_id: validateRequired(data.customer_id, '客戶ID'),
     saleNumber: data.saleNumber ? validateString(data.saleNumber, '銷售單號', 1, 30) : null,
 
     // 💰 價格相關 (雙重價格機制核心)
-    totalAmount: validateNumber(data.totalAmount, '總金額', 0, 100000000),
+    total_amount: validateNumber(data.total_amount, '總金額', 0, 100000000),
     actualTotalAmount: validateNumber(data.actualTotalAmount, '實際金額', 0, 100000000),
     discountAmount: data.discountAmount ? validateNumber(data.discountAmount, '折扣金額', 0, 10000000) : 0,
     taxAmount: data.taxAmount ? validateNumber(data.taxAmount, '稅額', 0, 10000000) : 0,
@@ -286,11 +286,11 @@ export function validateSaleData(data: Record<string, unknown>) {
   }
 
   // 🔒 商業邏輯驗證 (雙重價格核心安全)
-  if (validated.actualTotalAmount < validated.totalAmount) {
+  if (validated.actualTotalAmount < validated.total_amount) {
     throw new Error('實際金額不能小於顯示金額 (商業邏輯錯誤)')
   }
 
-  if (validated.discountAmount > validated.totalAmount) {
+  if (validated.discountAmount > validated.total_amount) {
     throw new Error('折扣金額不能大於總金額')
   }
 
@@ -315,13 +315,13 @@ export function validateSaleData(data: Record<string, unknown>) {
 // 🔒 銷售項目驗證
 function validateSaleItemData(data: Record<string, unknown>, itemLabel: string) {
   return {
-    productId: validateRequired(data.productId, `${itemLabel} 產品ID`),
+    product_id: validateRequired(data.product_id, `${itemLabel} 產品ID`),
     variantId: data.variantId ? validateString(data.variantId, `${itemLabel} 變體ID`, 1, 50) : null,
     quantity: validateNumber(data.quantity, `${itemLabel} 數量`, 0.01, 999999),
-    unitPrice: validateNumber(data.unitPrice, `${itemLabel} 單價`, 0, 999999),
-    actualUnitPrice: validateNumber(data.actualUnitPrice || data.unitPrice, `${itemLabel} 實際單價`, 0, 999999),
-    totalPrice: validateNumber(data.totalPrice, `${itemLabel} 小計`, 0, 999999999),
-    actualTotalPrice: validateNumber(data.actualTotalPrice || data.totalPrice, `${itemLabel} 實際小計`, 0, 999999999),
+    unit_price: validateNumber(data.unit_price, `${itemLabel} 單價`, 0, 999999),
+    actual_unit_price: validateNumber(data.actual_unit_price || data.unit_price, `${itemLabel} 實際單價`, 0, 999999),
+    total_price: validateNumber(data.total_price, `${itemLabel} 小計`, 0, 999999999),
+    actual_total_price: validateNumber(data.actual_total_price || data.total_price, `${itemLabel} 實際小計`, 0, 999999999),
     discountRate: data.discountRate ? validateNumber(data.discountRate, `${itemLabel} 折扣率`, 0, 100) : 0,
     notes: validateString(data.notes || '', `${itemLabel} 備註`, 0, 500)
   }

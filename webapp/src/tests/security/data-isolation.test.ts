@@ -11,13 +11,13 @@ const mockSalesData = [
   {
     id: 'sale_001',
     saleNumber: 'SA20250917001',
-    customerId: 'customer_001',
+    customer_id: 'customer_001',
     customerName: '客戶A',
     fundingSource: 'COMPANY', // 投資項目
 
     // 🔑 關鍵：雙重價格機制
-    totalAmount: 1000,        // 投資方看到的價格
-    actualAmount: 1200,       // 真實收取價格 (僅超級管理員)
+    total_amount: 1000,        // 投資方看到的價格
+    actual_amount: 1200,       // 真實收取價格 (僅超級管理員)
     commission: 200,          // 老闆傭金 (僅超級管理員)
 
     cost: 800,                // 成本
@@ -25,23 +25,23 @@ const mockSalesData = [
       {
         productName: '山崎18年威士忌',
         quantity: 1,
-        unitPrice: 1000,        // 顯示單價
-        actualUnitPrice: 1200,  // 實際單價 (敏感)
-        totalPrice: 1000,       // 顯示總價
-        actualTotalPrice: 1200  // 實際總價 (敏感)
+        unit_price: 1000,        // 顯示單價
+        actual_unit_price: 1200,  // 實際單價 (敏感)
+        total_price: 1000,       // 顯示總價
+        actual_total_price: 1200  // 實際總價 (敏感)
       }
     ],
-    createdAt: new Date('2025-09-17')
+    created_at: new Date('2025-09-17')
   },
   {
     id: 'sale_002',
     saleNumber: 'SA20250917002',
-    customerId: 'customer_002',
+    customer_id: 'customer_002',
     customerName: '客戶B',
     fundingSource: 'PERSONAL', // 個人調貨 (投資方不能看到)
 
-    totalAmount: 500,
-    actualAmount: 500,
+    total_amount: 500,
+    actual_amount: 500,
     commission: 0,
     cost: 300,
 
@@ -49,13 +49,13 @@ const mockSalesData = [
       {
         productName: '響21年威士忌',
         quantity: 1,
-        unitPrice: 500,
-        actualUnitPrice: 500,
-        totalPrice: 500,
-        actualTotalPrice: 500
+        unit_price: 500,
+        actual_unit_price: 500,
+        total_price: 500,
+        actual_total_price: 500
       }
     ],
-    createdAt: new Date('2025-09-17')
+    created_at: new Date('2025-09-17')
   }
 ]
 
@@ -68,7 +68,7 @@ describe('🔒 投資方數據隔離測試', () => {
   const investorContext: PermissionContext = {
     userId: 'investor_001',
     role: Role.INVESTOR,
-    investorId: 'inv_001'
+    investor_id: 'inv_001'
   }
 
   const employeeContext: PermissionContext = {
@@ -94,7 +94,7 @@ describe('🔒 投資方數據隔離測試', () => {
       const sale = filtered[0] as any
 
       // 🔒 關鍵檢查：這些欄位必須完全不存在
-      expect(sale.actualAmount).toBeUndefined()
+      expect(sale.actual_amount).toBeUndefined()
       expect(sale.commission).toBeUndefined()
       expect(sale.actualPrice).toBeUndefined()
       expect(sale.realPrice).toBeUndefined()
@@ -102,12 +102,12 @@ describe('🔒 投資方數據隔離測試', () => {
 
       // 確認項目中的敏感欄位也被移除
       if (sale.items && sale.items[0]) {
-        expect(sale.items[0].actualUnitPrice).toBeUndefined()
-        expect(sale.items[0].actualTotalPrice).toBeUndefined()
+        expect(sale.items[0].actual_unit_price).toBeUndefined()
+        expect(sale.items[0].actual_total_price).toBeUndefined()
       }
 
       // 只能看到顯示價格
-      expect(sale.totalAmount).toBe(1000) // 顯示金額
+      expect(sale.total_amount).toBe(1000) // 顯示金額
       expect(sale.profit).toBe(200) // 基於顯示價格計算的獲利 (1000-800)
     })
 
@@ -119,9 +119,9 @@ describe('🔒 投資方數據隔離測試', () => {
 
       // 可以看到完整的敏感資料
       const companySale = filtered.find((sale: any) => sale.fundingSource === 'COMPANY')
-      expect(companySale.actualAmount).toBe(1200)
+      expect(companySale.actual_amount).toBe(1200)
       expect(companySale.commission).toBe(200)
-      expect(companySale.totalAmount).toBe(1000)
+      expect(companySale.total_amount).toBe(1000)
     })
 
     test('🔍 員工看到基本資料但不含財務敏感資訊', () => {
@@ -132,7 +132,7 @@ describe('🔒 投資方數據隔離測試', () => {
 
       const sale = filtered[0] as any
       expect(sale.actualPrice).toBeUndefined()
-      expect(sale.actualAmount).toBeUndefined()
+      expect(sale.actual_amount).toBeUndefined()
       expect(sale.commission).toBeUndefined()
       expect(sale.profit).toBeUndefined()
     })
@@ -181,7 +181,7 @@ describe('🔒 投資方數據隔離測試', () => {
         fundingSource: 'COMPANY',
 
         // 各種可能的敏感欄位命名
-        actualAmount: 1200,
+        actual_amount: 1200,
         actual_amount: 1200,
         realPrice: 1200,
         real_price: 1200,
@@ -190,7 +190,7 @@ describe('🔒 投資方數據隔離測試', () => {
         commission: 200,
         ownerProfit: 200,
         owner_profit: 200,
-        actualUnitPrice: 1200,
+        actual_unit_price: 1200,
         actual_unit_price: 1200
       }]
 
@@ -198,7 +198,7 @@ describe('🔒 投資方數據隔離測試', () => {
       const result = filtered[0] as any
 
       // 檢查所有敏感欄位都被移除
-      expect(result.actualAmount).toBeUndefined()
+      expect(result.actual_amount).toBeUndefined()
       expect(result.actual_amount).toBeUndefined()
       expect(result.realPrice).toBeUndefined()
       expect(result.real_price).toBeUndefined()
@@ -207,7 +207,7 @@ describe('🔒 投資方數據隔離測試', () => {
       expect(result.commission).toBeUndefined()
       expect(result.ownerProfit).toBeUndefined()
       expect(result.owner_profit).toBeUndefined()
-      expect(result.actualUnitPrice).toBeUndefined()
+      expect(result.actual_unit_price).toBeUndefined()
       expect(result.actual_unit_price).toBeUndefined()
     })
   })
@@ -222,31 +222,31 @@ describe('🔒 投資方數據隔離測試', () => {
       const cleanData = [{
         id: 'clean_001',
         fundingSource: 'COMPANY',
-        totalAmount: 1000,
+        total_amount: 1000,
         customer: '客戶A'
       }]
 
       const filtered = filterSalesData(cleanData, investorContext)
       expect(filtered).toHaveLength(1)
-      expect(filtered[0].totalAmount).toBe(1000)
+      expect(filtered[0].total_amount).toBe(1000)
     })
 
     test('🔒 投資方ID匹配測試', () => {
       const testData = [{
         id: 'test_001',
         fundingSource: 'COMPANY',
-        investorId: 'different_investor',
-        totalAmount: 1000
+        investor_id: 'different_investor',
+        total_amount: 1000
       }]
 
       const contextWithInvestorId: PermissionContext = {
         userId: 'investor_001',
         role: Role.INVESTOR,
-        investorId: 'inv_001' // 不同的投資方ID
+        investor_id: 'inv_001' // 不同的投資方ID
       }
 
       const filtered = filterSalesData(testData, contextWithInvestorId)
-      // 如果investorId不匹配，應該過濾掉
+      // 如果investor_id不匹配，應該過濾掉
       expect(filtered).toHaveLength(0)
     })
   })
@@ -262,13 +262,13 @@ describe('🚨 安全漏洞測試', () => {
     const nestedData = [{
       id: 'nested_001',
       fundingSource: 'COMPANY',
-      totalAmount: 1000,
+      total_amount: 1000,
       details: {
-        actualAmount: 1200,    // 巢狀的敏感資料
+        actual_amount: 1200,    // 巢狀的敏感資料
         commission: 200
       },
       items: [{
-        actualUnitPrice: 1200  // 陣列中的敏感資料
+        actual_unit_price: 1200  // 陣列中的敏感資料
       }]
     }]
 
@@ -277,7 +277,7 @@ describe('🚨 安全漏洞測試', () => {
 
     // 檢查巢狀物件中的敏感資料也被處理
     if (result.details) {
-      expect(result.details.actualAmount).toBeUndefined()
+      expect(result.details.actual_amount).toBeUndefined()
       expect(result.details.commission).toBeUndefined()
     }
   })
@@ -286,11 +286,11 @@ describe('🚨 安全漏洞測試', () => {
     const prototypeData = [{
       id: 'proto_001',
       fundingSource: 'COMPANY',
-      totalAmount: 1000
+      total_amount: 1000
     }]
 
     // 嘗試在原型上添加敏感資料
-    Object.defineProperty(prototypeData[0], 'actualAmount', {
+    Object.defineProperty(prototypeData[0], 'actual_amount', {
       value: 1200,
       enumerable: false
     })
@@ -299,7 +299,7 @@ describe('🚨 安全漏洞測試', () => {
     const result = filtered[0] as any
 
     // 確保即使是非枚舉屬性也不會洩漏
-    expect(result.actualAmount).toBeUndefined()
+    expect(result.actual_amount).toBeUndefined()
   })
 })
 
