@@ -8,7 +8,7 @@ import {
   CustomerQueryParams,
   StandardApiResponse
 } from '@/types/api'
-import { CustomerTier } from '@prisma/client'
+import { CustomerTier, PaymentTerms } from '@prisma/client'
 
 /**
  * 🏠 Room-2: Customer 模組 API
@@ -157,8 +157,8 @@ export async function POST(request: NextRequest) {
         tax_id,
         address,
         shipping_address,
-        tier,
-        payment_terms,
+        tier: tier ? (tier as CustomerTier) : 'REGULAR',
+        payment_terms: payment_terms ? (payment_terms as PaymentTerms) : 'CASH',
         requires_invoice,
         credit_limit,
         notes
