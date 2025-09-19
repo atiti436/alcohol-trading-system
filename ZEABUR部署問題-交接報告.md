@@ -67,7 +67,12 @@ alcohol-trading-system/
 
 ### 🔧 Git提交記錄
 ```bash
-9d9ee72 fix: 修復ZEABUR部署的兩個關鍵錯誤 ← 最新修復
+9fdf813 📊 螞蟻B緊急修復任務完成報告 ← 最新修復
+5d7ac3f 📋 建立資料庫遷移指南
+30b4eca 🔧 品質提升修復: 統一庫存欄位命名規範
+c28dd79 🔧 高優先級修復: Product模型欄位命名統一化
+926073b 🚨 緊急修復: 修正sales API中variantCode欄位命名錯誤
+9d9ee72 fix: 修復ZEABUR部署的兩個關鍵錯誤
 874125d fix: 修復ZEABUR部署的兩個關鍵錯誤
 8935fd5 fix: 修復所有PackageOutlined導入問題
 ```
@@ -79,10 +84,24 @@ alcohol-trading-system/
 
 ### ⚠️ 發現的系統性問題
 1. **Icon導入問題**: Ant Design的barrel optimization與ZEABUR環境衝突
-2. **欄位命名不一致**: Schema與API代碼間存在camelCase vs snake_case混用
+2. **欄位命名不一致**: Schema與API代碼間存在camelCase vs snake_case混用 ✅ **已修復**
 3. **本機環境損壞**: node_modules有檔案損壞，無法執行npm install
 
+### 🆕 **2025-09-19 晚上完成的重大修復**
+4. **DATABASE欄位命名全面統一**: 螞蟻A+B完成深度檢查和修復
+   - ✅ 修復 sales API 的 `variantCode` 嚴重錯誤
+   - ✅ 統一 Product 模型重量欄位為 `weight_kg`
+   - ✅ 移除冗餘的 `code` 欄位，統一使用 `product_code`
+   - ✅ 統一命名規範為 snake_case
+   - ✅ 建立完整的資料庫遷移指南
+
 ### 🎯 明天需要處理的任務
+
+#### 🚨 **重要：必須先執行資料庫遷移**
+1. **立即執行資料庫遷移**（參考 `MIGRATION_GUIDE.md`）
+   - 執行 Prisma 遷移更新資料庫結構
+   - 或使用手動 SQL 遷移（如果 Prisma 有問題）
+   - 確認所有新欄位名稱生效
 
 #### 如果ZEABUR還是失敗：
 1. **協助用戶檢查ZEABUR設定**
@@ -92,7 +111,7 @@ alcohol-trading-system/
 
 2. **排查可能的其他問題**
    - 檢查是否還有其他不存在的圖標
-   - 確認Prisma生成是否正常
+   - 確認Prisma生成是否正常（特別是新的欄位命名）
    - 驗證所有API路由的型別正確性
 
 #### 如果ZEABUR成功部署：
@@ -100,11 +119,14 @@ alcohol-trading-system/
    - 測試登入功能
    - 檢查Dashboard顯示
    - 驗證客戶管理功能
+   - **特別測試**：銷售API和產品變體功能（我們修復的重點）
 
 ### 💡 關鍵學習
 1. **ZEABUR環境比本機嚴格** - 本機能跑不代表雲端OK
 2. **依賴版本鎖定很重要** - 避免偶發的版本差異
 3. **全域一致性檢查** - 修復時要掃描相同問題，不要只改單點
+4. **單一事實來源很重要** - DATA_MODELS.md 規範必須嚴格遵循
+5. **資料庫與代碼同步** - Schema 修改後必須執行遷移才能生效
 
 ### 📞 用戶狀況
 - 用戶理解本機環境有衝突，不要求修復本機問題
