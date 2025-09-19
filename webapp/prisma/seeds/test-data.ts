@@ -368,7 +368,7 @@ export async function verifyDataIsolation() {
 
   // 檢查雙重價格機制
   const doublePriceSales = investmentSales.filter(sale =>
-    sale.actual_amount && sale.actual_amount > sale.total_amount
+    sale.actualAmount && sale.actualAmount > sale.totalAmount
   )
 
   console.log(`   雙重價格記錄: ${doublePriceSales.length}`)
@@ -376,9 +376,9 @@ export async function verifyDataIsolation() {
   if (doublePriceSales.length > 0) {
     const sale = doublePriceSales[0]
     console.log('🔑 雙重價格驗證:')
-    console.log(`   顯示金額: ${sale.total_amount} (投資方看到)`)
-    console.log(`   實際金額: ${sale.actual_amount} (僅超級管理員)`)
-    console.log(`   老闆傭金: ${sale.commission} (${sale.actual_amount} - ${sale.total_amount})`)
+    console.log(`   顯示金額: ${sale.totalAmount} (投資方看到)`)
+    console.log(`   實際金額: ${sale.actualAmount} (僅超級管理員)`)
+    console.log(`   老闆傭金: ${sale.commission} (${sale.actualAmount} - ${sale.totalAmount})`)
   }
 
   return {
