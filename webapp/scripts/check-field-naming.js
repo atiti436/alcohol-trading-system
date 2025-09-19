@@ -74,7 +74,13 @@ function checkFile(filePath) {
 
   // 檢查是否為舊標準模型相關檔案 (SaleItem 等使用 camelCase)
   const isLegacyModelFile = LEGACY_MODEL_FILES.some(model =>
-    filePath.includes(model) || content.includes(`model ${model}`) || content.includes(`${model}.`)
+    filePath.includes(model) ||
+    content.includes(`model ${model}`) ||
+    content.includes(`${model}.`) ||
+    content.includes(`prisma.${model.toLowerCase()}`) ||  // prisma.sale, prisma.saleItem
+    content.includes(`prisma.accountingEntry`) ||  // 特別處理 AccountingEntry
+    content.includes(`prisma.journalEntry`) ||     // 特別處理 JournalEntry
+    content.includes(`prisma.auditLog`)            // 特別處理 AuditLog
   );
 
   // 特別檢查：seeds檔案中的 SaleItem 建立語法
