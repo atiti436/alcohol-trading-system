@@ -11,7 +11,7 @@ import {
   WarningOutlined,
   CheckCircleOutlined,
   PlusOutlined,
-  TrendingUpOutlined,
+  RiseOutlined,
   PieChartOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
