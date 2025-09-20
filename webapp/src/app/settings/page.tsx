@@ -49,7 +49,12 @@ export default function SettingsPage() {
         <TabPane tab="一般設定" key="general">
           <Row gutter={[24, 24]}>
             <Col xs={24} lg={12}>
-              <Card title="系統基本設定" icon={<SettingOutlined />}>
+              <Card title={
+                <>
+                  <SettingOutlined style={{ marginRight: 8 }} />
+                  系統基本設定
+                </>
+              }>
                 <Form form={form} layout="vertical" onFinish={handleSave}>
                   <Form.Item label="系統名稱" name="systemName" initialValue="酒類進口貿易管理系統">
                     <Input disabled={!isAdmin} />
@@ -85,7 +90,12 @@ export default function SettingsPage() {
             </Col>
 
             <Col xs={24} lg={12}>
-              <Card title="通知設定" icon={<BellOutlined />}>
+              <Card title={
+                <>
+                  <BellOutlined style={{ marginRight: 8 }} />
+                  通知設定
+                </>
+              }>
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text>低庫存警報</Text>
@@ -114,7 +124,12 @@ export default function SettingsPage() {
           <TabPane tab="安全設定" key="security">
             <Row gutter={[24, 24]}>
               <Col xs={24} lg={12}>
-                <Card title="安全政策" icon={<SecurityScanOutlined />}>
+                <Card title={
+                  <>
+                    <SecurityScanOutlined style={{ marginRight: 8 }} />
+                    安全政策
+                  </>
+                }>
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Text>強制密碼政策</Text>
@@ -137,7 +152,12 @@ export default function SettingsPage() {
               </Col>
 
               <Col xs={24} lg={12}>
-                <Card title="權限管理" icon={<UserOutlined />}>
+                <Card title={
+                  <>
+                    <UserOutlined style={{ marginRight: 8 }} />
+                    權限管理
+                  </>
+                }>
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <Text strong>角色統計</Text>
                     <div style={{ padding: '8px 0' }}>
@@ -164,7 +184,12 @@ export default function SettingsPage() {
           <TabPane tab="資料庫" key="database">
             <Row gutter={[24, 24]}>
               <Col xs={24} lg={12}>
-                <Card title="備份設定" icon={<DatabaseOutlined />}>
+                <Card title={
+                  <>
+                    <DatabaseOutlined style={{ marginRight: 8 }} />
+                    備份設定
+                  </>
+                }>
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Text>自動備份</Text>
@@ -192,7 +217,12 @@ export default function SettingsPage() {
               </Col>
 
               <Col xs={24} lg={12}>
-                <Card title="資料庫狀態" icon={<DatabaseOutlined />}>
+                <Card title={
+                  <>
+                    <DatabaseOutlined style={{ marginRight: 8 }} />
+                    資料庫狀態
+                  </>
+                }>
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div>
                       <Text strong>連接狀態: </Text>
