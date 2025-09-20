@@ -50,7 +50,7 @@ async function sendLineMessage(replyToken: string, messages: LineMessage[]) {
 }
 
 // 處理文字訊息
-async function handleTextMessage(text: string, userId: string) {
+async function handleTextMessage(text: string, userId: string): Promise<LineMessage> {
   console.log(`收到訊息 from ${userId}: ${text}`)
 
   // 成本計算功能
@@ -78,14 +78,14 @@ async function handleTextMessage(text: string, userId: string) {
 }
 
 // 成本計算處理
-async function handleCostCalculation(text: string) {
+async function handleCostCalculation(text: string): Promise<LineMessage> {
   try {
     // 解析數字和關鍵字
     const priceMatch = text.match(/(\d+(?:,\d{3})*(?:\.\d+)?)/g)
 
     if (!priceMatch || priceMatch.length === 0) {
       return {
-        type: 'text',
+        type: 'text' as const,
         text: '請提供數字資訊，例如：「計算100萬日圓的成本」'
       }
     }
@@ -131,7 +131,7 @@ async function handleCostCalculation(text: string) {
     if (result.success) {
       const data = result.data
       return {
-        type: 'text',
+        type: 'text' as const,
         text: `💰 專業成本計算結果：
 
 📊 基本資訊：
@@ -162,7 +162,7 @@ async function handleCostCalculation(text: string) {
       const totalCost = costInTwd + importTax
 
       return {
-        type: 'text',
+        type: 'text' as const,
         text: `💰 基本成本計算：
 
 原價：¥${amount.toLocaleString()}
@@ -177,49 +177,49 @@ async function handleCostCalculation(text: string) {
   } catch (error) {
     console.error('Cost calculation error:', error)
     return {
-      type: 'text',
+      type: 'text' as const,
       text: '💰 成本計算暫時不可用，請稍後再試\n\n可以重新輸入：「計算100萬日圓成本」'
     }
   }
 }
 
 // 商品查詢處理
-async function handleProductQuery(text: string) {
+async function handleProductQuery(text: string): Promise<LineMessage> {
   // 這裡可以整合產品API查詢
   return {
-    type: 'text',
+    type: 'text' as const,
     text: '🍷 商品查詢功能開發中...\n\n可以查詢：\n• 威士忌\n• 清酒\n• 紅酒\n• 庫存狀況'
   }
 }
 
 // 庫存查詢處理
-async function handleInventoryQuery(text: string) {
+async function handleInventoryQuery(text: string): Promise<LineMessage> {
   return {
-    type: 'text',
+    type: 'text' as const,
     text: '📦 庫存查詢功能開發中...\n\n將提供：\n• 即時庫存數量\n• 預留庫存\n• 可售庫存\n• 安全庫存警示'
   }
 }
 
 // 銷售報表處理
-async function handleSalesReport(text: string) {
+async function handleSalesReport(text: string): Promise<LineMessage> {
   return {
-    type: 'text',
+    type: 'text' as const,
     text: '📊 銷售報表功能開發中...\n\n將提供：\n• 今日銷售\n• 本月統計\n• TOP客戶\n• 熱銷商品'
   }
 }
 
 // 一般對話處理 (Gemini AI)
-async function handleGeneralChat(text: string, userId: string) {
+async function handleGeneralChat(text: string, userId: string): Promise<LineMessage> {
   try {
     const aiResponse = await callGeminiAPI(text, userId)
     return {
-      type: 'text',
+      type: 'text' as const,
       text: aiResponse
     }
   } catch (error) {
     console.error('Gemini API error:', error)
     return {
-      type: 'text',
+      type: 'text' as const,
       text: '🤖 小白助手暫時無法回應，請稍後再試。\n\n可以嘗試：\n• 成本計算\n• 商品查詢\n• 庫存查詢\n• 銷售報表'
     }
   }
@@ -262,7 +262,7 @@ async function callGeminiAPI(text: string, userId: string): Promise<string> {
 }
 
 // 處理圖片訊息 (OCR辨識)
-async function handleImageMessage(messageId: string, userId: string) {
+async function handleImageMessage(messageId: string, userId: string): Promise<LineMessage> {
   try {
     const response = await fetch(`${process.env.NEXTAUTH_URL}/api/linebot/ocr`, {
       method: 'POST',
@@ -289,19 +289,19 @@ async function handleImageMessage(messageId: string, userId: string) {
       }
 
       return {
-        type: 'text',
+        type: 'text' as const,
         text: responseText
       }
     } else {
       return {
-        type: 'text',
+        type: 'text' as const,
         text: '📷 圖片辨識功能暫時不可用\n\n將支援：\n• 報單辨識\n• 商品標籤辨識\n• 價格表辨識\n• 發票辨識'
       }
     }
   } catch (error) {
     console.error('Image processing error:', error)
     return {
-      type: 'text',
+      type: 'text' as const,
       text: '❌ 圖片處理失敗，請稍後再試\n\n💡 提示：\n• 確保圖片清晰\n• 支援JPG/PNG格式\n• 文字內容完整可見'
     }
   }
@@ -326,7 +326,7 @@ export async function POST(request: NextRequest) {
       console.log('LINE Event:', JSON.stringify(event, null, 2))
 
       if (event.type === 'message') {
-        let response
+        let response: LineMessage | undefined
 
         switch (event.message.type) {
           case 'text':
@@ -339,7 +339,7 @@ export async function POST(request: NextRequest) {
 
           default:
             response = {
-              type: 'text',
+              type: 'text' as const,
               text: '🤖 目前只支援文字和圖片訊息\n\n試試看：\n• 輸入「成本計算」\n• 上傳圖片進行辨識'
             }
         }

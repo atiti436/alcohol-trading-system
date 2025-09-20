@@ -164,8 +164,8 @@ export function ShippingOrderModal({
   }
 
   // Transfer變更處理
-  const handleTransferChange = (targetKeys: string[]) => {
-    setSelectedItems(targetKeys)
+  const handleTransferChange = (targetKeys: React.Key[]) => {
+    setSelectedItems(targetKeys.map(key => String(key)))
   }
 
   // 計算總重量
@@ -265,7 +265,7 @@ export function ShippingOrderModal({
                       </div>
                       <div style={{ fontSize: '12px', color: '#666' }}>
                         {sale.customer.company && `${sale.customer.company} | `}
-                        <SecurePriceDisplay price={sale.total_amount} />
+                        <SecurePriceDisplay amount={sale.total_amount} />
                         <SuperAdminOnly>
                           {sale.actual_amount && sale.actual_amount !== sale.total_amount && (
                             <span style={{ color: '#52c41a' }}>

@@ -120,7 +120,7 @@ export function validateCustomerData(data: Record<string, unknown>) {
     address: validateString(data.address || '', '地址', 0, 500),
     tier: validateEnum(String(data.tier || 'REGULAR'), ['VIP', 'PREMIUM', 'REGULAR', 'NEW'], '客戶等級'),
     credit_limit: validateNumber(data.credit_limit || 0, '信用額度', 0, 100000000),
-    payment_terms: validateString(data.payment_terms || 'CASH', ['CASH', 'WEEKLY', 'MONTHLY', 'SIXTY_DAYS'], '付款條件'),
+    payment_terms: validateEnum(String(data.payment_terms || 'CASH'), ['CASH', 'WEEKLY', 'MONTHLY', 'SIXTY_DAYS'], '付款條件'),
     notes: validateString(data.notes || '', '備註', 0, 1000)
   }
 }

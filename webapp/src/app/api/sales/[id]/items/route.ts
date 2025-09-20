@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { Role } from '@/types/auth'
 
 /**
  * 💰 Room-4: 銷售明細管理 API
@@ -147,12 +148,12 @@ export async function POST(
       }
     })
 
-    // 🔒 回傳前過濾敏感資料
+    // 🔒 回傳前過濾敏感資料 (INVESTOR已在上方被阻擋)
     const filteredItem = {
       ...saleItem,
-      actual_unit_price: session.user.role === 'INVESTOR' ? undefined : saleItem.actual_unit_price,
-      actual_total_price: session.user.role === 'INVESTOR' ? undefined : saleItem.actual_total_price,
-      is_personal_purchase: session.user.role === 'INVESTOR' ? undefined : saleItem.is_personal_purchase
+      actual_unit_price: saleItem.actual_unit_price,
+      actual_total_price: saleItem.actual_total_price,
+      is_personal_purchase: saleItem.is_personal_purchase
     }
 
     return NextResponse.json({
@@ -226,12 +227,12 @@ export async function GET(
       orderBy: { created_at: 'asc' }
     })
 
-    // 🔒 資料過濾：根據角色隱藏敏感資訊
+    // 🔒 資料過濾：根據角色隱藏敏感資訊 (INVESTOR已在上方被阻擋)
     const filteredItems = items.map(item => ({
       ...item,
-      actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
-      actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
-      is_personal_purchase: session.user.role === 'INVESTOR' ? undefined : item.is_personal_purchase,
+      actual_unit_price: item.actual_unit_price,
+      actual_total_price: item.actual_total_price,
+      is_personal_purchase: item.is_personal_purchase,
       product: {
         ...item.product,
         cost_price: session.user.role === 'SUPER_ADMIN' ? item.product.cost_price : undefined

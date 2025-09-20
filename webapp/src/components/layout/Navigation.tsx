@@ -24,7 +24,6 @@ import {
   LogoutOutlined,
   BellOutlined,
   MenuOutlined,
-  WineOutlined,
   TruckOutlined,
   FileSearchOutlined,
   RobotOutlined
@@ -55,7 +54,7 @@ export default function Navigation({ collapsed = false, onCollapse }: Navigation
       },
       {
         key: '/products',
-        icon: <WineOutlined />,
+        icon: <ShoppingOutlined />,
         label: <Link href="/products">商品管理</Link>,
       },
       {
@@ -156,7 +155,7 @@ export default function Navigation({ collapsed = false, onCollapse }: Navigation
         borderBottom: '1px solid #f0f0f0',
         background: '#ffffff',
       }}>
-        <WineOutlined style={{
+        <ShoppingOutlined style={{
           fontSize: 24,
           color: '#007AFF',
           marginRight: collapsed ? 0 : 12
@@ -273,7 +272,7 @@ export default function Navigation({ collapsed = false, onCollapse }: Navigation
           onClick={() => setMobileMenuOpen(true)}
           style={{ marginRight: 12 }}
         />
-        <WineOutlined style={{ fontSize: 20, color: '#007AFF', marginRight: 8 }} />
+        <ShoppingOutlined style={{ fontSize: 20, color: '#007AFF', marginRight: 8 }} />
         <span style={{ fontSize: 16, fontWeight: 600, color: '#2C2C2C' }}>
           酒類管理
         </span>
@@ -304,7 +303,7 @@ export default function Navigation({ collapsed = false, onCollapse }: Navigation
     <Drawer
       title={
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <WineOutlined style={{ fontSize: 20, color: '#007AFF', marginRight: 8 }} />
+          <ShoppingOutlined style={{ fontSize: 20, color: '#007AFF', marginRight: 8 }} />
           <span>酒類管理系統</span>
         </div>
       }

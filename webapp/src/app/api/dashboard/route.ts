@@ -238,21 +238,18 @@ async function getEmployeeDashboard(context: PermissionContext): Promise<Partial
 
   // 最近訂單 (不含財務敏感資訊)
   const recentOrders = await prisma.sale.findMany({
-    include: {
-      customer: {
-        select: { id: true, name: true }
-      }
-    },
-    orderBy: { created_at: 'desc' },
-    take: 5,
     select: {
       id: true,
       sale_number: true,
-      customer: true,
+      customer: {
+        select: { id: true, name: true }
+      },
       total_amount: true, // 顯示金額 (不含實際金額)
       is_paid: true,
       created_at: true
-    }
+    },
+    orderBy: { created_at: 'desc' },
+    take: 5
   })
 
   // 庫存警報 - 🔧 修正：使用優化的原始SQL查詢避免N+1問題

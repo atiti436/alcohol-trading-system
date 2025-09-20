@@ -197,7 +197,7 @@ export default function AgeingAnalysisReport() {
           <Text type="secondary" style={{ fontSize: '12px' }}>
             {record.customer.customer_code}
           </Text>
-          <Tag color={getTierColor(record.customer.tier)} size="small">
+          <Tag color={getTierColor(record.customer.tier)}>
             {record.customer.tier}
           </Tag>
         </div>

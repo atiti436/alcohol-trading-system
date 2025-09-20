@@ -26,6 +26,7 @@ import {
   DollarOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
+import { Role } from '@/types/auth'
 import type {
   Customer,
   CustomerWithStats,
@@ -216,19 +217,17 @@ export default function CustomersPage() {
               onClick={() => handleEdit(record)}
             />
           </Tooltip>
-          {/* 專價管理按鈕 - 只有SUPER_ADMIN和EMPLOYEE可見 */}
-          {session?.user?.role !== 'INVESTOR' && (
-            <Tooltip title="專價管理">
-              <Button
-                icon={<DollarOutlined />}
-                size="small"
-                type="primary"
-                ghost
-                onClick={() => handleSpecialPrice(record)}
-              />
-            </Tooltip>
-          )}
-          {session?.user?.role === 'SUPER_ADMIN' && (
+          {/* 專價管理按鈕 */}
+          <Tooltip title="專價管理">
+            <Button
+              icon={<DollarOutlined />}
+              size="small"
+              type="primary"
+              ghost
+              onClick={() => handleSpecialPrice(record)}
+            />
+          </Tooltip>
+          {session?.user?.role === Role.SUPER_ADMIN && (
             <Popconfirm
               title="確定要刪除此客戶嗎？"
               onConfirm={() => handleDelete(record.id)}
@@ -317,7 +316,7 @@ export default function CustomersPage() {
   }
 
   // 檢查權限
-  if (session?.user?.role === 'INVESTOR') {
+  if (session?.user?.role === Role.INVESTOR) {
     return (
       <Card>
         <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -376,16 +375,14 @@ export default function CustomersPage() {
                 <Option value="NEW">新客戶</Option>
               </Select>
             </div>
-            {session?.user?.role !== 'INVESTOR' && (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => handleEdit()}
-                style={{ flexShrink: 0 }}
-              >
-                新增客戶
-              </Button>
-            )}
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => handleEdit()}
+              style={{ flexShrink: 0 }}
+            >
+              新增客戶
+            </Button>
           </div>
         }
       >

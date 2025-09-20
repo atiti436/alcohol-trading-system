@@ -462,8 +462,8 @@ export default function PurchasesPage() {
     ],
     exchangeRate: [
       { required: true, message: '請輸入匯率' },
-      { type: 'number', min: 0.001, message: '匯率必須大於0' },
-      { type: 'number', max: 1000, message: '匯率不能超過1000' }
+      { type: 'number' as const, min: 0.001, message: '匯率必須大於0' },
+      { type: 'number' as const, max: 1000, message: '匯率不能超過1000' }
     ],
     fundingSource: [
       { required: true, message: '請選擇資金來源' }
@@ -496,9 +496,9 @@ export default function PurchasesPage() {
       }
 
       // 檢查報單號碼是否重複
-      if (values.declarationNumber) {
+      if (values.declaration_number) {
         const duplicateDeclaration = purchases.find(p =>
-          p.declarationNumber === values.declarationNumber &&
+          p.declarationNumber === values.declaration_number &&
           p.id !== editingPurchase?.id
         )
         if (duplicateDeclaration) {
@@ -507,8 +507,8 @@ export default function PurchasesPage() {
       }
 
       // 檢查報關日期不能早於今天太久
-      if (values.declarationDate) {
-        const daysDiff = dayjs().diff(dayjs(values.declarationDate), 'days')
+      if (values.declaration_date) {
+        const daysDiff = dayjs().diff(dayjs(values.declaration_date), 'days')
         if (daysDiff > 365) {
           validationErrors.push('報關日期不能早於一年前')
         }
@@ -530,7 +530,7 @@ export default function PurchasesPage() {
 
       const requestData = {
         ...values,
-        declarationDate: values.declarationDate?.toISOString(),
+        declaration_date: values.declaration_date,
         total_amount: 0, // 初始金額，後續添加商品時計算
         items: [] // 基礎版本暫時不處理採購明細
       }
@@ -757,7 +757,6 @@ export default function PurchasesPage() {
                 precision={3}
                 disabled={submitting}
                 formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
               />
             </Form.Item>
           </div>

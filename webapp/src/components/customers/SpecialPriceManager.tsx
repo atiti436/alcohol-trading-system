@@ -12,7 +12,8 @@ import {
   Table,
   Popconfirm,
   Tooltip,
-  Tag
+  Tag,
+  Switch
 } from 'antd'
 import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { CustomerTier, Product } from '@/types/room-2'
@@ -286,7 +287,7 @@ const SpecialPriceManager: React.FC<SpecialPriceManagerProps> = ({
             placeholder="選擇產品"
             optionFilterProp="children"
             filterOption={(input, option) =>
-              (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+              String(option?.children || '')?.toLowerCase().includes(input.toLowerCase())
             }
             loading={loading}
             disabled={!!editingPrice} // 編輯時不能改產品
@@ -313,28 +314,28 @@ const SpecialPriceManager: React.FC<SpecialPriceManagerProps> = ({
             label="標準售價"
             rules={[{ required: true, message: '請輸入標準售價' }]}
           >
-            <InputNumber min={0} precision={2} formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={value => value!.replace(/\$\s?|(,*)/g, '')} />
+            <InputNumber min={0} precision={2} formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}  />
           </Form.Item>
           <Form.Item
             name="special_price"
             label="專屬價格"
             rules={[{ required: true, message: '請輸入專屬價格' }]}
           >
-            <InputNumber min={0} precision={2} formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={value => value!.replace(/\$\s?|(,*)/g, '')} />
+            <InputNumber min={0} precision={2} formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}  />
           </Form.Item>
           <Form.Item
             name="discount_amount"
             label="折扣金額"
             rules={[{ required: true, message: '請輸入折扣金額' }]}
           >
-            <InputNumber min={0} precision={2} formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={value => value!.replace(/\$\s?|(,*)/g, '')} />
+            <InputNumber min={0} precision={2} formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}  />
           </Form.Item>
           <Form.Item
             name="discount_rate"
             label="折扣率"
             rules={[{ required: true, message: '請輸入折扣率' }]}
           >
-            <InputNumber min={0} max={1} step={0.01} precision={2} formatter={value => `${value}%`} parser={value => value!.replace(/%/g, '')} />
+            <InputNumber min={0} max={1} step={0.01} precision={2} formatter={value => `${value}%`}  />
           </Form.Item>
         </Space>
 

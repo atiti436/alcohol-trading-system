@@ -397,7 +397,7 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
 
   // 分類統計 - 🔧 修復：使用正確的Accumulator型別
   const categoryStats = productAnalysis.reduce((acc: ProductAnalysisAccumulator, product) => {
-    const category = product.category || 'OTHER'
+    const category = product?.category || 'OTHER'
     if (!acc[category]) {
       acc[category] = {
         category,
@@ -407,17 +407,17 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
         actualRevenue: 0
       }
     }
-    acc[category].salesCount += product.salesCount
-    acc[category].totalQuantity += product.totalQuantity || 0
-    acc[category].revenue += product.revenue
-    acc[category].actualRevenue += product.actualRevenue || product.revenue
+    acc[category].salesCount += product?.salesCount || 0
+    acc[category].totalQuantity += product?.totalQuantity || 0
+    acc[category].revenue += product?.revenue || 0
+    acc[category].actualRevenue += product?.actualRevenue || product?.revenue || 0
     return acc
   }, {})
 
   return NextResponse.json({
     success: true,
     data: {
-      products: productAnalysis.sort((a, b) => (b.totalQuantity || 0) - (a.totalQuantity || 0)),
+      products: productAnalysis.sort((a, b) => (b?.totalQuantity || 0) - (a?.totalQuantity || 0)),
       categories: Object.values(categoryStats)
     }
   })
@@ -438,7 +438,7 @@ async function getCustomerAnalysisReport(baseWhere: DatabaseWhereCondition, user
       customer_code: true,
       company: true,
       tier: true,
-      paymentTerms: true,
+      payment_terms: true,
       sales: {
         where: baseWhere,
         select: {
@@ -464,7 +464,7 @@ async function getCustomerAnalysisReport(baseWhere: DatabaseWhereCondition, user
         customer_code: customer.customer_code,
         company: customer.company,
         tier: customer.tier,
-        paymentTerms: customer.paymentTerms,
+        paymentTerms: customer.payment_terms,
         salesCount,
         revenue,
         actualRevenue: userRole === 'INVESTOR' ? undefined : actualRevenue,
@@ -472,7 +472,7 @@ async function getCustomerAnalysisReport(baseWhere: DatabaseWhereCondition, user
       }
     })
     .filter(Boolean) // 移除null值
-    .sort((a, b) => b.revenue - a.revenue)
+    .sort((a, b) => (b?.revenue || 0) - (a?.revenue || 0))
 
   return NextResponse.json({
     success: true,

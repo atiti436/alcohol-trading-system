@@ -4,7 +4,17 @@ import { filterSalesData } from '@/modules/auth/utils/data-filter'
 import { prisma } from '@/lib/prisma'
 import { PermissionContext, Role } from '@/types/auth'
 import { validateSaleData } from '@/lib/validation'
-import { DatabaseWhereCondition, Sale, SaleItem } from '@/types/business'
+import { DatabaseWhereCondition } from '@/types/business'
+import { Sale, SaleItem, Customer, Product, ProductVariant } from '@prisma/client'
+
+// Define Sale with included relations
+type SaleWithRelations = Sale & {
+  customer: Pick<Customer, 'id' | 'name' | 'tier'>
+  items: (SaleItem & {
+    product: Pick<Product, 'id' | 'product_code' | 'name' | 'cost_price'>
+    variant: Pick<ProductVariant, 'id' | 'variant_code' | 'description'> | null
+  })[]
+}
 
 // 🔒 核心商業邏輯：銷售管理API with 投資方數據隔離
 
@@ -50,7 +60,7 @@ export const GET = withAppAuth(async (
     }
 
     // 查詢銷售資料
-    const [sales, total] = await Promise.all([
+    const [sales, total]: [SaleWithRelations[], number] = await Promise.all([
       prisma.sale.findMany({
         where,
         include: {
@@ -67,7 +77,8 @@ export const GET = withAppAuth(async (
                 select: {
                   id: true,
                   product_code: true,
-                  name: true
+                  name: true,
+                  cost_price: true
                 }
               },
               variant: {
@@ -143,7 +154,7 @@ export const POST = withAppAuth(async (
       }, { status: 403 })
     }
 
-    const body = await request.json()
+    const body = await req.json()
 
     // 🔒 嚴格輸入驗證 - 修復安全漏洞
     let validatedData
@@ -286,7 +297,7 @@ export const POST = withAppAuth(async (
 /**
  * 計算銷售匯總（根據角色過濾）
  */
-function calculateSalesSummary(sales: Sale[], context: PermissionContext) {
+function calculateSalesSummary(sales: SaleWithRelations[], context: PermissionContext) {
   if (context.role === Role.SUPER_ADMIN) {
     // 超級管理員看到完整的財務摘要
     const totalRevenue = sales.reduce((sum, sale) => sum + (sale.actual_amount || sale.total_amount), 0)

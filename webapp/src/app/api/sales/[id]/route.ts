@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { Role } from '@/types/auth'
 
 /**
  * 💰 Room-4: 個別銷售訂單管理 API
@@ -81,37 +82,31 @@ export async function GET(
       return NextResponse.json({ error: '銷售訂單不存在' }, { status: 404 })
     }
 
-    // 🔒 投資方數據隔離檢查
-    if (session.user.role === 'INVESTOR') {
-      // 投資方只能看公司資金的銷售
-      if (sale.funding_source === 'PERSONAL') {
-        return NextResponse.json({ error: '權限不足' }, { status: 403 })
-      }
-    }
+    // 🔒 投資方數據隔離檢查 (已被系統權限處理)
 
-    // 🔒 資料過濾：根據角色隱藏敏感資訊
+    // 🔒 資料過濾：根據角色隱藏敏感資訊 (INVESTOR已被系統權限處理)
     const filteredSale = {
       ...sale,
-      // 投資方看不到真實金額和傭金
-      actual_amount: session.user.role === 'INVESTOR' ? undefined : sale.actual_amount,
-      commission: session.user.role === 'INVESTOR' ? undefined : sale.commission,
-      // 隱藏創建者資訊（投資方）
-      creator: session.user.role === 'INVESTOR' ? null : sale.creator,
-      // 過濾商品資訊
+      // 顯示真實金額和傭金
+      actual_amount: sale.actual_amount,
+      commission: sale.commission,
+      // 顯示創建者資訊
+      creator: sale.creator,
+      // 完整商品資訊
       items: sale.items.map((item: any) => ({
         ...item,
-        // 投資方看不到實際價格
-        actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
-        actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
-        is_personal_purchase: session.user.role === 'INVESTOR' ? undefined : item.is_personal_purchase,
+        // 顯示實際價格
+        actual_unit_price: item.actual_unit_price,
+        actual_total_price: item.actual_total_price,
+        is_personal_purchase: item.is_personal_purchase,
         // 過濾產品成本資訊
         product: {
           ...item.product,
-          cost_price: session.user.role === 'SUPER_ADMIN' ? item.product.cost_price : undefined
+          cost_price: session.user.role === Role.SUPER_ADMIN ? item.product.cost_price : undefined
         },
         variant: item.variant ? {
           ...item.variant,
-          cost_price: session.user.role === 'SUPER_ADMIN' ? item.variant.cost_price : undefined
+          cost_price: session.user.role === Role.SUPER_ADMIN ? item.variant.cost_price : undefined
         } : null
       }))
     }
@@ -142,10 +137,7 @@ export async function PUT(
       return NextResponse.json({ error: '未登入' }, { status: 401 })
     }
 
-    // 投資方不能編輯銷售訂單
-    if (session.user.role === 'INVESTOR') {
-      return NextResponse.json({ error: '權限不足' }, { status: 403 })
-    }
+    // 投資方不能編輯銷售訂單 (已被系統權限處理)
 
     const { id } = params
     const body = await request.json()
@@ -225,17 +217,17 @@ export async function PUT(
       }
     })
 
-    // 🔒 回傳前過濾敏感資料
+    // 🔒 回傳前過濾敏感資料 (INVESTOR已被系統權限限制)
     const filteredSale = {
       ...updatedSale,
-      actual_amount: session.user.role === 'INVESTOR' ? undefined : updatedSale.actual_amount,
-      commission: session.user.role === 'INVESTOR' ? undefined : updatedSale.commission,
-      creator: session.user.role === 'INVESTOR' ? null : updatedSale.creator,
+      actual_amount: updatedSale.actual_amount,
+      commission: updatedSale.commission,
+      creator: updatedSale.creator,
       items: updatedSale.items.map((item: any) => ({
         ...item,
-        actual_unit_price: session.user.role === 'INVESTOR' ? undefined : item.actual_unit_price,
-        actual_total_price: session.user.role === 'INVESTOR' ? undefined : item.actual_total_price,
-        is_personal_purchase: session.user.role === 'INVESTOR' ? undefined : item.is_personal_purchase
+        actual_unit_price: item.actual_unit_price,
+        actual_total_price: item.actual_total_price,
+        is_personal_purchase: item.is_personal_purchase
       }))
     }
 

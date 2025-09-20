@@ -30,7 +30,7 @@ import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { DualPriceManager } from './DualPriceManager'
-import { Sale, CreateSaleRequest, CreateSaleItemRequest } from '@/types/room-2'
+import { Sale, CreateSaleRequest, CreateSaleItemRequest, ProductWithVariants, ProductVariant } from '@/types/room-2'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -45,24 +45,6 @@ interface Customer {
   paymentTerms: string
 }
 
-interface Product {
-  id: string
-  product_code: string
-  name: string
-  category: string
-  current_price: number
-  standard_price: number
-  variants?: ProductVariant[]
-}
-
-interface ProductVariant {
-  id: string
-  variant_code: string
-  variantType: string
-  description: string
-  current_price: number
-}
-
 interface SaleOrderItem {
   key: string
   product_id: string
@@ -71,7 +53,7 @@ interface SaleOrderItem {
   displayPrice: number
   actualPrice: number
   commission: number
-  product: Product
+  product: ProductWithVariants
   variant?: ProductVariant
 }
 
@@ -99,7 +81,7 @@ export function SaleOrderModal({
 
   // 資料狀態
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<ProductWithVariants[]>([])
   const [orderItems, setOrderItems] = useState<SaleOrderItem[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
 
@@ -153,9 +135,9 @@ export function SaleOrderModal({
     if (editingSale && visible) {
       form.setFieldsValue({
         customer_id: editingSale.customer_id,
-        fundingSource: editingSale.fundingSource,
-        paymentTerms: editingSale.paymentTerms,
-        dueDate: editingSale.dueDate ? dayjs(editingSale.dueDate) : null,
+        fundingSource: editingSale.funding_source,
+        paymentTerms: editingSale.payment_terms,
+        dueDate: editingSale.due_date ? dayjs(editingSale.due_date) : null,
         notes: editingSale.notes
       })
 
@@ -168,12 +150,12 @@ export function SaleOrderModal({
         const items = editingSale.items.map((item, index: number) => ({
           key: `item-${index}`,
           product_id: item.product_id,
-          variantId: item.variantId,
+          variantId: item.variant_id,
           quantity: item.quantity,
           displayPrice: item.unit_price,
           actualPrice: item.actual_unit_price || item.unit_price,
           commission: (item.actual_unit_price || item.unit_price) - item.unit_price,
-          product: item.product,
+          product: (item.product || {} as ProductWithVariants) as ProductWithVariants,
           variant: item.variant
         }))
         setOrderItems(items)
@@ -215,7 +197,7 @@ export function SaleOrderModal({
       displayPrice: 0,
       actualPrice: 0,
       commission: 0,
-      product: {} as Product
+      product: {} as ProductWithVariants
     }
     setOrderItems([...orderItems, newItem])
   }
@@ -322,7 +304,7 @@ export function SaleOrderModal({
       title: '商品',
       key: 'product',
       width: 200,
-      render: (_, record: SaleOrderItem) => (
+      render: (_: any, record: SaleOrderItem) => (
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
           <Select
             style={{ width: '100%' }}
@@ -362,7 +344,7 @@ export function SaleOrderModal({
       title: '數量',
       key: 'quantity',
       width: 100,
-      render: (_, record: SaleOrderItem) => (
+      render: (_: any, record: SaleOrderItem) => (
         <InputNumber
           min={1}
           value={record.quantity}
@@ -375,7 +357,7 @@ export function SaleOrderModal({
       title: '價格設定',
       key: 'price',
       width: 300,
-      render: (_, record: SaleOrderItem) => (
+      render: (_: any, record: SaleOrderItem) => (
         record.product_id ? (
           <DualPriceManager
             product_id={record.product_id}
@@ -391,7 +373,7 @@ export function SaleOrderModal({
       title: '小計',
       key: 'subtotal',
       width: 120,
-      render: (_, record: SaleOrderItem) => (
+      render: (_: any, record: SaleOrderItem) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>
             NT$ {(record.displayPrice * record.quantity).toLocaleString()}
@@ -410,7 +392,7 @@ export function SaleOrderModal({
       title: '操作',
       key: 'actions',
       width: 80,
-      render: (_, record: SaleOrderItem) => (
+      render: (_: any, record: SaleOrderItem) => (
         <Button
           type="text"
           danger

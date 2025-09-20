@@ -185,7 +185,6 @@ export function DualPriceManager({
                 min={0}
                 precision={0}
                 formatter={(value) => `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(value) => value!.replace(/NT\$\s?|(,*)/g, '')}
               />
             </Form.Item>
           </Col>
@@ -210,8 +209,7 @@ export function DualPriceManager({
                   min={displayPrice} // 實際價格不能低於顯示價格
                   precision={0}
                   formatter={(value) => `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={(value) => value!.replace(/NT\$\s?|(,*)/g, '')}
-                />
+                  />
               </Form.Item>
             </Col>
           </SuperAdminOnly>

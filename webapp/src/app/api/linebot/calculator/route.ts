@@ -277,10 +277,10 @@ export async function GET(request: NextRequest) {
       case 'example':
         const exampleRequest = {
           amount: 1000000,
-          currency: 'JPY',
+          currency: 'JPY' as 'JPY' | 'USD' | 'EUR' | 'TWD',
           productType: 'whisky',
           quantity: 1,
-          customerTier: 'REGULAR'
+          customerTier: 'REGULAR' as 'VIP' | 'REGULAR' | 'PREMIUM' | 'NEW'
         }
         const exampleResult = await calculateCosts(exampleRequest)
 

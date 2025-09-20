@@ -270,18 +270,71 @@ export interface KPIData {
 }
 
 export interface DashboardData {
-  kpi: KPIData
-  recentSales: Sale[]
-  topCustomers: Array<{
-    customer: Customer
-    totalPurchases: number
-    total_amount: number
-  }>
-  inventoryAlerts: Array<{
-    product: Product
-    variant?: ProductVariant
-    currentStock: number
+  // 🔑 關鍵KPI指標 (超級管理員)
+  totalRevenue?: number
+  personalRevenue?: number
+  investmentRevenue?: number
+  commission?: number
+  stockValue?: number
+  stockCount?: number
+  pendingReceivables?: number
+
+  // 🔑 投資方KPI指標
+  investmentProfit?: number
+  investmentStock?: number
+  profitMargin?: number
+
+  // 詳細資料列表
+  lowStockItems?: Array<{
+    name: string
+    stock: number
     minStock: number
+  }>
+  salesTrend?: Array<{
+    month: string
+    revenue: number
+    profit: number
+    orders: number
+  }>
+  monthlyTrend?: Array<{
+    month: string
+    revenue: number
+    profit: number
+    orders: number
+  }>
+  investmentItems?: Array<{
+    id: string
+    sale_number: string
+    amount: number
+    profit: number
+    date: Date
+  }>
+
+  // 員工相關資料
+  todayTasks?: Array<{
+    id: number
+    task: string
+    status: string
+  }>
+  recentOrders?: Array<{
+    id: string
+    customer: string
+    amount: number
+    status: string
+  }>
+  stockAlerts?: Array<{
+    id: string
+    name: string
+    stock: number
+    alertLevel: string
+  }>
+
+  // 快速操作
+  quickActions?: Array<{
+    id: string
+    title: string
+    icon: string
+    url: string
   }>
 }
 

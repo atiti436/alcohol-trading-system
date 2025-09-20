@@ -205,7 +205,7 @@ export function filterDashboardData<T extends Record<string, any>>(
         profit: (trend.total_amount || 0) - (trend.cost || 0)
       })) || [],
       investmentItems: data.investmentItems || []
-    }
+    } as unknown as Partial<T>
   }
 
   // 員工Dashboard：基本操作資料
@@ -214,7 +214,7 @@ export function filterDashboardData<T extends Record<string, any>>(
     recentOrders: data.recentOrders || [],
     stockAlerts: data.stockAlerts || [],
     quickActions: data.quickActions || []
-  }
+  } as unknown as Partial<T>
 }
 
 /**

@@ -144,7 +144,7 @@ export default function ProductsPage() {
             {record.name}
           </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            {record.volume_ml}ml • {record.alc_percentage}% • {record.weight}kg
+            {record.volume_ml}ml • {record.alc_percentage}% • {record.weight_kg}kg
           </div>
           {record.supplier && (
             <div style={{ fontSize: '12px', color: '#666' }}>
@@ -391,15 +391,13 @@ export default function ProductsPage() {
             </Select>
           </Space>
 
-          {session?.user?.role !== 'INVESTOR' && (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => handleEdit()}
-            >
-              新增商品
-            </Button>
-          )}
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => handleEdit()}
+          >
+            新增商品
+          </Button>
         </div>
 
         <Table
