@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
     const quoteNumber = `QT${dateString}${randomSuffix}`
 
     // 計算總金額
-    const totalAmount = data.quantity * data.unit_price
+    const total_amount = data.quantity * data.unit_price
 
     // 處理有效期
     let validUntil: Date | undefined
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
         product_name: data.product_name,
         quantity: data.quantity,
         unit_price: data.unit_price,
-        total_amount: totalAmount,
+        total_amount: total_amount,
         special_notes: data.special_notes,
         valid_until: validUntil,
         quoted_by: session.user.id,
