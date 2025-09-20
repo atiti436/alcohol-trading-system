@@ -51,6 +51,7 @@ model User {
   created_accounting_entries AccountingEntry[]
   created_accounts_receivable AccountsReceivable[]
   created_payment_records   PaymentRecord[]
+  created_quotations        Quotation[]
 
   @@map("users")
 }
@@ -86,6 +87,7 @@ model Customer {
   sales                 Sale[]
   special_prices        CustomerSpecialPrice[]
   accounts_receivables  AccountsReceivable[]
+  quotations            Quotation[]
 
   @@map("customers")
 }
@@ -121,6 +123,7 @@ model Product {
   purchase_items PurchaseItem[]
   sale_items     SaleItem[]
   special_prices CustomerSpecialPrice[]
+  quotations     Quotation[]
 
   @@map("products")
 }
@@ -440,4 +443,37 @@ model PaymentRecord {
   creator             User             @relation(fields: [created_by], references: [id])
 
   @@map("payment_records")
+}
+
+enum QuotationStatus {
+  PENDING    // 待回覆
+  ACCEPTED   // 已接受
+  REJECTED   // 已拒絕
+  EXPIRED    // 已過期
+}
+
+model Quotation {
+  id              String          @id @default(cuid())
+  quote_number    String          @unique
+  customer_id     String
+  product_id      String?
+  product_name    String          // 支援自定義商品名稱（不一定在產品庫中）
+  quantity        Int
+  unit_price      Float
+  total_amount    Float
+  special_notes   String?         // 備註：如"一次12支價格"
+  status          QuotationStatus @default(PENDING)
+  valid_until     DateTime?       // 報價有效期
+  quoted_by       String          // 報價人員
+  source          String          @default("WEB") // 來源：WEB, LINE_BOT
+  line_user_id    String?         // LINE用戶ID（如果來自LINE BOT）
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  // Relations
+  customer  Customer @relation(fields: [customer_id], references: [id])
+  product   Product? @relation(fields: [product_id], references: [id])
+  quoter    User     @relation(fields: [quoted_by], references: [id])
+
+  @@map("quotations")
 }

@@ -24,7 +24,8 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
-  ShopOutlined
+  ShopOutlined,
+  FileTextOutlined
 } from '@ant-design/icons'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -68,6 +69,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         onClick: () => router.push('/products')
       },
       {
+        key: '/quotations',
+        icon: <FileTextOutlined />,
+        label: '報價管理',
+        onClick: () => router.push('/quotations')
+      },
+      {
         key: '/inventory',
         icon: <AppstoreOutlined />,
         label: '庫存管理',
@@ -104,15 +111,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         ...commonItems,
         adminItems[0], // 客戶管理
         adminItems[1], // 商品管理
-        adminItems[3], // 銷售管理（會過濾資料）
-        adminItems[4]  // 報表分析（會過濾資料）
+        adminItems[2], // 報價管理
+        adminItems[4], // 銷售管理（會過濾資料）
+        adminItems[5]  // 報表分析（會過濾資料）
       ]
     } else {
       return [
         ...commonItems,
         adminItems[0], // 客戶管理
         adminItems[1], // 商品管理
-        adminItems[2]  // 庫存管理
+        adminItems[2], // 報價管理
+        adminItems[3]  // 庫存管理
       ]
     }
   }
