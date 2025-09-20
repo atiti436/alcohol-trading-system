@@ -27,7 +27,7 @@ import {
   ShopOutlined
 } from '@ant-design/icons'
 import { useSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Role } from '@/types/auth'
 
 const { Sider, Content, Header } = Layout
@@ -41,6 +41,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
   const { data: session } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
 
   // 根據角色配置選單項目
   const getMenuItems = (userRole: Role): MenuProps['items'] => {
@@ -55,31 +56,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     const adminItems = [
       {
-        key: 'customers',
+        key: '/customers',
         icon: <UserOutlined />,
         label: '客戶管理',
         onClick: () => router.push('/customers')
       },
       {
-        key: 'products',
+        key: '/products',
         icon: <ShoppingOutlined />,
         label: '商品管理',
         onClick: () => router.push('/products')
       },
       {
-        key: 'inventory',
+        key: '/inventory',
         icon: <AppstoreOutlined />,
         label: '庫存管理',
         onClick: () => router.push('/inventory')
       },
       {
-        key: 'sales',
+        key: '/sales',
         icon: <DollarOutlined />,
         label: '銷售管理',
         onClick: () => router.push('/sales')
       },
       {
-        key: 'reports',
+        key: '/reports',
         icon: <BarChartOutlined />,
         label: '報表分析',
         onClick: () => router.push('/reports')
@@ -88,7 +89,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     const superAdminItems = [
       {
-        key: 'settings',
+        key: '/settings',
         icon: <SettingOutlined />,
         label: '系統設定',
         onClick: () => router.push('/settings')
@@ -121,7 +122,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: '個人設定'
+      label: '個人設定',
+      onClick: () => router.push('/profile')
     },
     {
       type: 'divider'
@@ -183,7 +185,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <Menu
           theme="dark"
           mode="inline"
-          defaultSelectedKeys={['/dashboard']}
+          selectedKeys={[pathname]}
           items={session?.user?.role ? getMenuItems(session.user.role) : []}
         />
       </Sider>
