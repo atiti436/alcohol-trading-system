@@ -311,7 +311,7 @@ export default function QuotationsPage() {
       title: '操作',
       key: 'actions',
       width: 120,
-      render: (_, record: Quotation) => (
+      render: (_: any, record: Quotation) => (
         <Space size="small">
           <Button
             type="text"

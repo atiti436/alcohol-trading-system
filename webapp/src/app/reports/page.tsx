@@ -413,7 +413,7 @@ export default function ReportsPage() {
                 {
                   title: '商品',
                   key: 'product',
-                  render: (_, record) => (
+                  render: (_: any, record: any) => (
                     <div>
                       <div style={{ fontWeight: 'bold' }}>{record.name}</div>
                       <div style={{ fontSize: '12px', color: '#666' }}>
@@ -488,7 +488,7 @@ export default function ReportsPage() {
               {
                 title: '客戶',
                 key: 'customer',
-                render: (_, record) => (
+                render: (_: any, record: any) => (
                   <div>
                     <div style={{ fontWeight: 'bold' }}>{record.name}</div>
                     <div style={{ fontSize: '12px', color: '#666' }}>

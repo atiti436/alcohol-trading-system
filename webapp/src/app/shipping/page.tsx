@@ -623,7 +623,7 @@ export default function ShippingPage() {
                 {
                   title: '品名',
                   width: '40%',
-                  render: (_, record) => (
+                  render: (_: any, record: any) => (
                     <div>
                       <div style={{ fontWeight: 'bold' }}>{record.product.name}</div>
                       <div style={{ fontSize: '12px', color: '#666' }}>
@@ -643,7 +643,7 @@ export default function ShippingPage() {
                   title: '單價',
                   width: '20%',
                   align: 'right',
-                  render: (_, record) => (
+                  render: (_: any, record: any) => (
                     <SecurePriceDisplay
                       amount={record.unit_price}
                       currency="NT$"
@@ -656,7 +656,7 @@ export default function ShippingPage() {
                   title: '小計',
                   width: '25%',
                   align: 'right',
-                  render: (_, record) => (
+                  render: (_: any, record: any) => (
                     <SecurePriceDisplay
                       amount={record.quantity * record.unit_price}
                       currency="NT$"
