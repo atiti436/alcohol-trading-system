@@ -220,7 +220,7 @@ export default function InventoryPage() {
       title: '操作',
       key: 'action',
       width: 120,
-      render: (_, record: InventoryItem) => (
+      render: (_: any, record: InventoryItem) => (
         <Space>
           <Button
             type="link"
