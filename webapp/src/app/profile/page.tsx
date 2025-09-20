@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, Form, Input, Button, Typography, Space, Avatar, Row, Col, Switch, Divider, Select, message, Upload } from 'antd'
+import { Card, Form, Input, Button, Typography, Space, Avatar, Row, Col, Switch, Divider, Select, message, Upload, Alert } from 'antd'
 import {
   UserOutlined,
   MailOutlined,
@@ -9,7 +9,8 @@ import {
   EditOutlined,
   SaveOutlined,
   CameraOutlined,
-  SettingOutlined
+  SettingOutlined,
+  CrownOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 
@@ -89,6 +90,27 @@ export default function ProfilePage() {
   const handleCancel = () => {
     form.setFieldsValue(profile)
     setEditing(false)
+  }
+
+  const handleUpgradeRole = async () => {
+    try {
+      const response = await fetch('/api/admin/upgrade-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (response.ok) {
+        message.success('角色已升級為超級管理員！請重新登入查看完整功能。')
+        // 重新載入頁面以更新session
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        message.error('角色升級失敗，請稍後再試')
+      }
+    } catch (error) {
+      message.error('升級過程中發生錯誤')
+    }
   }
 
   if (!profile) {
@@ -234,6 +256,27 @@ export default function ProfilePage() {
                      session.user.role === 'INVESTOR' ? '投資方' :
                      session.user.role === 'EMPLOYEE' ? '員工' : session.user.role}
                   </Text>
+
+                  {/* 如果是員工角色，顯示升級按鈕 */}
+                  {session.user.role === 'EMPLOYEE' && (
+                    <div style={{ marginTop: 12 }}>
+                      <Alert
+                        message="需要管理員權限？"
+                        description="點擊下方按鈕升級為超級管理員，查看完整Dashboard功能"
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 12 }}
+                      />
+                      <Button
+                        type="primary"
+                        icon={<CrownOutlined />}
+                        onClick={handleUpgradeRole}
+                        style={{ width: '100%' }}
+                      >
+                        升級為超級管理員
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </Space>
