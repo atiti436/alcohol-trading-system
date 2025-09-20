@@ -8,13 +8,16 @@ import {
   UserOutlined,
   AppstoreOutlined,
   LineChartOutlined,
-  
   WarningOutlined,
   CheckCircleOutlined,
-  PlusOutlined
+  PlusOutlined,
+  TrendingUpOutlined,
+  PieChartOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import { Role } from '@/types/auth'
+import SimpleLineChart from '@/components/charts/SimpleLineChart'
+import SimplePieChart from '@/components/charts/SimplePieChart'
 
 const { Title, Text } = Typography
 
@@ -63,6 +66,27 @@ function SuperAdminDashboard() {
       { name: '山崎18年威士忌', stock: 3, minStock: 10 },
       { name: '響21年威士忌', stock: 1, minStock: 5 },
       { name: '白州12年威士忌', stock: 2, minStock: 8 }
+    ],
+    // 新增圖表數據
+    revenueChart: [
+      { month: '1月', value: 1850000 },
+      { month: '2月', value: 2100000 },
+      { month: '3月', value: 2450000 },
+      { month: '4月', value: 2200000 },
+      { month: '5月', value: 2680000 },
+      { month: '6月', value: 2950000 }
+    ],
+    categoryChart: [
+      { name: '威士忌', value: 1200000, color: '#1890ff' },
+      { name: '清酒', value: 680000, color: '#52c41a' },
+      { name: '葡萄酒', value: 420000, color: '#faad14' },
+      { name: '香檳', value: 150000, color: '#722ed1' }
+    ],
+    customerChart: [
+      { name: 'VIP客戶', value: 45, color: '#f5222d' },
+      { name: '優質客戶', value: 128, color: '#fa541c' },
+      { name: '一般客戶', value: 256, color: '#1890ff' },
+      { name: '新客戶', value: 89, color: '#52c41a' }
     ]
   }
 
@@ -119,9 +143,40 @@ function SuperAdminDashboard() {
         </Col>
       </Row>
 
+      {/* 圖表區域 */}
       <Row gutter={[16, 16]}>
-        {/* 快速操作 */}
+        {/* 營收趨勢圖 */}
         <Col xs={24} lg={12}>
+          <SimpleLineChart
+            title="營收趨勢分析"
+            data={mockData.revenueChart}
+            prefix="NT$ "
+            height={250}
+          />
+        </Col>
+
+        {/* 商品類別銷售分布 */}
+        <Col xs={24} lg={12}>
+          <SimplePieChart
+            title="商品類別銷售分布"
+            data={mockData.categoryChart}
+            height={250}
+          />
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
+        {/* 客戶分布圖 */}
+        <Col xs={24} lg={8}>
+          <SimplePieChart
+            title="客戶分布"
+            data={mockData.customerChart}
+            height={200}
+          />
+        </Col>
+
+        {/* 快速操作 */}
+        <Col xs={24} lg={8}>
           <Card title="快速操作" extra={<Button type="link">更多</Button>}>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Button type="primary" icon={<PlusOutlined />} block>
@@ -141,7 +196,7 @@ function SuperAdminDashboard() {
         </Col>
 
         {/* 低庫存警報 */}
-        <Col xs={24} lg={12}>
+        <Col xs={24} lg={8}>
           <Card
             title={
               <Space>
@@ -187,6 +242,20 @@ function InvestorDashboard() {
       { month: '1月', revenue: 1200000, profit: 240000 },
       { month: '2月', revenue: 1500000, profit: 300000 },
       { month: '3月', revenue: 1770000, profit: 354000 }
+    ],
+    // 新增圖表數據 (投資方專用，隱藏真實數據)
+    investmentChart: [
+      { month: '1月', value: 240000 },
+      { month: '2月', value: 300000 },
+      { month: '3月', value: 354000 },
+      { month: '4月', value: 390000 },
+      { month: '5月', value: 420000 },
+      { month: '6月', value: 450000 }
+    ],
+    productChart: [
+      { name: '威士忌', value: 180000, color: '#1890ff' },
+      { name: '清酒', value: 120000, color: '#52c41a' },
+      { name: '葡萄酒', value: 54000, color: '#faad14' }
     ]
   }
 
@@ -230,7 +299,29 @@ function InvestorDashboard() {
         </Col>
       </Row>
 
-      {/* 投資趨勢 */}
+      {/* 投資方圖表區域 */}
+      <Row gutter={[16, 16]}>
+        {/* 投資獲利趨勢 */}
+        <Col xs={24} lg={16}>
+          <SimpleLineChart
+            title="投資獲利趨勢"
+            data={mockData.investmentChart}
+            prefix="NT$ "
+            height={250}
+          />
+        </Col>
+
+        {/* 投資商品分布 */}
+        <Col xs={24} lg={8}>
+          <SimplePieChart
+            title="投資商品分布"
+            data={mockData.productChart}
+            height={250}
+          />
+        </Col>
+      </Row>
+
+      {/* 投資趨勢列表 */}
       <Card title="投資表現趨勢">
         <List
           dataSource={mockData.monthlyTrend}
