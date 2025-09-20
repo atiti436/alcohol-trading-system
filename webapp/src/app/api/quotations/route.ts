@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('新增報價失敗:', error)
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: '資料格式錯誤', details: error.errors }, { status: 400 })
+      return NextResponse.json({ error: '資料格式錯誤', details: error.issues }, { status: 400 })
     }
     return NextResponse.json({ error: '新增報價失敗' }, { status: 500 })
   }
