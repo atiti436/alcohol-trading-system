@@ -30,13 +30,13 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role as Role
           token.investor_id = dbUser.investor_id || undefined
         } else {
-          // 首次登入的新使用者，預設為員工角色
+          // 首次登入的新使用者，預設為超級管理員角色（老闆）
           const newUser = await prisma.user.create({
             data: {
               email: user.email!,
               name: user.name!,
               image: user.image,
-              role: Role.EMPLOYEE,
+              role: Role.SUPER_ADMIN,
             },
           })
           token.id = newUser.id
