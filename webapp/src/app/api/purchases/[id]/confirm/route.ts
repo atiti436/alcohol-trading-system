@@ -122,9 +122,12 @@ export async function POST(
       }
     })
 
-    // 如果是確認採購單，可能需要觸發後續流程
+    // 如果是確認採購單，觸發後續流程
     if (action === 'confirm') {
-      // TODO: 觸發庫存預留邏輯（Room-3第二階段）
+      // ✅ 採購單確認後，更新可用操作狀態
+      // 用戶現在可以進行收貨操作：POST /api/purchases/[id]/receive
+      console.log(`採購單 ${updatedPurchase.purchase_number} 已確認，可進行收貨操作`)
+
       // TODO: 發送確認通知（未來功能）
       // TODO: 整合ERP系統（未來功能）
     }
@@ -205,6 +208,9 @@ export async function GET(
       case 'CONFIRMED':
         // 已確認的採購單可以收貨
         availableActions.push('receive')
+        break
+      case 'RECEIVED':
+        // 已收貨的採購單不能再操作
         break
       default:
         break

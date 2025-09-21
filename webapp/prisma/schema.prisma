@@ -88,6 +88,7 @@ model Customer {
   special_prices        CustomerSpecialPrice[]
   accounts_receivables  AccountsReceivable[]
   quotations            Quotation[]
+  shipping_orders       ShippingOrder[]
 
   @@map("customers")
 }
@@ -124,6 +125,7 @@ model Product {
   sale_items     SaleItem[]
   special_prices CustomerSpecialPrice[]
   quotations     Quotation[]
+  shipping_items ShippingItem[]
 
   @@map("products")
 }
@@ -162,6 +164,7 @@ model ProductVariant {
   product             Product             @relation(fields: [product_id], references: [id], onDelete: Cascade)
   sale_items          SaleItem[]
   inventory_movements InventoryMovement[]
+  shipping_items      ShippingItem[]
 
   @@unique([product_id, variant_type])
   @@map("product_variants")
@@ -319,6 +322,7 @@ model Sale {
   creator               User                 @relation(fields: [created_by], references: [id])
   items                 SaleItem[]
   accounts_receivables  AccountsReceivable[]
+  shipping_orders       ShippingOrder[]
 
   @@map("sales")
 }
@@ -338,9 +342,10 @@ model SaleItem {
   updated_at            DateTime @updatedAt
 
   // Relations
-  sale     Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
-  product  Product         @relation(fields: [product_id], references: [id])
-  variant  ProductVariant? @relation(fields: [variant_id], references: [id])
+  sale          Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  product       Product         @relation(fields: [product_id], references: [id])
+  variant       ProductVariant? @relation(fields: [variant_id], references: [id])
+  shipping_items ShippingItem[]
 
   @@map("sale_items")
 }
@@ -476,4 +481,47 @@ model Quotation {
   quoter    User     @relation(fields: [quoted_by], references: [id])
 
   @@map("quotations")
+}
+
+model ShippingOrder {
+  id                String   @id @default(cuid())
+  shipping_number   String   @unique
+  sale_id           String
+  customer_id       String
+  shipping_address  String
+  shipping_method   String   @default("DELIVERY") // DELIVERY, PICKUP, EXPRESS
+  tracking_number   String?
+  status            String   @default("PENDING") // PENDING, SHIPPED, DELIVERED, CANCELLED
+  shipped_at        DateTime?
+  delivered_at      DateTime?
+  notes             String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relations
+  sale     Sale           @relation(fields: [sale_id], references: [id])
+  customer Customer       @relation(fields: [customer_id], references: [id])
+  items    ShippingItem[]
+
+  @@map("shipping_orders")
+}
+
+model ShippingItem {
+  id                String   @id @default(cuid())
+  shipping_order_id String
+  sale_item_id      String
+  product_id        String
+  variant_id        String?
+  quantity          Int
+  unit_price        Float
+  total_price       Float
+  created_at        DateTime @default(now())
+
+  // Relations
+  shipping_order ShippingOrder   @relation(fields: [shipping_order_id], references: [id], onDelete: Cascade)
+  sale_item      SaleItem        @relation(fields: [sale_item_id], references: [id])
+  product        Product         @relation(fields: [product_id], references: [id])
+  variant        ProductVariant? @relation(fields: [variant_id], references: [id])
+
+  @@map("shipping_items")
 }
