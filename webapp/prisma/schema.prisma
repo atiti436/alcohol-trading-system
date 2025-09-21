@@ -200,14 +200,16 @@ model InventoryMovement {
   variant_id      String
   movement_type   String   // 'PURCHASE' | 'SALE' | 'ADJUSTMENT' | 'TRANSFER'
   adjustment_type String?  // 'ADD' | 'SUBTRACT' | 'SET'
-  quantity        Int
-  previous_stock  Int
-  new_stock       Int
+  quantity_before Int      // 異動前數量
+  quantity_change Int      // 異動數量（正負值）
+  quantity_after  Int      // 異動後數量
+  unit_cost       Float    @default(0) // 單位成本
+  total_cost      Float    @default(0) // 總成本
   reason          String
   notes           String?
   reference_id    String?
   reference_type  String?
-  created_by      String
+  created_by      String?  // 可能是系統自動創建
   created_at      DateTime @default(now())
 
   // Relations

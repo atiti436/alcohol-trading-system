@@ -75,7 +75,7 @@ export async function POST(
       // 1. 建立收貨記錄
       const total_cost = purchase.items.reduce((sum, item) =>
         sum + (item.quantity * item.unit_price), 0
-      ) * exchange_rate + inspection_fee + additional_costs.reduce((sum, cost) => sum + cost.amount, 0)
+      ) * exchange_rate + inspection_fee + additional_costs.reduce((sum: number, cost: any) => sum + cost.amount, 0)
 
       const goodsReceipt = await tx.goodsReceipt.create({
         data: {
@@ -117,7 +117,7 @@ export async function POST(
         let itemCost = item.unit_price * exchange_rate
 
         // 根據分攤方式計算額外成本分攤
-        const totalAdditionalCost = inspection_fee + additional_costs.reduce((sum, cost) => sum + cost.amount, 0)
+        const totalAdditionalCost = inspection_fee + additional_costs.reduce((sum: number, cost: any) => sum + cost.amount, 0)
         let itemAdditionalCost = 0
 
         switch (allocation_method) {
@@ -163,13 +163,13 @@ export async function POST(
 
             if (!variant) {
               // 創建新的A類變體
-              const variantCode = `${item.product?.product_code || 'P001'}-A`
+              const variant_code = `${item.product?.product_code || 'P001'}-A`
               const sku = `${item.product?.product_code || 'P001'}-A-001`
 
               variant = await tx.productVariant.create({
                 data: {
                   product_id: item.product_id,
-                  variant_code: variantCode,
+                  variant_code: variant_code,
                   sku,
                   variant_type: 'A',
                   description: `${item.product_name} - 正常品`,
@@ -217,7 +217,8 @@ export async function POST(
               reason: `採購進貨 - ${purchase.purchase_number}`,
               reference_type: 'PURCHASE',
               reference_id: purchaseId,
-              notes: loss_quantity > 0 ? `損耗 ${itemLoss} 件 (${loss_type})` : '正常進貨'
+              notes: loss_quantity > 0 ? `損耗 ${itemLoss} 件 (${loss_type})` : '正常進貨',
+              created_by: session.user.id
             }
           })
 

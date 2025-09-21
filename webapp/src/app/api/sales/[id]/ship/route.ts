@@ -75,7 +75,11 @@ export async function POST(
     }
 
     // 檢查庫存是否充足
-    const inventoryChecks = []
+    const inventoryChecks: Array<{
+      saleItem: any;
+      variant: any;
+      shipQuantity: number;
+    }> = []
     for (const shipItem of items) {
       const saleItem = sale.items.find(item => item.id === shipItem.sale_item_id)
       if (!saleItem) {
@@ -160,7 +164,8 @@ export async function POST(
             reason: `銷售出貨 - ${sale.sale_number}`,
             reference_type: 'SALE',
             reference_id: saleId,
-            notes: `出貨單號：${shippingOrder.shipping_number}`
+            notes: `出貨單號：${shippingOrder.shipping_number}`,
+            created_by: session.user.id
           }
         })
 
