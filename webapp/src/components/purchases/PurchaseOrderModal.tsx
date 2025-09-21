@@ -237,8 +237,11 @@ export function PurchaseOrderModal({
   const handleCurrencyChange = (currency: string) => {
     if (currency === 'TWD') {
       form.setFieldValue('exchangeRate', 1)
+    } else if (currency === 'JPY') {
+      // 日幣預設匯率 0.2（避免出現匯率需大於0的誤判）
+      form.setFieldValue('exchangeRate', 0.2)
     } else {
-      // 如果選擇其他幣別，清空匯率讓用戶輸入
+      // 其他幣別維持手動輸入
       form.setFieldValue('exchangeRate', undefined)
     }
   }

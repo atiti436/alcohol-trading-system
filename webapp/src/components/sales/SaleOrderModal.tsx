@@ -199,12 +199,12 @@ export function SaleOrderModal({
       commission: 0,
       product: null as any // 避免空對象造成錯誤
     }
-    setOrderItems([...orderItems, newItem])
+    setOrderItems(prev => [...prev, newItem])
   }
 
   // 刪除商品
   const removeProduct = (key: string) => {
-    setOrderItems(orderItems.filter(item => item.key !== key))
+    setOrderItems(prev => prev.filter(item => item.key !== key))
   }
 
   // 商品選擇處理
@@ -221,7 +221,7 @@ export function SaleOrderModal({
       return
     }
 
-    setOrderItems(orderItems.map(item =>
+    setOrderItems(prev => prev.map(item =>
       item.key === key ? {
         ...item,
         product_id,
@@ -248,7 +248,7 @@ export function SaleOrderModal({
     actualPrice: number
     commission: number
   }) => {
-    setOrderItems(orderItems.map(item =>
+    setOrderItems(prev => prev.map(item =>
       item.key === key ? {
         ...item,
         ...prices
@@ -258,7 +258,7 @@ export function SaleOrderModal({
 
   // 數量變更處理
   const handleQuantityChange = (key: string, quantity: number) => {
-    setOrderItems(orderItems.map(item =>
+    setOrderItems(prev => prev.map(item =>
       item.key === key ? {
         ...item,
         quantity
@@ -294,7 +294,7 @@ export function SaleOrderModal({
         dueDate: values.dueDate?.toISOString(),
         items: orderItems.map(item => ({
           product_id: item.product_id,
-          variantId: item.variantId,
+          variant_id: item.variantId,
           quantity: item.quantity,
           unit_price: item.displayPrice,
           actual_unit_price: item.actualPrice,
