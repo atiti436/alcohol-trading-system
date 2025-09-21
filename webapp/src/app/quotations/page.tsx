@@ -32,6 +32,7 @@ interface Product {
   name: string
   product_code: string
   category: string
+  current_price: number
 }
 
 interface Quotation {
