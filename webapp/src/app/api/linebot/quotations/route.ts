@@ -54,8 +54,8 @@ async function processQuotationCommand(text: string, lineUserId: string) {
   const recordDate = new Date()
   let customer = null
   let currentCustomer = null
-  const results = []
-  const errors = []
+  const results: string[] = []
+  const errors: string[] = []
 
   // 逐行處理（完全按照GAS邏輯）
   for (let i = 0; i < lines.length; i++) {

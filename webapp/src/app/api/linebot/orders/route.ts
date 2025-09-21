@@ -54,8 +54,8 @@ async function processOrderCommand(text: string, lineUserId: string) {
   const recordDate = new Date()
   let customer = null
   let currentCustomer = null
-  const items = []
-  const errors = []
+  const items: any[] = []
+  const errors: string[] = []
 
   // 逐行處理（完全按照GAS邏輯）
   for (let i = 0; i < lines.length; i++) {
@@ -116,7 +116,7 @@ async function processOrderCommand(text: string, lineUserId: string) {
 
   // 按客戶分組建立訂單
   const customerGroups = groupByCustomer(items)
-  const results = []
+  const results: string[] = []
 
   for (const [customerName, customerItems] of Object.entries(customerGroups)) {
     try {
@@ -161,7 +161,7 @@ function parseProductLine(parts: string[], lineNumber: number) {
 
     // 尋找包含*的部分（數量和價格）
     let quantityPrice = null
-    let productParts = []
+    let productParts: string[] = []
 
     for (let i = 0; i < parts.length; i++) {
       if (parts[i].includes('*')) {
