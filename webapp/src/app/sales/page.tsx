@@ -395,6 +395,22 @@ export default function SalesPage() {
             </HideFromInvestor>
           )}
 
+          {/* 出貨按鈕 - 已付款時顯示 */}
+          {record.isPaid && (
+            <HideFromInvestor>
+              <Tooltip title="進行出貨作業">
+                <Button
+                  icon={<ShoppingCartOutlined />}
+                  size="small"
+                  type="default"
+                  style={{ backgroundColor: '#ff7875', borderColor: '#ff7875', color: 'white' }}
+                  loading={actionLoading[`ship-${record.id}`]}
+                  onClick={() => handleShip(record)}
+                />
+              </Tooltip>
+            </HideFromInvestor>
+          )}
+
           {/* 刪除按鈕 - 只有超級管理員可刪除未付款訂單 */}
           {!record.isPaid && (
             <SuperAdminOnly>
@@ -560,6 +576,61 @@ export default function SalesPage() {
     } catch (error) {
       console.error('標記付款失敗:', error)
       message.error('操作失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+    }
+  }
+
+  // 處理出貨作業
+  const handleShip = async (sale: Sale) => {
+    const actionKey = `ship-${sale.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
+    try {
+      // 簡化出貨：假設所有項目都全數出貨
+      // 注意：這裡需要查詢銷售項目和對應的變體
+      const saleDetailsResponse = await fetch(`/api/sales/${sale.id}`)
+      const saleDetails = await saleDetailsResponse.json()
+
+      if (!saleDetailsResponse.ok || !saleDetails.success) {
+        throw new Error('無法獲取銷售訂單詳情')
+      }
+
+      // 構建出貨數據
+      const shipmentData = {
+        shipping_address: sale.customer.shipping_address || '客戶自取',
+        shipping_method: 'DELIVERY',
+        notes: '自動出貨',
+        items: saleDetails.data.items?.map((item: any) => ({
+          sale_item_id: item.id,
+          ship_quantity: item.quantity,
+          variant_id: item.variant_id || item.variantId
+        })) || []
+      }
+
+      console.log('出貨數據:', shipmentData) // 調試輸出
+
+      const response = await fetch(`/api/sales/${sale.id}/ship`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(shipmentData)
+      })
+
+      const result = await response.json()
+      console.log('出貨API回應:', result) // 調試輸出
+
+      if (response.ok && result.success) {
+        message.success('出貨成功，庫存已扣減')
+        await loadSales(false) // 重新載入列表
+      } else {
+        console.error('出貨失敗:', result.error)
+        message.error(result.error || '出貨失敗')
+      }
+    } catch (error) {
+      console.error('出貨操作失敗:', error)
+      message.error('出貨失敗，請檢查網路連線')
     } finally {
       setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }
