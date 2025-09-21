@@ -81,7 +81,7 @@ async function processQuotationCommand(text: string, lineUserId: string) {
             const quotation = await createQuotationRecord(currentCustomer, quoteInfo.product, quoteInfo.price, quoteInfo.note, recordDate, lineUserId)
             results.push(`• ${currentCustomer}: ${quoteInfo.product} ${quoteInfo.price.toLocaleString()}元`)
           } else {
-            errors.push(quoteInfo.error)
+            errors.push(quoteInfo.error || '報價資訊處理失敗')
           }
         } else {
           errors.push(`第${i+1}行未記錄：格式不正確`)
@@ -104,7 +104,7 @@ async function processQuotationCommand(text: string, lineUserId: string) {
             const quotation = await createQuotationRecord(currentCustomer, quoteInfo.product, quoteInfo.price, quoteInfo.note, recordDate, lineUserId)
             results.push(`• ${currentCustomer}: ${quoteInfo.product} ${quoteInfo.price.toLocaleString()}元`)
           } else {
-            errors.push(quoteInfo.error)
+            errors.push(quoteInfo.error || '報價資訊處理失敗')
           }
         }
       }

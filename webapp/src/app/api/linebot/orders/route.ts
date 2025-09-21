@@ -79,7 +79,7 @@ async function processOrderCommand(text: string, lineUserId: string) {
             ...productInfo.item
           })
         } else {
-          errors.push(productInfo.error)
+          errors.push(productInfo.error || '商品資訊處理失敗')
         }
       } else {
         // 後續行：判斷是新客戶還是繼續商品
@@ -101,7 +101,7 @@ async function processOrderCommand(text: string, lineUserId: string) {
               ...productInfo.item
             })
           } else {
-            errors.push(productInfo.error)
+            errors.push(productInfo.error || '商品資訊處理失敗')
           }
         }
       }
