@@ -69,9 +69,9 @@ export default function InventoryPage() {
       const inventoryData: InventoryItem[] = data.data.products.map((product: any) => {
         // 計算庫存狀態
         let status: 'normal' | 'low' | 'out' | 'excess' = 'normal'
-        if (product.total_available_stock === 0) {
+        if (product.inventory.total_available_stock === 0) {
           status = 'out'
-        } else if (product.total_available_stock <= (product.total_stock_quantity * 0.2)) {
+        } else if (product.inventory.total_available_stock <= (product.inventory.total_stock_quantity * 0.2)) {
           status = 'low'
         }
 
@@ -80,11 +80,11 @@ export default function InventoryPage() {
           name: product.name,
           product_code: product.product_code,
           category: product.category,
-          total_stock_quantity: product.total_stock_quantity,
-          total_available_stock: product.total_available_stock,
-          total_reserved_stock: product.total_reserved_stock,
-          total_value: product.total_value,
-          unit_cost: product.unit_cost,
+          total_stock_quantity: product.inventory.total_stock_quantity,
+          total_available_stock: product.inventory.total_available_stock,
+          total_reserved_stock: product.inventory.total_reserved_stock,
+          total_value: product.inventory.total_value,
+          unit_cost: product.cost_price,
           current_price: product.current_price,
           status,
           variants_count: product._count?.variants || 0,

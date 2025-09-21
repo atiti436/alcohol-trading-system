@@ -184,7 +184,7 @@ export function validateProductData(data: Record<string, unknown>) {
 export function validatePurchaseData(data: Record<string, unknown>) {
   // 基本欄位驗證
   const validatedData: any = {
-    supplier_id: validateRequired(data.supplier_id, '供應商ID'),
+    supplier_id: data.supplier_id ? validateString(data.supplier_id, '供應商ID', 1, 50) : null,
     supplier: validateRequired(data.supplier, '供應商名稱'),
     total_amount: validateNumber(data.total_amount, '總金額', 0, 100000000), // 限制最大1億
     currency: validateEnum(String(data.currency || 'JPY'), ['JPY', 'USD', 'TWD'], '幣別'),
