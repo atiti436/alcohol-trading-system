@@ -317,6 +317,9 @@ export default function ProductsPage() {
           : []
       }
 
+      // 調試輸出
+      console.log('提交的商品資料:', formData)
+
       const url = editingProduct
         ? `/api/products/${editingProduct.id}`
         : '/api/products'
@@ -336,7 +339,9 @@ export default function ProductsPage() {
         setModalVisible(false)
         loadProducts()
       } else {
-        message.error(result.error)
+        // 更詳細的錯誤顯示
+        console.error('API 錯誤回應:', result)
+        message.error(`${result.error}${result.details ? ': ' + result.details : ''}`)
       }
     } catch (error) {
       message.error('操作失敗')
@@ -509,8 +514,17 @@ export default function ProductsPage() {
             </Form.Item>
           </div>
 
-          <Form.Item name="supplier" label="供應商">
-            <Input placeholder="請輸入供應商" />
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item name="supplier" label="供應商" style={{ flex: 1 }}>
+              <Input placeholder="請輸入供應商" />
+            </Form.Item>
+            <Form.Item name="brand" label="品牌" style={{ flex: 1 }}>
+              <Input placeholder="請輸入品牌" />
+            </Form.Item>
+          </div>
+
+          <Form.Item name="description" label="商品描述">
+            <Input.TextArea placeholder="請輸入商品描述" rows={3} />
           </Form.Item>
 
           <Form.Item name="accessories" label="附件清單">

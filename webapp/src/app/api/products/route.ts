@@ -118,12 +118,16 @@ export async function POST(request: NextRequest) {
     // 🔒 嚴格輸入驗證 - 修復安全漏洞
     let validatedData
     try {
+      console.log('收到的商品資料:', body) // 調試輸出
       validatedData = validateProductData(body)
+      console.log('驗證後的商品資料:', validatedData) // 調試輸出
     } catch (validationError) {
+      console.error('商品驗證錯誤:', validationError) // 調試輸出
       return NextResponse.json(
         {
           error: '輸入資料驗證失敗',
-          details: validationError instanceof Error ? validationError.message : '格式錯誤'
+          details: validationError instanceof Error ? validationError.message : '格式錯誤',
+          originalData: body // 調試時顯示原始數據
         },
         { status: 400 }
       )
