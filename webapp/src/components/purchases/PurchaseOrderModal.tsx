@@ -38,7 +38,7 @@ const { Title, Text } = Typography
 interface PurchaseOrderItem {
   key: string
   product_id: string
-  variantId?: string
+  variant_id?: string
   quantity: number
   unit_price: number
   total_price: number
@@ -116,7 +116,7 @@ export function PurchaseOrderModal({
         const items = editingPurchase.items.map((item: any, index: number) => ({
           key: `item-${index}`,
           product_id: item.product_id,
-          variantId: item.variant_id,
+          variant_id: item.variant_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
           total_price: item.total_price,
@@ -156,17 +156,17 @@ export function PurchaseOrderModal({
   }
 
   // 商品選擇處理
-  const handleProductChange = (key: string, productId: string) => {
-    const product = products.find(p => p.id === productId)
+  const handleProductChange = (key: string, product_id: string) => {
+    const product = products.find(p => p.id === product_id)
     if (!product) return
 
     setOrderItems(prev => prev.map(item => {
       if (item.key === key) {
         return {
           ...item,
-          product_id: productId,
+          product_id: product_id,
           product,
-          variantId: undefined,
+          variant_id: undefined,
           variant: undefined,
           unit_price: 0, // 重置價格，讓用戶手動輸入
           total_price: 0
@@ -177,13 +177,13 @@ export function PurchaseOrderModal({
   }
 
   // 變體選擇處理
-  const handleVariantChange = (key: string, variantId: string) => {
+  const handleVariantChange = (key: string, variant_id: string) => {
     setOrderItems(prev => prev.map(item => {
       if (item.key === key) {
-        const variant = item.product.variants?.find(v => v.id === variantId)
+        const variant = item.product.variants?.find(v => v.id === variant_id)
         return {
           ...item,
-          variantId,
+          variant_id,
           variant,
           unit_price: variant?.cost_price || 0,
           total_price: (variant?.cost_price || 0) * item.quantity
@@ -224,7 +224,7 @@ export function PurchaseOrderModal({
   }
 
   // 計算總金額
-  const totalAmount = orderItems.reduce((sum, item) => sum + item.total_price, 0)
+  const total_amount = orderItems.reduce((sum, item) => sum + item.total_price, 0)
 
   // 表格欄位定義
   const columns = [
@@ -258,7 +258,7 @@ export function PurchaseOrderModal({
       render: (_: any, record: PurchaseOrderItem) => (
         <Select
           placeholder="選擇變體"
-          value={record.variantId || undefined}
+          value={record.variant_id || undefined}
           onChange={(value) => handleVariantChange(record.key, value)}
           style={{ width: '100%' }}
           disabled={!record.product_id}
@@ -347,10 +347,10 @@ export function PurchaseOrderModal({
       const submitData: CreatePurchaseRequest = {
         ...values,
         declaration_date: values.declarationDate?.format('YYYY-MM-DD'),
-        total_amount: totalAmount,
+        total_amount: total_amount,
         items: orderItems.map(item => ({
           product_id: item.product_id,
-          variant_id: item.variantId,
+          variant_id: item.variant_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
           total_price: item.total_price
@@ -497,7 +497,7 @@ export function PurchaseOrderModal({
         {orderItems.length > 0 && (
           <div style={{ textAlign: 'right', marginTop: 16 }}>
             <Title level={4}>
-              總金額：{totalAmount.toLocaleString()}
+              總金額：{total_amount.toLocaleString()}
             </Title>
           </div>
         )}
