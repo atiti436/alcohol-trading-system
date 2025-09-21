@@ -239,9 +239,7 @@ export function PurchaseOrderModal({
           onChange={(value) => handleProductChange(record.key, value)}
           style={{ width: '100%' }}
           showSearch
-          filterOption={(input, option) =>
-            (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
-          }
+          optionFilterProp="children"
         >
           {products.map(product => (
             <Option key={product.id} value={product.id}>
