@@ -226,6 +226,23 @@ export function PurchaseOrderModal({
   // 計算總金額
   const total_amount = orderItems.reduce((sum, item) => sum + item.total_price, 0)
 
+  // 取得表單幣別和匯率
+  const selectedCurrency = form.getFieldValue('currency') || 'TWD'
+  const selectedExchangeRate = form.getFieldValue('exchangeRate') || 1
+
+  // 計算台幣金額
+  const twd_amount = selectedCurrency === 'TWD' ? total_amount : total_amount * selectedExchangeRate
+
+  // 幣別變更處理
+  const handleCurrencyChange = (currency: string) => {
+    if (currency === 'TWD') {
+      form.setFieldValue('exchangeRate', 1)
+    } else {
+      // 如果選擇其他幣別，清空匯率讓用戶輸入
+      form.setFieldValue('exchangeRate', undefined)
+    }
+  }
+
   // 表格欄位定義
   const columns = [
     {
@@ -420,7 +437,10 @@ export function PurchaseOrderModal({
               label="幣別"
               rules={validationRules.currency}
             >
-              <Select placeholder="請選擇幣別">
+              <Select
+                placeholder="請選擇幣別"
+                onChange={handleCurrencyChange}
+              >
                 <Option value="JPY">日圓 (JPY)</Option>
                 <Option value="USD">美元 (USD)</Option>
                 <Option value="EUR">歐元 (EUR)</Option>
@@ -500,9 +520,21 @@ export function PurchaseOrderModal({
 
         {orderItems.length > 0 && (
           <div style={{ textAlign: 'right', marginTop: 16 }}>
-            <Title level={4}>
-              總金額：{total_amount.toLocaleString()}
-            </Title>
+            <div style={{ marginBottom: 8 }}>
+              <Text style={{ fontSize: '16px' }}>
+                總金額 ({selectedCurrency})：{selectedCurrency} {total_amount.toLocaleString()}
+              </Text>
+            </div>
+            {selectedCurrency !== 'TWD' && (
+              <Title level={4} style={{ color: '#52c41a', margin: 0 }}>
+                台幣金額：NT$ {twd_amount.toLocaleString()}
+              </Title>
+            )}
+            {selectedCurrency === 'TWD' && (
+              <Title level={4} style={{ margin: 0 }}>
+                總金額：NT$ {total_amount.toLocaleString()}
+              </Title>
+            )}
           </div>
         )}
       </Form>

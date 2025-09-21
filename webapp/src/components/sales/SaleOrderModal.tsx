@@ -197,7 +197,7 @@ export function SaleOrderModal({
       displayPrice: 0,
       actualPrice: 0,
       commission: 0,
-      product: {} as ProductWithVariants
+      product: null as any // 避免空對象造成錯誤
     }
     setOrderItems([...orderItems, newItem])
   }
@@ -358,12 +358,12 @@ export function SaleOrderModal({
       key: 'price',
       width: 300,
       render: (_: any, record: SaleOrderItem) => (
-        record.product_id ? (
+        record.product_id && record.product?.id ? (
           <DualPriceManager
             product_id={record.product_id}
             variantId={record.variantId}
             quantity={record.quantity}
-            basePrice={record.variant?.current_price || record.product.current_price || 0}
+            basePrice={record.variant?.current_price || record.product?.current_price || 0}
             onPriceChange={(prices) => handlePriceChange(record.key, prices)}
           />
         ) : null
