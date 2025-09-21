@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Button, Input, Select, Space, Tag, Typography, Statistic, Row, Col, Modal, Form, message, DatePicker } from 'antd'
+import { Card, Table, Button, Input, Select, Space, Tag, Typography, Statistic, Row, Col, Modal, Form, message, DatePicker, Dropdown, MenuProps } from 'antd'
 import {
   FileTextOutlined,
   SearchOutlined,
@@ -11,7 +11,8 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  MoreOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
@@ -70,6 +71,7 @@ export default function QuotationsPage() {
     customer_id: ''
   })
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null)
   const [form] = Form.useForm()
   const [stats, setStats] = useState({
     total: 0,
@@ -162,6 +164,45 @@ export default function QuotationsPage() {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
+  // 處理編輯報價
+  const handleEditQuotation = (quotation: Quotation) => {
+    setEditingQuotation(quotation)
+    form.setFieldsValue({
+      customer_id: quotation.customer.id,
+      product_id: quotation.product?.id,
+      product_name: quotation.product_name,
+      quantity: quotation.quantity,
+      unit_price: quotation.unit_price,
+      special_notes: quotation.special_notes,
+      valid_until: quotation.valid_until ? dayjs(quotation.valid_until) : null,
+      status: quotation.status
+    })
+    setIsModalVisible(true)
+  }
+
+  // 處理狀態更新
+  const handleStatusUpdate = async (quotationId: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/quotations/${quotationId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        message.success('狀態更新成功')
+        loadQuotations()
+        loadStats()
+      } else {
+        message.error(data.error || '狀態更新失敗')
+      }
+    } catch (error) {
+      message.error('狀態更新失敗')
+    }
+  }
+
   const handleCreateQuotation = async (values: any) => {
     try {
       const payload = {
@@ -171,8 +212,11 @@ export default function QuotationsPage() {
         valid_until: values.valid_until ? values.valid_until.toISOString() : undefined
       }
 
-      const response = await fetch('/api/quotations', {
-        method: 'POST',
+      const url = editingQuotation ? `/api/quotations/${editingQuotation.id}` : '/api/quotations'
+      const method = editingQuotation ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
@@ -180,16 +224,17 @@ export default function QuotationsPage() {
       const data = await response.json()
 
       if (response.ok) {
-        message.success('報價建立成功')
+        message.success(editingQuotation ? '報價更新成功' : '報價建立成功')
         setIsModalVisible(false)
+        setEditingQuotation(null)
         form.resetFields()
         loadQuotations()
         loadStats()
       } else {
-        message.error(data.error || '建立報價失敗')
+        message.error(data.error || (editingQuotation ? '更新報價失敗' : '建立報價失敗'))
       }
     } catch (error) {
-      message.error('建立報價失敗')
+      message.error(editingQuotation ? '更新報價失敗' : '建立報價失敗')
     }
   }
 
@@ -311,23 +356,55 @@ export default function QuotationsPage() {
     {
       title: '操作',
       key: 'actions',
-      width: 120,
-      render: (_: any, record: Quotation) => (
-        <Space size="small">
-          <Button
-            type="text"
-            icon={<EyeOutlined />}
-            size="small"
-            onClick={() => {/* 查看詳情 */}}
-          />
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => {/* 編輯 */}}
-          />
-        </Space>
-      )
+      width: 150,
+      render: (_: any, record: Quotation) => {
+        const statusMenuItems: MenuProps['items'] = [
+          {
+            key: 'ACCEPTED',
+            label: '標記為已接受',
+            icon: <CheckCircleOutlined />,
+            disabled: record.status === 'ACCEPTED'
+          },
+          {
+            key: 'REJECTED',
+            label: '標記為已拒絕',
+            icon: <CloseCircleOutlined />,
+            disabled: record.status === 'REJECTED'
+          },
+          {
+            key: 'EXPIRED',
+            label: '標記為已過期',
+            icon: <ExclamationCircleOutlined />,
+            disabled: record.status === 'EXPIRED'
+          }
+        ]
+
+        return (
+          <Space size="small">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              size="small"
+              onClick={() => handleEditQuotation(record)}
+              title="編輯報價"
+            />
+            <Dropdown
+              menu={{
+                items: statusMenuItems,
+                onClick: ({ key }) => handleStatusUpdate(record.id, key)
+              }}
+              trigger={['click']}
+            >
+              <Button
+                type="text"
+                icon={<MoreOutlined />}
+                size="small"
+                title="更多操作"
+              />
+            </Dropdown>
+          </Space>
+        )
+      }
     }
   ]
 
@@ -463,12 +540,13 @@ export default function QuotationsPage() {
         />
       </Card>
 
-      {/* 新增報價 Modal */}
+      {/* 新增/編輯報價 Modal */}
       <Modal
-        title="新增報價"
+        title={editingQuotation ? '編輯報價' : '新增報價'}
         open={isModalVisible}
         onCancel={() => {
           setIsModalVisible(false)
+          setEditingQuotation(null)
           form.resetFields()
         }}
         afterOpenChange={(open) => {
@@ -509,57 +587,34 @@ export default function QuotationsPage() {
             <Col span={12}>
               <Form.Item
                 name="product_id"
-                label="商品（可選）"
+                label="商品選擇（可選）"
               >
                 <Select
-                  placeholder="選擇商品"
+                  placeholder="選擇現有商品"
                   allowClear
                   showSearch
                   optionFilterProp="children"
-                  onChange={(value, option: any) => {
-                    if (option) {
-                      form.setFieldsValue({ product_name: option.children.split(' (')[0] })
+                  onChange={(value) => {
+                    if (value) {
+                      const selectedProduct = products.find(p => p.id === value)
+                      if (selectedProduct) {
+                        form.setFieldsValue({
+                          product_name: selectedProduct.name,
+                          unit_price: selectedProduct.current_price
+                        })
+                      }
                     }
                   }}
                 >
                   {products.map(product => (
                     <Option key={product.id} value={product.id}>
-                      {product.name} ({product.product_code})
+                      {product.name} ({product.product_code}) - NT${product.current_price}
                     </Option>
                   ))}
                 </Select>
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item
-            name="product_id"
-            label="商品選擇"
-          >
-            <Select
-              placeholder="選擇現有商品（可選）"
-              allowClear
-              showSearch
-              optionFilterProp="children"
-              onChange={(value) => {
-                if (value) {
-                  const selectedProduct = products.find(p => p.id === value)
-                  if (selectedProduct) {
-                    form.setFieldsValue({
-                      product_name: selectedProduct.name,
-                      unit_price: selectedProduct.current_price
-                    })
-                  }
-                }
-              }}
-            >
-              {products.map(product => (
-                <Option key={product.id} value={product.id}>
-                  {product.name} ({product.product_code}) - NT${product.current_price}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
 
           <Form.Item
             name="product_name"
@@ -605,16 +660,31 @@ export default function QuotationsPage() {
             <TextArea rows={3} placeholder="一次12支價格" />
           </Form.Item>
 
+          {editingQuotation && (
+            <Form.Item
+              name="status"
+              label="狀態"
+            >
+              <Select placeholder="選擇狀態">
+                <Option value="PENDING">待回覆</Option>
+                <Option value="ACCEPTED">已接受</Option>
+                <Option value="REJECTED">已拒絕</Option>
+                <Option value="EXPIRED">已過期</Option>
+              </Select>
+            </Form.Item>
+          )}
+
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => {
                 setIsModalVisible(false)
+                setEditingQuotation(null)
                 form.resetFields()
               }}>
                 取消
               </Button>
               <Button type="primary" htmlType="submit">
-                建立報價
+                {editingQuotation ? '更新報價' : '建立報價'}
               </Button>
             </Space>
           </Form.Item>

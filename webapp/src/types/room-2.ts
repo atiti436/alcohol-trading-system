@@ -173,6 +173,7 @@ export interface Sale {
   commission?: number        // 老闆傭金（僅超級管理員）
   funding_source: 'COMPANY' | 'PERSONAL'
   payment_terms: 'CASH' | 'WEEKLY' | 'MONTHLY' | 'SIXTY_DAYS'
+  status: 'DRAFT' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
   is_paid: boolean
   paid_at?: Date
   due_date?: Date

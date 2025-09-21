@@ -348,6 +348,7 @@ export function PurchaseOrderModal({
         total_amount: total_amount,
         items: orderItems.map(item => ({
           product_id: item.product_id,
+          product_name: item.product.name,
           variant_id: item.variant_id,
           quantity: item.quantity,
           unit_price: item.unit_price,

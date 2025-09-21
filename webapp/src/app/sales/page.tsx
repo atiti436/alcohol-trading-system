@@ -14,8 +14,6 @@ import {
   message,
   Popconfirm,
   Tooltip,
-  DatePicker,
-  InputNumber,
   Divider,
   Spin,
   Empty,
@@ -36,67 +34,11 @@ import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
+import { SaleOrderModal } from '@/components/sales/SaleOrderModal'
+import { Sale, SaleItem } from '@/types/room-2'
 
 const { Search } = Input
-const { Option } = Select
-const { TextArea } = Input
 
-interface Sale {
-  id: string
-  saleNumber: string
-  customer_id: string
-  customer: {
-    id: string
-    customer_code: string
-    name: string
-    company?: string
-    tier: string
-    paymentTerms: string
-  }
-  total_amount: number
-  actual_amount?: number
-  commission?: number
-  fundingSource: string
-  paymentTerms: string
-  status: 'DRAFT' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
-  isPaid: boolean
-  paidAt?: string
-  dueDate?: string
-  notes?: string
-  createdBy: string
-  created_at: string
-  creator?: {
-    id: string
-    name: string
-    email: string
-  }
-  items: SaleItem[]
-  _count: { items: number }
-}
-
-interface SaleItem {
-  id: string
-  product_id: string
-  variantId?: string
-  quantity: number
-  unit_price: number
-  actual_unit_price?: number
-  total_price: number
-  actual_total_price?: number
-  isPersonalPurchase?: boolean
-  product: {
-    id: string
-    product_code: string
-    name: string
-    category: string
-  }
-  variant?: {
-    id: string
-    variant_code: string
-    variantType: string
-    description: string
-  }
-}
 
 interface SaleFilters {
   page: number
@@ -133,13 +75,7 @@ export default function SalesPage() {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingSale, setEditingSale] = useState<Sale | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
-  const [form] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)
-
-  // 客戶和商品列表
-  const [customers, setCustomers] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [loadingData, setLoadingData] = useState(false)
 
   // 載入銷售訂單列表
   const loadSales = async (showLoading = true) => {
@@ -236,12 +172,12 @@ export default function SalesPage() {
   const columns = [
     {
       title: '銷售單號',
-      dataIndex: 'saleNumber',
+      dataIndex: 'sale_number',
       key: 'saleNumber',
       width: 150,
       render: (text: string, record: Sale) => (
         <div>
-          <div style={{ fontWeight: 'bold' }}>{text}</div>
+          <div style={{ fontWeight: 'bold' }}>{record.sale_number}</div>
           <div style={{ fontSize: '12px', color: '#666' }}>
             {dayjs(record.created_at).format('YYYY/MM/DD')}
           </div>
@@ -254,11 +190,11 @@ export default function SalesPage() {
       width: 180,
       render: (record: Sale) => (
         <div>
-          <div style={{ fontWeight: 'bold' }}>{record.customer.name}</div>
+          <div style={{ fontWeight: 'bold' }}>{record.customer?.name}</div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            {record.customer.customer_code}
+            {record.customer?.customer_code}
           </div>
-          {record.customer.company && (
+          {record.customer?.company && (
             <div style={{ fontSize: '12px', color: '#999' }}>
               {record.customer.company}
             </div>
@@ -268,7 +204,7 @@ export default function SalesPage() {
     },
     {
       title: '資金來源',
-      dataIndex: 'fundingSource',
+      dataIndex: 'funding_source',
       key: 'fundingSource',
       width: 100,
       render: (fundingSource: string) => (
@@ -329,7 +265,7 @@ export default function SalesPage() {
       width: 80,
       render: (record: Sale) => (
         <div style={{ textAlign: 'center' }}>
-          {record._count.items} 項
+          {record.items?.length || 0} 項
         </div>
       )
     },
@@ -343,23 +279,23 @@ export default function SalesPage() {
             {getStatusName(record.status)}
           </Tag>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-            {record.isPaid ? '已付款' : '未付款'}
+            {record.is_paid ? '已付款' : '未付款'}
           </div>
         </div>
       )
     },
     {
       title: '到期日',
-      dataIndex: 'dueDate',
-      key: 'dueDate',
+      dataIndex: 'due_date',
+      key: 'due_date',
       width: 100,
-      render: (dueDate: string) => (
+      render: (due_date: Date) => (
         <div>
-          {dueDate ? (
+          {due_date ? (
             <div style={{
-              color: dayjs(dueDate).isBefore(dayjs()) ? '#ff4d4f' : '#666'
+              color: dayjs(due_date).isBefore(dayjs()) ? '#ff4d4f' : '#666'
             }}>
-              {dayjs(dueDate).format('YYYY/MM/DD')}
+              {dayjs(due_date).format('YYYY/MM/DD')}
             </div>
           ) : (
             <span style={{ color: '#ccc' }}>無設定</span>
@@ -412,7 +348,7 @@ export default function SalesPage() {
           )}
 
           {/* 付款按鈕 - 已確認且未付款時顯示 */}
-          {record.status === 'CONFIRMED' && !record.isPaid && (
+          {record.status === 'CONFIRMED' && !record.is_paid && (
             <HideFromInvestor>
               <Tooltip title="標記為已付款">
                 <Button
@@ -429,7 +365,7 @@ export default function SalesPage() {
           )}
 
           {/* 出貨按鈕 - 已付款且尚未出貨時顯示 */}
-          {record.isPaid && record.status === 'CONFIRMED' && (
+          {record.is_paid && record.status === 'CONFIRMED' && (
             <HideFromInvestor>
               <Tooltip title="進行出貨作業">
                 <Button
@@ -482,49 +418,9 @@ export default function SalesPage() {
   // 處理新增/編輯
   const handleEdit = (sale?: Sale) => {
     setEditingSale(sale || null)
-    if (sale) {
-      form.setFieldsValue({
-        ...sale,
-        dueDate: sale.dueDate ? dayjs(sale.dueDate) : null
-      })
-    } else {
-      form.resetFields()
-      form.setFieldsValue({
-        fundingSource: 'COMPANY',
-        paymentTerms: 'CASH'
-      })
-    }
     setModalVisible(true)
   }
 
-  // 載入客戶列表
-  const loadCustomers = async () => {
-    try {
-      setLoadingData(true)
-      const response = await fetch('/api/customers')
-      const data = await response.json()
-      if (response.ok) {
-        setCustomers(data.data?.customers || [])
-      }
-    } catch (error) {
-      console.error('載入客戶列表失敗:', error)
-    } finally {
-      setLoadingData(false)
-    }
-  }
-
-  // 載入商品列表
-  const loadProducts = async () => {
-    try {
-      const response = await fetch('/api/products')
-      const data = await response.json()
-      if (response.ok) {
-        setProducts(data.data?.products || [])
-      }
-    } catch (error) {
-      console.error('載入商品列表失敗:', error)
-    }
-  }
 
   // 處理確認銷售訂單
   const handleConfirm = async (sale: Sale) => {
@@ -555,32 +451,10 @@ export default function SalesPage() {
     }
   }
 
-  // 處理表單提交
-  const handleSubmit = async (values: any) => {
+  // 處理表單提交 - 使用SaleOrderModal的資料格式
+  const handleSubmit = async (data: any) => {
+    setSubmitting(true)
     try {
-      console.log('原始表單數據:', values) // 調試輸出
-
-      // 轉換表單數據為API期望的格式
-      const totalAmount = (values.quantity || 1) * (values.unit_price || 0)
-      const apiData = {
-        customer_id: values.customer_id,
-        items: [{
-          product_id: values.product_id,
-          product_name: values.product_name,
-          quantity: values.quantity || 1,
-          unit_price: values.unit_price || 0
-        }],
-        displayPrices: [values.unit_price || 0],
-        actualPrices: [values.unit_price || 0], // 暫時使用相同價格，後續可加入實際價格邏輯
-        total_amount: totalAmount,
-        actual_amount: totalAmount,
-        payment_terms: values.payment_terms || 'CASH',
-        funding_source: values.funding_source || 'COMPANY',
-        notes: values.notes || ''
-      }
-
-      console.log('轉換後的API數據:', apiData) // 調試輸出
-
       const url = editingSale ? `/api/sales/${editingSale.id}` : '/api/sales'
       const method = editingSale ? 'PUT' : 'POST'
 
@@ -589,26 +463,24 @@ export default function SalesPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(apiData)
+        body: JSON.stringify(data)
       })
 
       const result = await response.json()
-
-      console.log('API 回應:', result) // 調試輸出
 
       if (result.success) {
         message.success(editingSale ? '銷售訂單更新成功' : '銷售訂單創建成功')
         setModalVisible(false)
         setEditingSale(null)
-        form.resetFields()
         loadSales()
       } else {
-        console.error('API 錯誤詳情:', result.error) // 調試輸出
-        message.error(result.error?.message || result.error || '操作失敗')
+        message.error(result.error || '操作失敗')
       }
     } catch (error) {
-      message.error('操作失敗')
       console.error('提交錯誤:', error)
+      message.error('操作失敗')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -624,8 +496,8 @@ export default function SalesPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          isPaid: true,
-          paidAt: new Date().toISOString()
+          is_paid: true,
+          paid_at: new Date().toISOString()
         })
       })
 
@@ -850,149 +722,16 @@ export default function SalesPage() {
       </Spin>
 
       {/* 新增/編輯銷售訂單 Modal */}
-      <Modal
-        title={editingSale ? '編輯銷售訂單' : '新增銷售訂單'}
-        open={modalVisible}
+      <SaleOrderModal
+        visible={modalVisible}
         onCancel={() => {
           setModalVisible(false)
           setEditingSale(null)
-          form.resetFields()
         }}
-        afterOpenChange={(open) => {
-          if (open) {
-            // Modal 開啟時載入客戶和商品列表
-            loadCustomers()
-            loadProducts()
-          }
-        }}
-        footer={null}
-        width={800}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="customer_id"
-            label="客戶"
-            rules={[{ required: true, message: '請選擇客戶' }]}
-          >
-            <Select
-              placeholder="選擇客戶"
-              showSearch
-              optionFilterProp="children"
-              loading={loadingData}
-              notFoundContent={loadingData ? '載入中...' : '無客戶資料'}
-            >
-              {customers.map(customer => (
-                <Option key={customer.id} value={customer.id}>
-                  {customer.name} ({customer.customer_code})
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="product_id"
-            label="商品選擇"
-            rules={[{ required: true, message: '請選擇商品' }]}
-          >
-            <Select
-              placeholder="選擇商品"
-              showSearch
-              optionFilterProp="children"
-              loading={loadingData}
-              notFoundContent={loadingData ? '載入中...' : '無商品資料'}
-              onChange={(value, option: any) => {
-                // 當選擇商品時，自動填入商品名稱和建議價格
-                const selectedProduct = products.find(p => p.id === value)
-                if (selectedProduct) {
-                  form.setFieldsValue({
-                    product_name: selectedProduct.name,
-                    unit_price: selectedProduct.current_price
-                  })
-                }
-              }}
-            >
-              {products.map(product => (
-                <Option key={product.id} value={product.id}>
-                  {product.name} ({product.product_code}) - NT${product.current_price}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="product_name"
-            label="商品名稱"
-            rules={[{ required: true, message: '請輸入商品名稱' }]}
-          >
-            <Input placeholder="商品名稱會自動填入，或可手動輸入臨時商品" />
-          </Form.Item>
-
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Form.Item
-              name="quantity"
-              label="數量"
-              rules={[{ required: true, message: '請輸入數量' }]}
-              style={{ flex: 1 }}
-            >
-              <InputNumber placeholder="1" min={1} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item
-              name="unit_price"
-              label="單價"
-              rules={[{ required: true, message: '請輸入單價' }]}
-              style={{ flex: 1 }}
-            >
-              <InputNumber placeholder="21000" min={0} style={{ width: '100%' }} />
-            </Form.Item>
-          </div>
-
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Form.Item
-              name="payment_terms"
-              label="付款條件"
-              style={{ flex: 1 }}
-              initialValue="CASH"
-            >
-              <Select placeholder="選擇付款條件">
-                <Option value="CASH">現金</Option>
-                <Option value="WEEKLY">週結</Option>
-                <Option value="MONTHLY">月結</Option>
-                <Option value="SIXTY_DAYS">60天</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              name="funding_source"
-              label="資金來源"
-              style={{ flex: 1 }}
-              initialValue="COMPANY"
-            >
-              <Select placeholder="選擇資金來源">
-                <Option value="COMPANY">公司資金</Option>
-                <Option value="PERSONAL">個人調貨</Option>
-              </Select>
-            </Form.Item>
-          </div>
-
-          <Form.Item name="notes" label="備註">
-            <TextArea rows={3} placeholder="請輸入備註" />
-          </Form.Item>
-
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
-              <Button onClick={() => setModalVisible(false)}>
-                取消
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {editingSale ? '更新' : '新增'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleSubmit}
+        editingSale={editingSale || undefined}
+        loading={submitting}
+      />
 
       {/* 查看詳情Modal - 將在下一步實作 */}
       <Modal
@@ -1011,7 +750,7 @@ export default function SalesPage() {
       >
         {/* 詳情內容將在下一步實作 */}
         {editingSale && (
-          <div>銷售訂單: {editingSale.saleNumber}</div>
+          <div>銷售訂單: {editingSale.sale_number}</div>
         )}
       </Modal>
     </div>

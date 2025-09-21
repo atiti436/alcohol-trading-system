@@ -1,7 +1,7 @@
 'use client'
 
-import React from 'react'
-import { Card, Row, Col, Statistic, Typography, Space, Button, List, Tag, Progress } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Card, Row, Col, Statistic, Typography, Space, Button, List, Tag, Progress, Spin, message } from 'antd'
 import {
   DollarOutlined,
   ShoppingOutlined,
@@ -24,6 +24,39 @@ const { Title, Text } = Typography
 
 export default function Dashboard() {
   const { data: session } = useSession()
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // 載入Dashboard數據
+  const loadDashboardData = async () => {
+    if (!session?.user?.id) return
+
+    try {
+      setLoading(true)
+      const response = await fetch('/api/dashboard')
+
+      if (!response.ok) {
+        throw new Error('載入Dashboard資料失敗')
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        setDashboardData(result.data)
+      } else {
+        message.error(result.error?.message || '載入Dashboard資料失敗')
+      }
+    } catch (error) {
+      console.error('Dashboard載入錯誤:', error)
+      message.error('載入Dashboard資料失敗')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [session?.user?.id])
 
   // 根據角色顯示不同的Dashboard內容
   const renderDashboardByRole = () => {
@@ -31,13 +64,26 @@ export default function Dashboard() {
       return <div>載入中...</div>
     }
 
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16 }}>正在載入Dashboard資料...</div>
+        </div>
+      )
+    }
+
+    if (!dashboardData) {
+      return <div>無法載入Dashboard資料</div>
+    }
+
     switch (session.user.role) {
       case Role.SUPER_ADMIN:
-        return <SuperAdminDashboard />
+        return <SuperAdminDashboard data={dashboardData} />
       case Role.INVESTOR:
-        return <InvestorDashboard />
+        return <InvestorDashboard data={dashboardData} />
       case Role.EMPLOYEE:
-        return <EmployeeDashboard />
+        return <EmployeeDashboard data={dashboardData} />
       default:
         return <div>角色未識別</div>
     }
@@ -54,44 +100,29 @@ export default function Dashboard() {
 }
 
 // 超級管理員Dashboard
-function SuperAdminDashboard() {
+function SuperAdminDashboard({ data }: { data: any }) {
   const router = useRouter()
 
-  const mockData = {
-    totalRevenue: 2450000,
-    personalRevenue: 680000,
-    investmentRevenue: 1770000,
-    commission: 245000,
-    stockValue: 8900000,
-    stockCount: 1250,
-    pendingReceivables: 420000,
-    lowStockItems: [
-      { name: '山崎18年威士忌', stock: 3, minStock: 10 },
-      { name: '響21年威士忌', stock: 1, minStock: 5 },
-      { name: '白州12年威士忌', stock: 2, minStock: 8 }
-    ],
-    // 新增圖表數據
-    revenueChart: [
-      { month: '1月', value: 1850000 },
-      { month: '2月', value: 2100000 },
-      { month: '3月', value: 2450000 },
-      { month: '4月', value: 2200000 },
-      { month: '5月', value: 2680000 },
-      { month: '6月', value: 2950000 }
-    ],
-    categoryChart: [
-      { name: '威士忌', value: 1200000, color: '#1890ff' },
-      { name: '清酒', value: 680000, color: '#52c41a' },
-      { name: '葡萄酒', value: 420000, color: '#faad14' },
-      { name: '香檳', value: 150000, color: '#722ed1' }
-    ],
-    customerChart: [
-      { name: 'VIP客戶', value: 45, color: '#f5222d' },
-      { name: '優質客戶', value: 128, color: '#fa541c' },
-      { name: '一般客戶', value: 256, color: '#1890ff' },
-      { name: '新客戶', value: 89, color: '#52c41a' }
-    ]
-  }
+  // 處理圖表數據格式
+  const revenueChart = data.salesTrend?.map((trend: any) => ({
+    month: trend.month,
+    value: trend.revenue
+  })) || []
+
+  // 預設圖表數據（如果API沒有返回）
+  const categoryChart = [
+    { name: '威士忌', value: 1200000, color: '#1890ff' },
+    { name: '清酒', value: 680000, color: '#52c41a' },
+    { name: '葡萄酒', value: 420000, color: '#faad14' },
+    { name: '香檳', value: 150000, color: '#722ed1' }
+  ]
+
+  const customerChart = [
+    { name: 'VIP客戶', value: 45, color: '#f5222d' },
+    { name: '優質客戶', value: 128, color: '#fa541c' },
+    { name: '一般客戶', value: 256, color: '#1890ff' },
+    { name: '新客戶', value: 89, color: '#52c41a' }
+  ]
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -101,7 +132,7 @@ function SuperAdminDashboard() {
           <Card>
             <Statistic
               title="總營收"
-              value={mockData.totalRevenue}
+              value={data.totalRevenue || 0}
               precision={0}
               prefix={<DollarOutlined />}
               suffix="元"
@@ -113,7 +144,7 @@ function SuperAdminDashboard() {
           <Card>
             <Statistic
               title="個人調貨營收"
-              value={mockData.personalRevenue}
+              value={data.personalRevenue || 0}
               precision={0}
               prefix={<LineChartOutlined />}
               suffix="元"
@@ -125,7 +156,7 @@ function SuperAdminDashboard() {
           <Card>
             <Statistic
               title="庫存價值"
-              value={mockData.stockValue}
+              value={data.stockValue || 0}
               precision={0}
               prefix={<AppstoreOutlined />}
               suffix="元"
@@ -136,7 +167,7 @@ function SuperAdminDashboard() {
           <Card>
             <Statistic
               title="待收款項"
-              value={mockData.pendingReceivables}
+              value={data.pendingReceivables || 0}
               precision={0}
               prefix={<DollarOutlined />}
               suffix="元"
@@ -152,7 +183,7 @@ function SuperAdminDashboard() {
         <Col xs={24} lg={12}>
           <SimpleLineChart
             title="營收趨勢分析"
-            data={mockData.revenueChart}
+            data={revenueChart}
             prefix="NT$ "
             height={250}
           />
@@ -162,7 +193,7 @@ function SuperAdminDashboard() {
         <Col xs={24} lg={12}>
           <SimplePieChart
             title="商品類別銷售分布"
-            data={mockData.categoryChart}
+            data={categoryChart}
             height={250}
           />
         </Col>
@@ -173,7 +204,7 @@ function SuperAdminDashboard() {
         <Col xs={24} lg={8}>
           <SimplePieChart
             title="客戶分布"
-            data={mockData.customerChart}
+            data={customerChart}
             height={200}
           />
         </Col>
@@ -228,8 +259,8 @@ function SuperAdminDashboard() {
           >
             <List
               size="small"
-              dataSource={mockData.lowStockItems}
-              renderItem={(item) => (
+              dataSource={data.lowStockItems || []}
+              renderItem={(item: any) => (
                 <List.Item>
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -253,31 +284,19 @@ function SuperAdminDashboard() {
 }
 
 // 投資方Dashboard
-function InvestorDashboard() {
-  const mockData = {
-    investmentRevenue: 1770000, // 只顯示投資項目的調整後營收
-    investmentProfit: 354000,   // 基於顯示價格計算的獲利
-    investmentStock: 890,
-    monthlyTrend: [
-      { month: '1月', revenue: 1200000, profit: 240000 },
-      { month: '2月', revenue: 1500000, profit: 300000 },
-      { month: '3月', revenue: 1770000, profit: 354000 }
-    ],
-    // 新增圖表數據 (投資方專用，隱藏真實數據)
-    investmentChart: [
-      { month: '1月', value: 240000 },
-      { month: '2月', value: 300000 },
-      { month: '3月', value: 354000 },
-      { month: '4月', value: 390000 },
-      { month: '5月', value: 420000 },
-      { month: '6月', value: 450000 }
-    ],
-    productChart: [
-      { name: '威士忌', value: 180000, color: '#1890ff' },
-      { name: '清酒', value: 120000, color: '#52c41a' },
-      { name: '葡萄酒', value: 54000, color: '#faad14' }
-    ]
-  }
+function InvestorDashboard({ data }: { data: any }) {
+  // 處理投資獲利趨勢圖表數據
+  const investmentChart = data.monthlyTrend?.map((trend: any) => ({
+    month: trend.month,
+    value: trend.profit
+  })) || []
+
+  // 預設商品分布數據
+  const productChart = [
+    { name: '威士忌', value: 180000, color: '#1890ff' },
+    { name: '清酒', value: 120000, color: '#52c41a' },
+    { name: '葡萄酒', value: 54000, color: '#faad14' }
+  ]
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -287,7 +306,7 @@ function InvestorDashboard() {
           <Card>
             <Statistic
               title="投資項目營收"
-              value={mockData.investmentRevenue}
+              value={data.investmentRevenue || 0}
               precision={0}
               prefix={<DollarOutlined />}
               suffix="元"
@@ -299,7 +318,7 @@ function InvestorDashboard() {
           <Card>
             <Statistic
               title="投資獲利"
-              value={mockData.investmentProfit}
+              value={data.investmentProfit || 0}
               precision={0}
               prefix={<LineChartOutlined />}
               suffix="元"
@@ -311,7 +330,7 @@ function InvestorDashboard() {
           <Card>
             <Statistic
               title="投資商品庫存"
-              value={mockData.investmentStock}
+              value={data.investmentStock || 0}
               prefix={<AppstoreOutlined />}
               suffix="瓶"
             />
@@ -325,7 +344,7 @@ function InvestorDashboard() {
         <Col xs={24} lg={16}>
           <SimpleLineChart
             title="投資獲利趨勢"
-            data={mockData.investmentChart}
+            data={investmentChart}
             prefix="NT$ "
             height={250}
           />
@@ -335,7 +354,7 @@ function InvestorDashboard() {
         <Col xs={24} lg={8}>
           <SimplePieChart
             title="投資商品分布"
-            data={mockData.productChart}
+            data={productChart}
             height={250}
           />
         </Col>
@@ -344,14 +363,14 @@ function InvestorDashboard() {
       {/* 投資趨勢列表 */}
       <Card title="投資表現趨勢">
         <List
-          dataSource={mockData.monthlyTrend}
-          renderItem={(item) => (
+          dataSource={data.monthlyTrend || []}
+          renderItem={(item: any) => (
             <List.Item>
               <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                 <Text strong>{item.month}</Text>
                 <Space>
-                  <Text>營收: ${item.revenue.toLocaleString()}</Text>
-                  <Text type="success">獲利: ${item.profit.toLocaleString()}</Text>
+                  <Text>營收: ${item.revenue?.toLocaleString() || 0}</Text>
+                  <Text type="success">獲利: ${item.profit?.toLocaleString() || 0}</Text>
                 </Space>
               </Space>
             </List.Item>
@@ -363,18 +382,7 @@ function InvestorDashboard() {
 }
 
 // 員工Dashboard
-function EmployeeDashboard() {
-  const mockData = {
-    todayTasks: [
-      { id: 1, task: '處理客戶A的報價單', status: 'pending' },
-      { id: 2, task: '更新山崎威士忌庫存', status: 'completed' },
-      { id: 3, task: '確認本週到貨清單', status: 'pending' }
-    ],
-    recentOrders: [
-      { id: 'SA001', customer: '客戶A', amount: 125000, status: 'processing' },
-      { id: 'SA002', customer: '客戶B', amount: 89000, status: 'completed' }
-    ]
-  }
+function EmployeeDashboard({ data }: { data: any }) {
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -384,8 +392,8 @@ function EmployeeDashboard() {
           <Card title="今日待辦事項" extra={<Button type="link">新增</Button>}>
             <List
               size="small"
-              dataSource={mockData.todayTasks}
-              renderItem={(item) => (
+              dataSource={data.todayTasks || []}
+              renderItem={(item: any) => (
                 <List.Item>
                   <Space>
                     {item.status === 'completed' ? (
@@ -406,8 +414,8 @@ function EmployeeDashboard() {
           <Card title="最近訂單" extra={<Button type="link">查看全部</Button>}>
             <List
               size="small"
-              dataSource={mockData.recentOrders}
-              renderItem={(item) => (
+              dataSource={data.recentOrders || []}
+              renderItem={(item: any) => (
                 <List.Item>
                   <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                     <div>
@@ -416,7 +424,7 @@ function EmployeeDashboard() {
                       <Text type="secondary">{item.customer}</Text>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <Text>${item.amount.toLocaleString()}</Text>
+                      <Text>${item.amount?.toLocaleString() || 0}</Text>
                       <br />
                       <Tag color={item.status === 'completed' ? 'green' : 'blue'}>
                         {item.status === 'completed' ? '已完成' : '處理中'}
