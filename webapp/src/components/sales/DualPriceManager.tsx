@@ -81,7 +81,7 @@ export function DualPriceManager({
       actualPrice,
       commission: newCommission
     })
-  }, [displayPrice, actualPrice, onPriceChange])
+  }, [displayPrice, actualPrice])
 
   // 預設價格策略
   const applyPricingStrategy = (strategy: string) => {
