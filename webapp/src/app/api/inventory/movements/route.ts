@@ -196,10 +196,12 @@ export async function POST(request: NextRequest) {
     const quantityStats = await prisma.inventoryMovement.aggregate({
       where,
       _sum: {
-        quantity: true
+        quantity_change: true,
+        total_cost: true
       },
       _avg: {
-        quantity: true
+        quantity_change: true,
+        unit_cost: true
       }
     })
 
@@ -208,7 +210,8 @@ export async function POST(request: NextRequest) {
       by: ['movement_type'],
       where,
       _sum: {
-        quantity: true
+        quantity_change: true,
+        total_cost: true
       },
       _count: {
         _all: true
@@ -225,7 +228,7 @@ export async function POST(request: NextRequest) {
         }
       },
       _sum: {
-        quantity: true
+        quantity_change: true
       },
       _count: {
         _all: true
@@ -243,8 +246,10 @@ export async function POST(request: NextRequest) {
           transferMovements
         },
         quantityStats: {
-          totalQuantity: quantityStats._sum.quantity || 0,
-          averageQuantity: quantityStats._avg.quantity || 0
+          totalQuantityChange: quantityStats._sum.quantity_change || 0,
+          totalCost: quantityStats._sum.total_cost || 0,
+          averageQuantityChange: quantityStats._avg.quantity_change || 0,
+          averageUnitCost: quantityStats._avg.unit_cost || 0
         },
         movementTypeStats,
         recentTrend
