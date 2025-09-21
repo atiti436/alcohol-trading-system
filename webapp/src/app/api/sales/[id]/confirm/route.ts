@@ -61,29 +61,42 @@ export async function POST(
       )
     }
 
-    // 檢查庫存是否足夠
-    const stockCheckErrors = []
+    // 檢查庫存是否足夠（若未指定變體，嘗試自動選擇一個可用變體，如 A 版）
+    const chosenVariants: Record<string, string> = {} // sale_item_id -> variant_id
+    const stockCheckErrors: string[] = []
     for (const item of existingSale.items) {
+      let variantIdToUse = item.variant_id || ''
       let availableStock = 0
 
-      if (item.variant_id) {
-        // 檢查變體庫存
-        const variant = await prisma.productVariant.findUnique({
-          where: { id: item.variant_id }
-        })
-        availableStock = variant?.available_stock || 0
-      } else {
-        // 檢查商品所有變體的總庫存
+      if (!variantIdToUse) {
+        // 嘗試找到該商品下可用庫存足夠的變體，優先 A 版
         const variants = await prisma.productVariant.findMany({
           where: { product_id: item.product_id },
-          select: { available_stock: true }
+          orderBy: { variant_type: 'asc' },
+          select: { id: true, available_stock: true, variant_type: true }
         })
-        availableStock = variants.reduce((sum, variant) => sum + variant.available_stock, 0)
+
+        // 先找 A，其次任何足夠庫存者
+        const preferred = variants.find(v => v.variant_type === 'A' && v.available_stock >= item.quantity)
+        const anyEnough = preferred || variants.find(v => v.available_stock >= item.quantity)
+        if (anyEnough) {
+          variantIdToUse = anyEnough.id
+          availableStock = anyEnough.available_stock
+        } else {
+          // 沒有足夠的單一變體，回報錯誤（簡化：不做跨變體分攤）
+          const totalAvailable = variants.reduce((s, v) => s + v.available_stock, 0)
+          availableStock = totalAvailable
+        }
+      } else {
+        const variant = await prisma.productVariant.findUnique({ where: { id: variantIdToUse }, select: { available_stock: true } })
+        availableStock = variant?.available_stock || 0
       }
 
       if (availableStock < item.quantity) {
         const productName = item.variant?.variant_code || item.product?.name || '未知商品'
         stockCheckErrors.push(`商品 ${productName} 庫存不足，需要 ${item.quantity}，可用 ${availableStock}`)
+      } else if (!item.variant_id && variantIdToUse) {
+        chosenVariants[item.id] = variantIdToUse
       }
     }
 
@@ -106,25 +119,25 @@ export async function POST(
         }
       })
 
-      // 2. 預留庫存
+      // 2. 預留庫存（若有自動選變體，同步寫回 sale items 的 variant_id）
       for (const item of existingSale.items) {
-        if (item.variant_id) {
-          // 預留變體庫存
-          await tx.productVariant.update({
-            where: { id: item.variant_id },
-            data: {
-              available_stock: {
-                decrement: item.quantity
-              },
-              reserved_stock: {
-                increment: item.quantity
-              }
-            }
+        const variantId = item.variant_id || chosenVariants[item.id]
+        if (!variantId) {
+          throw new Error(`銷售項目 ${item.product?.name || item.product_id} 缺少可用變體`)
+        }
+        await tx.productVariant.update({
+          where: { id: variantId },
+          data: {
+            available_stock: { decrement: item.quantity },
+            reserved_stock: { increment: item.quantity }
+          }
+        })
+
+        if (!item.variant_id) {
+          await tx.saleItem.update({
+            where: { id: item.id },
+            data: { variant_id: variantId }
           })
-        } else {
-          // 如果沒有指定變體，需要從該產品的變體中扣除庫存
-          // 這裡簡化處理：要求銷售項目必須指定變體
-          throw new Error(`銷售項目 ${item.product?.name || item.product_id} 必須指定變體`)
         }
       }
 
