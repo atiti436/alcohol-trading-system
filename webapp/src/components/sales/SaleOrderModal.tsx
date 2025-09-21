@@ -430,6 +430,26 @@ export function SaleOrderModal({
 
   const { totalDisplayAmount, totalActualAmount, totalCommission } = calculateTotals()
 
+  // 臨時錯誤邊界：避免少數資料異常導致整個頁面崩潰
+  class SafeBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }>{
+    constructor(props: any) {
+      super(props)
+      this.state = { hasError: false }
+    }
+    static getDerivedStateFromError() {
+      return { hasError: true }
+    }
+    componentDidCatch(error: any, info: any) {
+      console.error('SaleOrderModal render error:', error, info?.componentStack)
+    }
+    render() {
+      if (this.state.hasError) {
+        return <Alert type="error" message="商品區塊發生錯誤，請截圖給開發者" />
+      }
+      return <>{this.props.children}</>
+    }
+  }
+
   return (
     <Modal
       title={
@@ -542,15 +562,17 @@ export function SaleOrderModal({
           </Button>
         </Space>
 
-        <Table
-          columns={itemColumns}
-          dataSource={orderItems}
-          pagination={false}
-          size="small"
-          locale={{
-            emptyText: '請點擊「添加商品」開始創建訂單'
-          }}
-        />
+        <SafeBoundary>
+          <Table
+            columns={itemColumns}
+            dataSource={orderItems}
+            pagination={false}
+            size="small"
+            locale={{
+              emptyText: '請點擊「添加商品」開始創建訂單'
+            }}
+          />
+        </SafeBoundary>
       </div>
 
       {/* 總計 */}
