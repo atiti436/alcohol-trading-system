@@ -38,6 +38,7 @@ import dayjs from 'dayjs'
 import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
 import { CreatePurchaseRequest } from '@/types/room-2'
+import { PurchaseOrderModal } from '@/components/purchases/PurchaseOrderModal'
 
 const { Search } = Input
 const { Option } = Select
@@ -105,7 +106,6 @@ export default function PurchasesPage() {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
-  const [form] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)
 
   // 載入採購單列表
@@ -394,19 +394,6 @@ export default function PurchasesPage() {
   // 處理新增/編輯
   const handleEdit = (purchase?: Purchase) => {
     setEditingPurchase(purchase || null)
-    if (purchase) {
-      form.setFieldsValue({
-        ...purchase,
-        declarationDate: purchase.declarationDate ? dayjs(purchase.declarationDate) : null
-      })
-    } else {
-      form.resetFields()
-      form.setFieldsValue({
-        currency: 'JPY',
-        exchangeRate: 0.2,
-        fundingSource: 'COMPANY'
-      })
-    }
     setModalVisible(true)
   }
 
@@ -511,98 +498,23 @@ export default function PurchasesPage() {
     }
   }
 
-  // 自定義驗證規則
-  const validationRules = {
-    supplier: [
-      { required: true, message: '請輸入供應商名稱' },
-      { min: 2, message: '供應商名稱至少需要2個字符' },
-      { max: 100, message: '供應商名稱不能超過100個字符' },
-      { pattern: /^[^<>"'&]*$/, message: '供應商名稱包含不允許的字符' }
-    ],
-    currency: [
-      { required: true, message: '請選擇幣別' }
-    ],
-    exchangeRate: [
-      { required: true, message: '請輸入匯率' },
-      { type: 'number' as const, min: 0.001, message: '匯率必須大於0' },
-      { type: 'number' as const, max: 1000, message: '匯率不能超過1000' }
-    ],
-    fundingSource: [
-      { required: true, message: '請選擇資金來源' }
-    ],
-    declarationNumber: [
-      { max: 50, message: '報單號碼不能超過50個字符' },
-      { pattern: /^[A-Za-z0-9\-_]*$/, message: '報單號碼只能包含字母、數字、連字符和下劃線' }
-    ],
-    notes: [
-      { max: 500, message: '備註不能超過500個字符' }
-    ]
-  }
 
   // 處理儲存
   const handleSave = async (values: CreatePurchaseRequest) => {
     setSubmitting(true)
     try {
-      // 額外驗證
-      const validationErrors = []
-
-      // 檢查供應商名稱是否重複（如果是新增）
-      if (!editingPurchase) {
-        const duplicateSupplier = purchases.find(p =>
-          p.supplier.toLowerCase() === values.supplier.toLowerCase() &&
-          p.status === 'DRAFT'
-        )
-        if (duplicateSupplier) {
-          validationErrors.push('該供應商已有未完成的草稿採購單，請先處理現有採購單')
-        }
-      }
-
-      // 檢查報單號碼是否重複
-      if (values.declaration_number) {
-        const duplicateDeclaration = purchases.find(p =>
-          p.declarationNumber === values.declaration_number &&
-          p.id !== editingPurchase?.id
-        )
-        if (duplicateDeclaration) {
-          validationErrors.push('報單號碼已存在，請使用不同的報單號碼')
-        }
-      }
-
-      // 檢查報關日期不能早於今天太久
-      if (values.declaration_date) {
-        const daysDiff = dayjs().diff(dayjs(values.declaration_date), 'days')
-        if (daysDiff > 365) {
-          validationErrors.push('報關日期不能早於一年前')
-        }
-        if (daysDiff < -30) {
-          validationErrors.push('報關日期不能超過未來30天')
-        }
-      }
-
-      if (validationErrors.length > 0) {
-        message.error(validationErrors[0])
-        return
-      }
-
       const url = editingPurchase
         ? `/api/purchases/${editingPurchase.id}`
         : '/api/purchases'
 
       const method = editingPurchase ? 'PUT' : 'POST'
 
-      const requestData = {
-        ...values,
-        declaration_date: values.declaration_date,
-        total_amount: 0, // 初始金額，後續添加商品時計算
-        items: [] // 基礎版本暫時不處理採購明細
-      }
-
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(values)
       })
 
       const result = await response.json()
@@ -611,37 +523,13 @@ export default function PurchasesPage() {
         message.success(editingPurchase ? '採購單更新成功' : '採購單創建成功')
         setModalVisible(false)
         setEditingPurchase(null)
-        form.resetFields()
-        await loadPurchases() // 等待重新載入完成
+        await loadPurchases()
       } else {
-        // 處理不同類型的錯誤
-        if (response.status === 400) {
-          message.error(`資料驗證失敗：${result.error || '請檢查輸入資料'}`)
-        } else if (response.status === 401) {
-          message.error('您沒有權限執行此操作')
-        } else if (response.status === 403) {
-          message.error('操作被拒絕，請檢查您的權限')
-        } else if (response.status === 500) {
-          message.error('伺服器錯誤，請稍後再試')
-        } else {
-          message.error(result.error || '操作失敗，請重試')
-        }
-
-        // 如果是特定欄位錯誤，嘗試設置欄位錯誤
-        if (result.field) {
-          form.setFields([{
-            name: result.field,
-            errors: [result.error]
-          }])
-        }
+        message.error(result.error || '操作失敗，請重試')
       }
     } catch (error) {
       console.error('儲存採購單失敗:', error)
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        message.error('網路連線錯誤，請檢查網路連線')
-      } else {
-        message.error('操作失敗，請重試')
-      }
+      message.error('操作失敗，請重試')
     } finally {
       setSubmitting(false)
     }
@@ -737,176 +625,16 @@ export default function PurchasesPage() {
       </Spin>
 
       {/* 新增/編輯採購單Modal */}
-      <Modal
-        title={editingPurchase ? '編輯採購單' : '新增採購單'}
-        open={modalVisible}
+      <PurchaseOrderModal
+        visible={modalVisible}
         onCancel={() => {
           setModalVisible(false)
           setEditingPurchase(null)
-          form.resetFields()
         }}
-        onOk={() => form.submit()}
-        confirmLoading={submitting}
-        okButtonProps={{ loading: submitting }}
-        cancelButtonProps={{ disabled: submitting }}
-        width="90%"
-        style={{
-          maxWidth: '600px',
-          width: '90vw'
-        }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSave}
-          validateTrigger={['onBlur', 'onChange']}
-          scrollToFirstError
-        >
-          <Form.Item
-            name="supplier"
-            label="供應商"
-            rules={validationRules.supplier}
-            hasFeedback
-          >
-            <Input
-              placeholder="請輸入供應商名稱"
-              maxLength={100}
-              showCount
-              disabled={submitting}
-            />
-          </Form.Item>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '16px'
-          }}>
-            <Form.Item
-              name="currency"
-              label="幣別"
-              style={{ flex: 1 }}
-              rules={validationRules.currency}
-              hasFeedback
-            >
-              <Select
-                placeholder="請選擇幣別"
-                disabled={submitting}
-                showSearch
-                optionFilterProp="children"
-              >
-                <Option value="JPY">日圓 (JPY)</Option>
-                <Option value="USD">美元 (USD)</Option>
-                <Option value="EUR">歐元 (EUR)</Option>
-                <Option value="GBP">英鎊 (GBP)</Option>
-                <Option value="TWD">新台幣 (TWD)</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              name="exchangeRate"
-              label="匯率"
-              style={{ flex: 1 }}
-              rules={validationRules.exchangeRate}
-              hasFeedback
-              extra="請輸入相對於新台幣的匯率"
-            >
-              <InputNumber
-                style={{ width: '100%' }}
-                placeholder="請輸入匯率"
-                step={0.001}
-                min={0.001}
-                max={1000}
-                precision={3}
-                disabled={submitting}
-                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              />
-            </Form.Item>
-          </div>
-
-          <Form.Item
-            name="fundingSource"
-            label="資金來源"
-            rules={validationRules.fundingSource}
-            hasFeedback
-            extra="個人調貨將影響庫存分配和成本計算"
-          >
-            <Select
-              placeholder="請選擇資金來源"
-              disabled={submitting}
-            >
-              <Option value="COMPANY">公司資金</Option>
-              <Option value="PERSONAL">個人調貨</Option>
-            </Select>
-          </Form.Item>
-
-          <Divider>報關資訊（選填）</Divider>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '16px'
-          }}>
-            <Form.Item
-              name="declarationNumber"
-              label="報單號碼"
-              style={{ flex: 1 }}
-              rules={validationRules.declarationNumber}
-              hasFeedback
-            >
-              <Input
-                placeholder="請輸入報單號碼"
-                maxLength={50}
-                disabled={submitting}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="declarationDate"
-              label="報關日期"
-              style={{ flex: 1 }}
-              dependencies={['declarationNumber']}
-              rules={[
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (getFieldValue('declarationNumber') && !value) {
-                      return Promise.reject(new Error('填寫報單號碼時必須選擇報關日期'))
-                    }
-                    return Promise.resolve()
-                  },
-                })
-              ]}
-            >
-              <DatePicker
-                style={{ width: '100%' }}
-                placeholder="請選擇報關日期"
-                disabled={submitting}
-                disabledDate={(current) => {
-                  // 不能選擇未來超過30天或過去超過365天的日期
-                  const today = dayjs()
-                  return current && (
-                    current.isAfter(today.add(30, 'days')) ||
-                    current.isBefore(today.subtract(365, 'days'))
-                  )
-                }}
-              />
-            </Form.Item>
-          </div>
-
-          <Form.Item
-            name="notes"
-            label="備註"
-            rules={validationRules.notes}
-          >
-            <TextArea
-              rows={3}
-              placeholder="請輸入備註資訊"
-              maxLength={500}
-              showCount
-              disabled={submitting}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleSave}
+        editingPurchase={editingPurchase}
+        loading={submitting}
+      />
 
       {/* 查看詳情Modal */}
       <Modal

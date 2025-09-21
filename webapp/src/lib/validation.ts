@@ -313,6 +313,34 @@ export function validateSaleData(data: Record<string, unknown>) {
     )
   }
 
+  // 🔒 雙重價格陣列驗證 (修復CRITICAL級安全漏洞)
+  if (data.displayPrices && Array.isArray(data.displayPrices)) {
+    validated.displayPrices = data.displayPrices.map((price, index) =>
+      validateNumber(price, `顯示價格${index + 1}`, 0, 100000000)
+    )
+  }
+
+  if (data.actualPrices && Array.isArray(data.actualPrices)) {
+    validated.actualPrices = data.actualPrices.map((price, index) =>
+      validateNumber(price, `實際價格${index + 1}`, 0, 100000000)
+    )
+  }
+
+  // 驗證價格陣列長度一致性
+  if (validated.displayPrices && validated.actualPrices &&
+      validated.displayPrices.length !== validated.actualPrices.length) {
+    throw new Error('顯示價格與實際價格數量不一致')
+  }
+
+  // 驗證雙重價格邏輯一致性
+  if (validated.displayPrices && validated.actualPrices) {
+    for (let i = 0; i < validated.displayPrices.length; i++) {
+      if (validated.actualPrices[i] < validated.displayPrices[i]) {
+        throw new Error(`實際價格${i + 1}不能小於顯示價格${i + 1} (商業邏輯錯誤)`)
+      }
+    }
+  }
+
   return validated
 }
 

@@ -23,6 +23,14 @@ enum PaymentTerms {
   SIXTY_DAYS
 }
 
+enum SaleStatus {
+  DRAFT
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
 enum AlcoholCategory {
   WHISKY
   WINE
@@ -311,11 +319,14 @@ model Sale {
   commission      Float?
   funding_source  String
   payment_terms   PaymentTerms @default(CASH)
+  status          SaleStatus   @default(DRAFT)
   is_paid         Boolean      @default(false)
   paid_at         DateTime?
   due_date        DateTime?
   notes           String?
   created_by      String
+  confirmed_at    DateTime?
+  confirmed_by    String?
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt
 

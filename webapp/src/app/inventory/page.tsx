@@ -18,16 +18,24 @@ const { Option } = Select
 
 interface InventoryItem {
   id: string
-  productName: string
+  name: string
+  product_code: string
   category: string
-  currentStock: number
-  minStock: number
-  maxStock: number
-  unitCost: number
-  totalValue: number
-  location: string
+  total_stock_quantity: number
+  total_available_stock: number
+  total_reserved_stock: number
+  total_value: number
+  unit_cost: number
+  current_price: number
   status: 'normal' | 'low' | 'out' | 'excess'
-  lastUpdated: string
+  variants_count: number
+  variants: Array<{
+    id: string
+    variant_code: string
+    stock_quantity: number
+    available_stock: number
+    cost_price: number
+  }>
 }
 
 export default function InventoryPage() {
@@ -37,80 +45,82 @@ export default function InventoryPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
 
-  // Mock data - 在實際環境中這會從API獲取
-  useEffect(() => {
-    const mockInventory: InventoryItem[] = [
-      {
-        id: 'INV001',
-        productName: '山崎18年威士忌',
-        category: '威士忌',
-        currentStock: 3,
-        minStock: 10,
-        maxStock: 50,
-        unitCost: 45000,
-        totalValue: 135000,
-        location: 'A1-01',
-        status: 'low',
-        lastUpdated: '2025-09-20'
-      },
-      {
-        id: 'INV002',
-        productName: '響21年威士忌',
-        category: '威士忌',
-        currentStock: 1,
-        minStock: 5,
-        maxStock: 25,
-        unitCost: 120000,
-        totalValue: 120000,
-        location: 'A1-02',
-        status: 'low',
-        lastUpdated: '2025-09-20'
-      },
-      {
-        id: 'INV003',
-        productName: '獺祭純米大吟釀',
-        category: '清酒',
-        currentStock: 45,
-        minStock: 20,
-        maxStock: 100,
-        unitCost: 1800,
-        totalValue: 81000,
-        location: 'B2-15',
-        status: 'normal',
-        lastUpdated: '2025-09-21'
-      },
-      {
-        id: 'INV004',
-        productName: 'Dom Pérignon 2015',
-        category: '香檳',
-        currentStock: 12,
-        minStock: 8,
-        maxStock: 30,
-        unitCost: 8500,
-        totalValue: 102000,
-        location: 'C1-05',
-        status: 'normal',
-        lastUpdated: '2025-09-19'
+  // 🔗 連接真實API - 移除假資料
+  const fetchInventory = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams({
+        search: searchText,
+        page: '1',
+        limit: '100'
+      })
+
+      if (categoryFilter) params.append('category', categoryFilter)
+      if (statusFilter === 'low') params.append('lowStock', 'true')
+
+      const response = await fetch(`/api/inventory?${params}`)
+      if (!response.ok) {
+        throw new Error('庫存資料載入失敗')
       }
-    ]
 
-    setTimeout(() => {
-      setInventory(mockInventory)
+      const data = await response.json()
+
+      // 轉換API數據為前端格式
+      const inventoryData: InventoryItem[] = data.data.products.map((product: any) => {
+        // 計算庫存狀態
+        let status: 'normal' | 'low' | 'out' | 'excess' = 'normal'
+        if (product.total_available_stock === 0) {
+          status = 'out'
+        } else if (product.total_available_stock <= (product.total_stock_quantity * 0.2)) {
+          status = 'low'
+        }
+
+        return {
+          id: product.id,
+          name: product.name,
+          product_code: product.product_code,
+          category: product.category,
+          total_stock_quantity: product.total_stock_quantity,
+          total_available_stock: product.total_available_stock,
+          total_reserved_stock: product.total_reserved_stock,
+          total_value: product.total_value,
+          unit_cost: product.unit_cost,
+          current_price: product.current_price,
+          status,
+          variants_count: product._count?.variants || 0,
+          variants: product.variants || []
+        }
+      })
+
+      setInventory(inventoryData)
+    } catch (error) {
+      console.error('庫存載入錯誤:', error)
+      message.error('庫存資料載入失敗')
+      setInventory([])
+    } finally {
       setLoading(false)
-    }, 500)
-  }, [])
+    }
+  }
 
-  // 計算統計數據
+  useEffect(() => {
+    fetchInventory()
+  }, [searchText, categoryFilter, statusFilter])
+
+  // 📊 計算真實統計數據
   const statistics = {
     totalItems: inventory.length,
-    totalValue: inventory.reduce((sum, item) => sum + item.totalValue, 0),
+    totalValue: inventory.reduce((sum, item) => sum + item.total_value, 0),
+    totalStock: inventory.reduce((sum, item) => sum + item.total_stock_quantity, 0),
+    availableStock: inventory.reduce((sum, item) => sum + item.total_available_stock, 0),
+    reservedStock: inventory.reduce((sum, item) => sum + item.total_reserved_stock, 0),
     lowStockCount: inventory.filter(item => item.status === 'low').length,
     outOfStockCount: inventory.filter(item => item.status === 'out').length
   }
 
-  // 過濾邏輯
+  // 📋 過濾邏輯 (修復欄位名稱)
   const filteredInventory = inventory.filter(item => {
-    const matchesSearch = item.productName.toLowerCase().includes(searchText.toLowerCase()) ||
+    const matchesSearch = item.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                         item.product_code.toLowerCase().includes(searchText.toLowerCase()) ||
                          item.id.toLowerCase().includes(searchText.toLowerCase())
     const matchesCategory = !categoryFilter || item.category === categoryFilter
     const matchesStatus = !statusFilter || item.status === statusFilter
@@ -139,14 +149,14 @@ export default function InventoryPage() {
   const columns = [
     {
       title: '商品編號',
-      dataIndex: 'id',
-      key: 'id',
+      dataIndex: 'product_code',
+      key: 'product_code',
       width: 120
     },
     {
       title: '商品名稱',
-      dataIndex: 'productName',
-      key: 'productName',
+      dataIndex: 'name',
+      key: 'name',
       width: 200
     },
     {
@@ -156,47 +166,47 @@ export default function InventoryPage() {
       width: 100
     },
     {
-      title: '當前庫存',
-      dataIndex: 'currentStock',
-      key: 'currentStock',
+      title: '總庫存',
+      dataIndex: 'total_stock_quantity',
+      key: 'total_stock_quantity',
       width: 100,
       align: 'center' as const,
       render: (stock: number, record: InventoryItem) => (
         <Space>
-          <Text strong={record.status === 'low'}>{stock}</Text>
-          <Text type="secondary">/ {record.maxStock}</Text>
+          <Text strong={record.status === 'low' || record.status === 'out'}>{stock}</Text>
+          <Text type="secondary">/ {record.total_available_stock}可用</Text>
         </Space>
       )
     },
     {
-      title: '安全庫存',
-      dataIndex: 'minStock',
-      key: 'minStock',
+      title: '預留庫存',
+      dataIndex: 'total_reserved_stock',
+      key: 'total_reserved_stock',
       width: 100,
+      align: 'center' as const
+    },
+    {
+      title: '變體數量',
+      dataIndex: 'variants_count',
+      key: 'variants_count',
+      width: 80,
       align: 'center' as const
     },
     {
       title: '單位成本',
-      dataIndex: 'unitCost',
-      key: 'unitCost',
+      dataIndex: 'unit_cost',
+      key: 'unit_cost',
       width: 120,
       align: 'right' as const,
-      render: (cost: number) => `NT$ ${cost.toLocaleString()}`
+      render: (cost: number) => cost ? `NT$ ${cost.toLocaleString()}` : 'N/A'
     },
     {
       title: '庫存價值',
-      dataIndex: 'totalValue',
-      key: 'totalValue',
+      dataIndex: 'total_value',
+      key: 'total_value',
       width: 120,
       align: 'right' as const,
       render: (value: number) => `NT$ ${value.toLocaleString()}`
-    },
-    {
-      title: '存放位置',
-      dataIndex: 'location',
-      key: 'location',
-      width: 100,
-      align: 'center' as const
     },
     {
       title: '狀態',
@@ -226,7 +236,7 @@ export default function InventoryPage() {
             type="link"
             icon={<EditOutlined />}
             size="small"
-            onClick={() => message.info(`編輯 ${record.productName}`)}
+            onClick={() => message.info(`編輯 ${record.name}`)}
           >
             調整
           </Button>

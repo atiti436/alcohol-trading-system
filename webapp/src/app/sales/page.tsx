@@ -58,6 +58,7 @@ interface Sale {
   commission?: number
   fundingSource: string
   paymentTerms: string
+  status: 'DRAFT' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
   isPaid: boolean
   paidAt?: string
   dueDate?: string
@@ -324,14 +325,14 @@ export default function SalesPage() {
     {
       title: '狀態',
       key: 'status',
-      width: 100,
+      width: 120,
       render: (record: Sale) => (
         <div>
-          <Tag color={getStatusColor(record)}>
-            {getStatusName(record)}
+          <Tag color={getStatusColor(record.status)}>
+            {getStatusName(record.status)}
           </Tag>
           <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-            {getPaymentTermsName(record.paymentTerms)}
+            {record.isPaid ? '已付款' : '未付款'}
           </div>
         </div>
       )
@@ -369,34 +370,55 @@ export default function SalesPage() {
             />
           </Tooltip>
 
-          {/* 編輯按鈕 - 投資方隱藏 */}
-          <HideFromInvestor>
-            <Tooltip title="編輯">
-              <Button
-                icon={<EditOutlined />}
-                size="small"
-                onClick={() => handleEdit(record)}
-              />
-            </Tooltip>
-          </HideFromInvestor>
-
-          {/* 付款按鈕 - 未付款時顯示 */}
-          {!record.isPaid && (
+          {/* 編輯按鈕 - 只有草稿狀態可編輯，投資方隱藏 */}
+          {record.status === 'DRAFT' && (
             <HideFromInvestor>
-              <Tooltip title="標記為已付款">
+              <Tooltip title="編輯">
                 <Button
-                  icon={<DollarOutlined />}
+                  icon={<EditOutlined />}
                   size="small"
-                  type="primary"
-                  loading={actionLoading[`pay-${record.id}`]}
-                  onClick={() => handleMarkPaid(record)}
+                  onClick={() => handleEdit(record)}
                 />
               </Tooltip>
             </HideFromInvestor>
           )}
 
-          {/* 出貨按鈕 - 已付款時顯示 */}
-          {record.isPaid && (
+          {/* 確認按鈕 - 草稿狀態可確認，投資方隱藏 */}
+          {record.status === 'DRAFT' && (
+            <HideFromInvestor>
+              <Tooltip title="確認銷售訂單">
+                <Button
+                  icon={<DollarOutlined />}
+                  size="small"
+                  type="primary"
+                  loading={actionLoading[`confirm-${record.id}`]}
+                  onClick={() => handleConfirm(record)}
+                >
+                  確認
+                </Button>
+              </Tooltip>
+            </HideFromInvestor>
+          )}
+
+          {/* 付款按鈕 - 已確認且未付款時顯示 */}
+          {record.status === 'CONFIRMED' && !record.isPaid && (
+            <HideFromInvestor>
+              <Tooltip title="標記為已付款">
+                <Button
+                  icon={<DollarOutlined />}
+                  size="small"
+                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+                  loading={actionLoading[`pay-${record.id}`]}
+                  onClick={() => handleMarkPaid(record)}
+                >
+                  付款
+                </Button>
+              </Tooltip>
+            </HideFromInvestor>
+          )}
+
+          {/* 出貨按鈕 - 已付款且尚未出貨時顯示 */}
+          {record.isPaid && record.status === 'CONFIRMED' && (
             <HideFromInvestor>
               <Tooltip title="進行出貨作業">
                 <Button
@@ -406,13 +428,15 @@ export default function SalesPage() {
                   style={{ backgroundColor: '#ff7875', borderColor: '#ff7875', color: 'white' }}
                   loading={actionLoading[`ship-${record.id}`]}
                   onClick={() => handleShip(record)}
-                />
+                >
+                  出貨
+                </Button>
               </Tooltip>
             </HideFromInvestor>
           )}
 
-          {/* 刪除按鈕 - 只有超級管理員可刪除未付款訂單 */}
-          {!record.isPaid && (
+          {/* 刪除按鈕 - 只有超級管理員可刪除草稿訂單 */}
+          {record.status === 'DRAFT' && (
             <SuperAdminOnly>
               <Popconfirm
                 title="確定要刪除此銷售訂單嗎？"
@@ -488,6 +512,59 @@ export default function SalesPage() {
       }
     } catch (error) {
       console.error('載入商品列表失敗:', error)
+    }
+  }
+
+  // 狀態標籤顏色
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DRAFT': return 'default'
+      case 'CONFIRMED': return 'blue'
+      case 'SHIPPED': return 'orange'
+      case 'DELIVERED': return 'green'
+      case 'CANCELLED': return 'red'
+      default: return 'default'
+    }
+  }
+
+  // 狀態顯示名稱
+  const getStatusName = (status: string) => {
+    const statusNames = {
+      DRAFT: '草稿',
+      CONFIRMED: '已確認',
+      SHIPPED: '已出貨',
+      DELIVERED: '已送達',
+      CANCELLED: '已取消'
+    }
+    return statusNames[status as keyof typeof statusNames] || status
+  }
+
+  // 處理確認銷售訂單
+  const handleConfirm = async (sale: Sale) => {
+    const actionKey = `confirm-${sale.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
+    try {
+      const response = await fetch(`/api/sales/${sale.id}/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        message.success('銷售訂單確認成功，庫存已預留')
+        await loadSales(false) // 重新載入但不顯示loading
+      } else {
+        message.error(result.error || '確認失敗')
+      }
+    } catch (error) {
+      console.error('確認銷售訂單失敗:', error)
+      message.error('確認失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }
   }
 
