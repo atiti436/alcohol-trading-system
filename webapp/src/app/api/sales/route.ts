@@ -188,13 +188,22 @@ export const POST = withAppAuth(async (
 
     const {
       customer_id,
-      items,
+      items = [],
       displayPrices,
       actualPrices,
       payment_terms,
       notes,
       funding_source = 'COMPANY'
     } = body
+
+    // 🔧 穩定性：若 display/actualPrices 缺失或長度不符，回退使用 items 內的單價
+    const normDisplayPrices: number[] = Array.isArray(displayPrices) && displayPrices.length === items.length
+      ? displayPrices.map((v: any) => Number(v) || 0)
+      : items.map((it: any) => Number(it?.unit_price) || 0)
+
+    const normActualPrices: number[] = Array.isArray(actualPrices) && actualPrices.length === items.length
+      ? actualPrices.map((v: any) => Number(v) || 0)
+      : items.map((it: any) => Number(it?.actual_unit_price ?? it?.unit_price) || 0)
 
     // 額外驗證
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -226,13 +235,13 @@ export const POST = withAppAuth(async (
     let totalActualAmount = 0
 
     // 計算總金額
-    displayPrices.forEach((price: number, index: number) => {
+    normDisplayPrices.forEach((price: number, index: number) => {
       const quantity = items[index]?.quantity || 0
       totalDisplayAmount += price * quantity
     })
 
-    if (actualPrices) {
-      actualPrices.forEach((price: number, index: number) => {
+    if (normActualPrices) {
+      normActualPrices.forEach((price: number, index: number) => {
         const quantity = items[index]?.quantity || 0
         totalActualAmount += price * quantity
       })
@@ -263,10 +272,10 @@ export const POST = withAppAuth(async (
             product_id: item.product_id,
             variant_id: item.variant_id,
             quantity: item.quantity,
-            unit_price: displayPrices[index],                    // 顯示單價
-            actual_unit_price: actualPrices?.[index] || displayPrices[index], // 實際單價
-            total_price: displayPrices[index] * item.quantity,   // 顯示總價
-            actual_total_price: (actualPrices?.[index] || displayPrices[index]) * item.quantity, // 實際總價
+            unit_price: normDisplayPrices[index],                    // 顯示單價
+            actual_unit_price: normActualPrices?.[index] || normDisplayPrices[index], // 實際單價
+            total_price: normDisplayPrices[index] * item.quantity,   // 顯示總價
+            actual_total_price: (normActualPrices?.[index] || normDisplayPrices[index]) * item.quantity, // 實際總價
             is_personal_purchase: funding_source === 'PERSONAL'
           }))
         }
