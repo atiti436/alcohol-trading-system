@@ -30,7 +30,8 @@ import {
   EyeOutlined,
   CheckOutlined,
   ClockCircleOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  ShoppingCartOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
@@ -341,6 +342,22 @@ export default function PurchasesPage() {
             </HideFromInvestor>
           )}
 
+          {/* 收貨按鈕 - 已確認狀態可收貨，投資方隱藏 */}
+          {record.status === 'CONFIRMED' && (
+            <HideFromInvestor>
+              <Tooltip title="進行收貨作業">
+                <Button
+                  icon={<ShoppingCartOutlined />}
+                  size="small"
+                  type="default"
+                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+                  loading={actionLoading[`receive-${record.id}`]}
+                  onClick={() => handleReceive(record)}
+                />
+              </Tooltip>
+            </HideFromInvestor>
+          )}
+
           {/* 刪除按鈕 - 只有超級管理員可刪除草稿 */}
           {record.status === 'DRAFT' && (
             <SuperAdminOnly>
@@ -418,6 +435,51 @@ export default function PurchasesPage() {
     } catch (error) {
       console.error('確認採購單失敗:', error)
       message.error('確認失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+    }
+  }
+
+  // 處理收貨作業
+  const handleReceive = async (purchase: Purchase) => {
+    const actionKey = `receive-${purchase.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
+    try {
+      // 簡化收貨：假設全部數量都正常收到，沒有損耗
+      const receiveData = {
+        actual_quantity: purchase.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+        exchange_rate: purchase.exchangeRate || 1.0,
+        loss_type: 'NONE',
+        loss_quantity: 0,
+        inspection_fee: 0,
+        allocation_method: 'BY_AMOUNT',
+        additional_costs: []
+      }
+
+      console.log('收貨數據:', receiveData) // 調試輸出
+
+      const response = await fetch(`/api/purchases/${purchase.id}/receive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(receiveData)
+      })
+
+      const result = await response.json()
+      console.log('收貨API回應:', result) // 調試輸出
+
+      if (response.ok && result.success) {
+        message.success('收貨成功，庫存已更新')
+        await loadPurchases(false) // 重新載入列表
+      } else {
+        console.error('收貨失敗:', result.error)
+        message.error(result.error?.message || result.error || '收貨失敗')
+      }
+    } catch (error) {
+      console.error('收貨操作失敗:', error)
+      message.error('收貨失敗，請檢查網路連線')
     } finally {
       setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }
