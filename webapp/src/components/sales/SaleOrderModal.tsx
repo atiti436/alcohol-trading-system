@@ -247,12 +247,18 @@ export function SaleOrderModal({
     actualPrice: number
     commission: number
   }) => {
-    setOrderItems(prev => prev.map(item =>
-      item.key === key ? {
-        ...item,
-        ...prices
-      } : item
-    ))
+    setOrderItems(prev => prev.map(item => {
+      if (item.key !== key) return item
+      // 避免相同數值反覆 setState 造成重渲染循環
+      if (
+        item.displayPrice === prices.displayPrice &&
+        item.actualPrice === prices.actualPrice &&
+        item.commission === prices.commission
+      ) {
+        return item
+      }
+      return { ...item, ...prices }
+    }))
   }
 
   // 數量變更處理
@@ -562,6 +568,7 @@ export function SaleOrderModal({
 
         <SafeBoundary>
           <Table
+            rowKey="key"
             columns={itemColumns}
             dataSource={orderItems}
             pagination={false}

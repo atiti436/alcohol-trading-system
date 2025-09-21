@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Card,
   Form,
@@ -68,6 +68,8 @@ export function DualPriceManager({
   const [profitMargin, setProfitMargin] = useState(0)         // 利潤率
 
   // 價格計算
+  const lastSentRef = useRef<{displayPrice:number; actualPrice:number; commission:number}>()
+
   useEffect(() => {
     const newCommission = actualPrice - displayPrice
     const newProfitMargin = displayPrice > 0 ? (newCommission / displayPrice) * 100 : 0
@@ -76,11 +78,12 @@ export function DualPriceManager({
     setProfitMargin(newProfitMargin)
 
     // 回調父組件
-    onPriceChange({
-      displayPrice,
-      actualPrice,
-      commission: newCommission
-    })
+    const payload = { displayPrice, actualPrice, commission: newCommission }
+    const last = lastSentRef.current
+    if (!last || last.displayPrice !== payload.displayPrice || last.actualPrice !== payload.actualPrice || last.commission !== payload.commission) {
+      onPriceChange(payload)
+      lastSentRef.current = payload
+    }
   }, [displayPrice, actualPrice])
 
   // 預設價格策略
