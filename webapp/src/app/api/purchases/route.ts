@@ -143,17 +143,28 @@ export async function POST(request: NextRequest) {
     let validatedData
     try {
       const purchaseData = {
+        supplier_id: body.supplier_id || null,
         supplier: body.supplier || 'temp-supplier',
         total_amount: body.total_amount || 0, // 將在後面重新計算
+        currency: body.currency || 'JPY',
+        exchange_rate: body.exchange_rate || 1.0,
         status: body.status || 'DRAFT',
+        funding_source: body.funding_source || 'COMPANY',
         notes: body.notes || '',
+        declaration_number: body.declaration_number || null,
+        declaration_date: body.declaration_date || null,
+        items: body.items || []
       }
+      console.log('準備驗證的採購資料:', purchaseData) // 調試輸出
       validatedData = validatePurchaseData(purchaseData)
+      console.log('驗證成功的採購資料:', validatedData) // 調試輸出
     } catch (validationError) {
+      console.error('採購驗證錯誤:', validationError) // 調試輸出
       return NextResponse.json(
         {
           error: '輸入資料驗證失敗',
-          details: validationError instanceof Error ? validationError.message : '格式錯誤'
+          details: validationError instanceof Error ? validationError.message : '格式錯誤',
+          originalData: body // 調試時顯示原始數據
         },
         { status: 400 }
       )
