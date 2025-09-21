@@ -423,7 +423,7 @@ export default function InventoryPage() {
           setSelectedInventoryItem(null)
         }}
         onSubmit={handleAdjustmentSubmit}
-        inventoryItem={selectedInventoryItem}
+        inventoryItem={selectedInventoryItem || undefined}
         loading={adjustmentLoading}
       />
     </div>
