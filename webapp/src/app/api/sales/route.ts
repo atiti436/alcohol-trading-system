@@ -197,13 +197,10 @@ export const POST = withAppAuth(async (
     } = body
 
     // 🔧 穩定性：若 display/actualPrices 缺失或長度不符，回退使用 items 內的單價
-    const normDisplayPrices: number[] = Array.isArray(displayPrices) && displayPrices.length === items.length
-      ? displayPrices.map((v: any) => Number(v) || 0)
-      : items.map((it: any) => Number(it?.unit_price) || 0)
+    // 以 items 內的單價為最終依據，避免前端陣列不同步導致儲存後被覆蓋
+    const normDisplayPrices: number[] = items.map((it: any) => Number(it?.unit_price) || 0)
 
-    const normActualPrices: number[] = Array.isArray(actualPrices) && actualPrices.length === items.length
-      ? actualPrices.map((v: any) => Number(v) || 0)
-      : items.map((it: any) => Number(it?.actual_unit_price ?? it?.unit_price) || 0)
+    const normActualPrices: number[] = items.map((it: any) => Number(it?.actual_unit_price ?? it?.unit_price) || 0)
 
     // 額外驗證
     if (!items || !Array.isArray(items) || items.length === 0) {
