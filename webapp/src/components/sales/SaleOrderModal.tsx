@@ -358,7 +358,8 @@ export function SaleOrderModal({
       key: 'price',
       width: 300,
       render: (_: any, record: SaleOrderItem) => (
-        record.product_id && record.product?.id ? (
+        record.product_id && record.product?.id &&
+        (record.variant?.current_price > 0 || record.product?.current_price > 0) ? (
           <DualPriceManager
             product_id={record.product_id}
             variantId={record.variantId}
@@ -366,7 +367,9 @@ export function SaleOrderModal({
             basePrice={record.variant?.current_price || record.product?.current_price || 0}
             onPriceChange={(prices) => handlePriceChange(record.key, prices)}
           />
-        ) : null
+        ) : (
+          <Text type="secondary">請先選擇商品</Text>
+        )
       )
     },
     {
@@ -460,9 +463,7 @@ export function SaleOrderModal({
             >
               <Select placeholder="選擇資金來源">
                 <Option value="COMPANY">公司資金</Option>
-                <HideFromInvestor>
-                  <Option value="PERSONAL">個人調貨</Option>
-                </HideFromInvestor>
+                <Option value="PERSONAL">個人調貨</Option>
               </Select>
             </Form.Item>
           </Col>
