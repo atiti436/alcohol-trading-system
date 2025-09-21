@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 使用驗證過的資料
     const {
       name,
       category,
@@ -137,26 +138,19 @@ export async function POST(request: NextRequest) {
       alc_percentage,
       weight_kg,
       package_weight_kg,
-      has_box = false,
-      has_accessories = false,
+      has_box,
+      has_accessories,
       accessory_weight_kg,
-      accessories = [],
+      accessories,
       hs_code,
       manufacturing_date,
       expiry_date,
       standard_price,
       current_price,
-      min_price,
-      create_default_variant = true
-    } = body
+      min_price
+    } = validatedData
 
-    // 商品特有驗證
-    if (!volume_ml || !alc_percentage || !standard_price || !current_price || !min_price) {
-      return NextResponse.json({
-        error: '商品必填欄位不完整',
-        required: ['volume_ml', 'alc_percentage', 'standard_price', 'current_price', 'min_price']
-      }, { status: 400 })
-    }
+    const create_default_variant = body.create_default_variant !== false // 預設為 true
 
     // 生成產品編號
     const product_code = await generateProductCode()
@@ -169,7 +163,7 @@ export async function POST(request: NextRequest) {
       data: {
         product_code,
         name,
-        category,
+        category: category as AlcoholCategory,
         volume_ml,
         alc_percentage,
         weight_kg: weight_kg || 0,
@@ -181,8 +175,8 @@ export async function POST(request: NextRequest) {
         accessories,
         hs_code,
         supplier,
-        manufacturing_date,
-        expiry_date,
+        manufacturing_date: manufacturing_date ? manufacturing_date.toISOString() : null,
+        expiry_date: expiry_date ? expiry_date.toISOString() : null,
         standard_price,
         current_price,
         cost_price: 0, // 初始成本為0，等進貨後更新

@@ -456,6 +456,13 @@ export default function QuotationsPage() {
           setIsModalVisible(false)
           form.resetFields()
         }}
+        afterOpenChange={(open) => {
+          if (open) {
+            // Modal 開啟時重新載入客戶列表，確保資料同步
+            loadCustomers()
+            loadProducts()
+          }
+        }}
         footer={null}
         width={600}
       >

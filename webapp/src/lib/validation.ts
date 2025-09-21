@@ -130,7 +130,7 @@ export function validateProductData(data: Record<string, unknown>) {
   const validated = {
     name: validateRequired(data.name, '商品名稱'),
     product_code: data.product_code ? validateString(data.product_code, '商品代碼', 1, 20) : null,
-    category: validateRequired(data.category, '商品分類'),
+    category: validateEnum(String(data.category), ['WHISKY', 'WINE', 'SAKE', 'BEER', 'SPIRITS', 'LIQUEUR', 'OTHER'], '商品分類'),
     brand: validateString(data.brand || '', '品牌', 0, 100),
     supplier: validateString(data.supplier || '', '供應商', 0, 200),
     description: validateString(data.description || '', '商品描述', 0, 2000),

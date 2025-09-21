@@ -441,6 +441,37 @@ export default function SalesPage() {
     setModalVisible(true)
   }
 
+  // 處理表單提交
+  const handleSubmit = async (values: any) => {
+    try {
+      const url = editingSale ? `/api/sales/${editingSale.id}` : '/api/sales'
+      const method = editingSale ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(values)
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        message.success(editingSale ? '銷售訂單更新成功' : '銷售訂單創建成功')
+        setModalVisible(false)
+        setEditingSale(null)
+        form.resetFields()
+        loadSales()
+      } else {
+        message.error(result.error || '操作失敗')
+      }
+    } catch (error) {
+      message.error('操作失敗')
+      console.error(error)
+    }
+  }
+
   // 處理標記已付款
   const handleMarkPaid = async (sale: Sale) => {
     const actionKey = `pay-${sale.id}`
@@ -611,6 +642,78 @@ export default function SalesPage() {
           )}
         </Card>
       </Spin>
+
+      {/* 新增/編輯銷售訂單 Modal */}
+      <Modal
+        title={editingSale ? '編輯銷售訂單' : '新增銷售訂單'}
+        open={modalVisible}
+        onCancel={() => {
+          setModalVisible(false)
+          setEditingSale(null)
+          form.resetFields()
+        }}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+        >
+          <Form.Item
+            name="customer_id"
+            label="客戶"
+            rules={[{ required: true, message: '請選擇客戶' }]}
+          >
+            <Select placeholder="選擇客戶" showSearch optionFilterProp="children">
+              {/* 這裡需要載入客戶列表 */}
+              <Option value="">客戶列表載入中...</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="product_name"
+            label="商品名稱"
+            rules={[{ required: true, message: '請輸入商品名稱' }]}
+          >
+            <Input placeholder="請輸入商品名稱" />
+          </Form.Item>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="quantity"
+              label="數量"
+              rules={[{ required: true, message: '請輸入數量' }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber placeholder="1" min={1} style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item
+              name="unit_price"
+              label="單價"
+              rules={[{ required: true, message: '請輸入單價' }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber placeholder="21000" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+          </div>
+
+          <Form.Item name="notes" label="備註">
+            <TextArea rows={3} placeholder="請輸入備註" />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => setModalVisible(false)}>
+                取消
+              </Button>
+              <Button type="primary" htmlType="submit">
+                {editingSale ? '更新' : '新增'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
 
       {/* 查看詳情Modal - 將在下一步實作 */}
       <Modal

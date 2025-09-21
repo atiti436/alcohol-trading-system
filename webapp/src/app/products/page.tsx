@@ -473,7 +473,7 @@ export default function ProductsPage() {
               <InputNumber placeholder="43.0" step={0.1} style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item
-              name="weight"
+              name="weight_kg"
               label="重量(kg)"
               rules={[{ required: true, message: '請輸入重量' }]}
               style={{ flex: 1 }}
@@ -518,10 +518,10 @@ export default function ProductsPage() {
           </Form.Item>
 
           <div style={{ display: 'flex', gap: '16px' }}>
-            <Form.Item name="hasBox" label="有外盒" valuePropName="checked" style={{ flex: 1 }}>
+            <Form.Item name="has_box" label="有外盒" valuePropName="checked" style={{ flex: 1 }}>
               <Switch />
             </Form.Item>
-            <Form.Item name="hasAccessories" label="有附件" valuePropName="checked" style={{ flex: 1 }}>
+            <Form.Item name="has_accessories" label="有附件" valuePropName="checked" style={{ flex: 1 }}>
               <Switch />
             </Form.Item>
           </div>
