@@ -109,7 +109,11 @@ async function processQuotationCommand(text: string, lineUserId: string) {
         }
       }
     } catch (lineError) {
-      errors.push(`第${i+1}行處理失敗：${lineError.message}`)
+      if (lineError instanceof Error) {
+        errors.push(`第${i+1}行處理失敗：${lineError.message}`)
+      } else {
+        errors.push(`第${i+1}行處理失敗：${String(lineError)}`)
+      }
     }
   }
 
@@ -165,7 +169,7 @@ function parseQuotationLine(parts: string[], lineNumber: number) {
   } catch (error) {
     return {
       success: false,
-      error: `第${lineNumber}行解析失敗：${error.message}`
+      error: `第${lineNumber}行解析失敗：${error instanceof Error ? error.message : String(error)}`
     }
   }
 }
@@ -223,7 +227,7 @@ async function createQuotationRecord(customerName: string, productName: string, 
     return quotation
   } catch (error) {
     console.error('創建報價記錄失敗:', error)
-    throw new Error(`資料庫記錄失敗：${error.message}`)
+    throw new Error(`資料庫記錄失敗：${error instanceof Error ? error.message : String(error)}`)
   }
 }
 

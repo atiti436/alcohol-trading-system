@@ -106,7 +106,11 @@ async function processOrderCommand(text: string, lineUserId: string) {
         }
       }
     } catch (lineError) {
-      errors.push(`第${i+1}行處理失敗：${lineError.message}`)
+      if (lineError instanceof Error) {
+        errors.push(`第${i+1}行處理失敗：${lineError.message}`)
+      } else {
+        errors.push(`第${i+1}行處理失敗：${String(lineError)}`)
+      }
     }
   }
 
@@ -119,7 +123,11 @@ async function processOrderCommand(text: string, lineUserId: string) {
       const order = await createOrderRecord(customerName, customerItems, recordDate, lineUserId)
       results.push(`• ${customerName}: ${customerItems.length}項商品，總金額 ${calculateTotal(customerItems).toLocaleString()}元`)
     } catch (orderError) {
-      errors.push(`${customerName}訂單創建失敗：${orderError.message}`)
+      if (orderError instanceof Error) {
+        errors.push(`${customerName}訂單創建失敗：${orderError.message}`)
+      } else {
+        errors.push(`${customerName}訂單創建失敗：${String(orderError)}`)
+      }
     }
   }
 
@@ -234,7 +242,7 @@ function parseProductLine(parts: string[], lineNumber: number) {
   } catch (error) {
     return {
       success: false,
-      error: `第${lineNumber}行解析失敗：${error.message}`
+      error: `第${lineNumber}行解析失敗：${error instanceof Error ? error.message : String(error)}`
     }
   }
 }
@@ -329,7 +337,7 @@ async function createOrderRecord(customerName: string, items: any[], recordDate:
     return sale
   } catch (error) {
     console.error('創建訂單記錄失敗:', error)
-    throw new Error(`資料庫記錄失敗：${error.message}`)
+    throw new Error(`資料庫記錄失敗：${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
