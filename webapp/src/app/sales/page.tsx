@@ -135,6 +135,11 @@ export default function SalesPage() {
   const [form] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)
 
+  // 客戶和商品列表
+  const [customers, setCustomers] = useState<any[]>([])
+  const [products, setProducts] = useState<any[]>([])
+  const [loadingData, setLoadingData] = useState(false)
+
   // 載入銷售訂單列表
   const loadSales = async (showLoading = true) => {
     if (showLoading) {
@@ -441,6 +446,35 @@ export default function SalesPage() {
     setModalVisible(true)
   }
 
+  // 載入客戶列表
+  const loadCustomers = async () => {
+    try {
+      setLoadingData(true)
+      const response = await fetch('/api/customers')
+      const data = await response.json()
+      if (response.ok) {
+        setCustomers(data.data?.customers || [])
+      }
+    } catch (error) {
+      console.error('載入客戶列表失敗:', error)
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  // 載入商品列表
+  const loadProducts = async () => {
+    try {
+      const response = await fetch('/api/products')
+      const data = await response.json()
+      if (response.ok) {
+        setProducts(data.data?.products || [])
+      }
+    } catch (error) {
+      console.error('載入商品列表失敗:', error)
+    }
+  }
+
   // 處理表單提交
   const handleSubmit = async (values: any) => {
     try {
@@ -652,6 +686,13 @@ export default function SalesPage() {
           setEditingSale(null)
           form.resetFields()
         }}
+        afterOpenChange={(open) => {
+          if (open) {
+            // Modal 開啟時載入客戶和商品列表
+            loadCustomers()
+            loadProducts()
+          }
+        }}
         footer={null}
         width={800}
       >
@@ -665,9 +706,48 @@ export default function SalesPage() {
             label="客戶"
             rules={[{ required: true, message: '請選擇客戶' }]}
           >
-            <Select placeholder="選擇客戶" showSearch optionFilterProp="children">
-              {/* 這裡需要載入客戶列表 */}
-              <Option value="">客戶列表載入中...</Option>
+            <Select
+              placeholder="選擇客戶"
+              showSearch
+              optionFilterProp="children"
+              loading={loadingData}
+              notFoundContent={loadingData ? '載入中...' : '無客戶資料'}
+            >
+              {customers.map(customer => (
+                <Option key={customer.id} value={customer.id}>
+                  {customer.name} ({customer.customer_code})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="product_id"
+            label="商品選擇"
+            rules={[{ required: true, message: '請選擇商品' }]}
+          >
+            <Select
+              placeholder="選擇商品"
+              showSearch
+              optionFilterProp="children"
+              loading={loadingData}
+              notFoundContent={loadingData ? '載入中...' : '無商品資料'}
+              onChange={(value, option: any) => {
+                // 當選擇商品時，自動填入商品名稱和建議價格
+                const selectedProduct = products.find(p => p.id === value)
+                if (selectedProduct) {
+                  form.setFieldsValue({
+                    product_name: selectedProduct.name,
+                    unit_price: selectedProduct.current_price
+                  })
+                }
+              }}
+            >
+              {products.map(product => (
+                <Option key={product.id} value={product.id}>
+                  {product.name} ({product.product_code}) - NT${product.current_price}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 
@@ -676,7 +756,7 @@ export default function SalesPage() {
             label="商品名稱"
             rules={[{ required: true, message: '請輸入商品名稱' }]}
           >
-            <Input placeholder="請輸入商品名稱" />
+            <Input placeholder="商品名稱會自動填入，或可手動輸入臨時商品" />
           </Form.Item>
 
           <div style={{ display: 'flex', gap: '16px' }}>

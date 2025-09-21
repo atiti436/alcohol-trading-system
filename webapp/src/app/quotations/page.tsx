@@ -109,7 +109,7 @@ export default function QuotationsPage() {
       const response = await fetch('/api/customers')
       const data = await response.json()
       if (response.ok) {
-        setCustomers(data.customers || [])
+        setCustomers(data.data?.customers || [])
       }
     } catch (error) {
       console.error('載入客戶列表失敗:', error)
@@ -122,7 +122,7 @@ export default function QuotationsPage() {
       const response = await fetch('/api/products')
       const data = await response.json()
       if (response.ok) {
-        setProducts(data.products || [])
+        setProducts(data.data?.products || [])
       }
     } catch (error) {
       console.error('載入商品列表失敗:', error)
@@ -518,11 +518,40 @@ export default function QuotationsPage() {
           </Row>
 
           <Form.Item
+            name="product_id"
+            label="商品選擇"
+          >
+            <Select
+              placeholder="選擇現有商品（可選）"
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              onChange={(value) => {
+                if (value) {
+                  const selectedProduct = products.find(p => p.id === value)
+                  if (selectedProduct) {
+                    form.setFieldsValue({
+                      product_name: selectedProduct.name,
+                      unit_price: selectedProduct.current_price
+                    })
+                  }
+                }
+              }}
+            >
+              {products.map(product => (
+                <Option key={product.id} value={product.id}>
+                  {product.name} ({product.product_code}) - NT${product.current_price}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
             name="product_name"
             label="商品名稱"
             rules={[{ required: true, message: '請輸入商品名稱' }]}
           >
-            <Input placeholder="輸入商品名稱（如：山崎18年）" />
+            <Input placeholder="選擇上方商品自動填入，或手動輸入客製化商品名稱" />
           </Form.Item>
 
           <Row gutter={16}>
