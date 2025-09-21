@@ -192,17 +192,28 @@ export default function SalesPage() {
   }, [filters])
 
   // 獲取狀態顏色（基於付款狀態）
-  const getStatusColor = (sale: Sale) => {
-    if (sale.isPaid) return 'green'
-    if (sale.dueDate && dayjs(sale.dueDate).isBefore(dayjs())) return 'red'
-    return 'orange'
+  // 狀態標籤顏色
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DRAFT': return 'default'
+      case 'CONFIRMED': return 'blue'
+      case 'SHIPPED': return 'orange'
+      case 'DELIVERED': return 'green'
+      case 'CANCELLED': return 'red'
+      default: return 'default'
+    }
   }
 
-  // 獲取狀態名稱
-  const getStatusName = (sale: Sale) => {
-    if (sale.isPaid) return '已付款'
-    if (sale.dueDate && dayjs(sale.dueDate).isBefore(dayjs())) return '逾期未付'
-    return '待付款'
+  // 狀態顯示名稱
+  const getStatusName = (status: string) => {
+    const statusNames = {
+      DRAFT: '草稿',
+      CONFIRMED: '已確認',
+      SHIPPED: '已出貨',
+      DELIVERED: '已送達',
+      CANCELLED: '已取消'
+    }
+    return statusNames[status as keyof typeof statusNames] || status
   }
 
   // 資金來源顯示
@@ -513,30 +524,6 @@ export default function SalesPage() {
     } catch (error) {
       console.error('載入商品列表失敗:', error)
     }
-  }
-
-  // 狀態標籤顏色
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'DRAFT': return 'default'
-      case 'CONFIRMED': return 'blue'
-      case 'SHIPPED': return 'orange'
-      case 'DELIVERED': return 'green'
-      case 'CANCELLED': return 'red'
-      default: return 'default'
-    }
-  }
-
-  // 狀態顯示名稱
-  const getStatusName = (status: string) => {
-    const statusNames = {
-      DRAFT: '草稿',
-      CONFIRMED: '已確認',
-      SHIPPED: '已出貨',
-      DELIVERED: '已送達',
-      CANCELLED: '已取消'
-    }
-    return statusNames[status as keyof typeof statusNames] || status
   }
 
   // 處理確認銷售訂單
