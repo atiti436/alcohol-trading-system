@@ -162,18 +162,26 @@ export const POST = withAppAuth(async (
       const saleData = {
         customer_id: body.customer_id,
         total_amount: body.total_amount || 0, // 將在後面重新計算
-        actual_amount: body.actual_amount || 0, // 將在後面重新計算
+        actual_total_amount: body.actual_amount || 0, // 將在後面重新計算
         status: body.status || 'PENDING',
-        notes: body.notes || ''
+        payment_status: body.payment_status || 'PENDING',
+        notes: body.notes || '',
+        payment_terms: body.payment_terms || 'CASH',
+        funding_source: body.funding_source || 'COMPANY',
+        items: body.items || []
       }
+      console.log('準備驗證的銷售資料:', saleData) // 調試輸出
       validatedData = validateSaleData(saleData)
+      console.log('驗證成功的銷售資料:', validatedData) // 調試輸出
     } catch (validationError) {
+      console.error('銷售驗證錯誤:', validationError) // 調試輸出
       return NextResponse.json({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
           message: '輸入資料驗證失敗',
-          details: validationError instanceof Error ? validationError.message : '格式錯誤'
+          details: validationError instanceof Error ? validationError.message : '格式錯誤',
+          originalData: body // 調試時顯示原始數據
         }
       }, { status: 400 })
     }

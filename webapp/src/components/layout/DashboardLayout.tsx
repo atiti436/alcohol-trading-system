@@ -75,6 +75,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         onClick: () => router.push('/quotations')
       },
       {
+        key: '/purchases',
+        icon: <ShoppingOutlined />,
+        label: '採購管理',
+        onClick: () => router.push('/purchases')
+      },
+      {
         key: '/inventory',
         icon: <AppstoreOutlined />,
         label: '庫存管理',
@@ -112,8 +118,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         adminItems[0], // 客戶管理
         adminItems[1], // 商品管理
         adminItems[2], // 報價管理
-        adminItems[4], // 銷售管理（會過濾資料）
-        adminItems[5]  // 報表分析（會過濾資料）
+        adminItems[5], // 銷售管理（會過濾資料）
+        adminItems[6]  // 報表分析（會過濾資料）
       ]
     } else {
       return [
@@ -121,7 +127,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         adminItems[0], // 客戶管理
         adminItems[1], // 商品管理
         adminItems[2], // 報價管理
-        adminItems[3]  // 庫存管理
+        adminItems[3], // 採購管理
+        adminItems[4]  // 庫存管理
       ]
     }
   }

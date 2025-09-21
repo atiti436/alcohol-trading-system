@@ -276,6 +276,10 @@ export function validateSaleData(data: Record<string, unknown>) {
     status: validateEnum(String(data.status || 'PENDING'), ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'], '訂單狀態'),
     payment_status: validateEnum(String(data.payment_status || 'PENDING'), ['PENDING', 'PARTIAL', 'PAID', 'OVERDUE'], '付款狀態'),
 
+    // 💳 付款條件和資金來源
+    payment_terms: validateEnum(String(data.payment_terms || 'CASH'), ['CASH', 'WEEKLY', 'MONTHLY', 'SIXTY_DAYS'], '付款條件'),
+    funding_source: validateEnum(String(data.funding_source || 'COMPANY'), ['COMPANY', 'PERSONAL'], '資金來源'),
+
     // 📄 發票相關
     invoice_number: data.invoice_number ? validateString(data.invoice_number, '發票號碼', 0, 30) : null,
     requires_invoice: Boolean(data.requires_invoice),

@@ -15,6 +15,7 @@ import {
   PieChartOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Role } from '@/types/auth'
 import SimpleLineChart from '@/components/charts/SimpleLineChart'
 import SimplePieChart from '@/components/charts/SimplePieChart'
@@ -54,6 +55,8 @@ export default function Dashboard() {
 
 // 超級管理員Dashboard
 function SuperAdminDashboard() {
+  const router = useRouter()
+
   const mockData = {
     totalRevenue: 2450000,
     personalRevenue: 680000,
@@ -179,16 +182,33 @@ function SuperAdminDashboard() {
         <Col xs={24} lg={8}>
           <Card title="快速操作" extra={<Button type="link">更多</Button>}>
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Button type="primary" icon={<PlusOutlined />} block>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                block
+                onClick={() => router.push('/purchases')}
+              >
                 新增採購單
               </Button>
-              <Button icon={<ShoppingOutlined />} block>
+              <Button
+                icon={<ShoppingOutlined />}
+                block
+                onClick={() => alert('AI 報單辨識功能開發中...')}
+              >
                 AI 報單辨識
               </Button>
-              <Button icon={<UserOutlined />} block>
+              <Button
+                icon={<UserOutlined />}
+                block
+                onClick={() => router.push('/customers')}
+              >
                 新增客戶
               </Button>
-              <Button icon={<AppstoreOutlined />} block>
+              <Button
+                icon={<AppstoreOutlined />}
+                block
+                onClick={() => router.push('/inventory')}
+              >
                 庫存調撥
               </Button>
             </Space>
