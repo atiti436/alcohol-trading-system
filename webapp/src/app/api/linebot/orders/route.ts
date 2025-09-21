@@ -325,7 +325,7 @@ async function createOrderRecord(customerName: string, items: any[], recordDate:
       await prisma.saleItem.create({
         data: {
           sale_id: sale.id,
-          product_id: null, // LINE BOT商品暫時不關聯具體產品
+          product_id: undefined, // LINE BOT商品暫時不關聯具體產品
           quantity: item.quantity,
           unit_price: item.unit_price,
           total_price: item.total_price,

@@ -11,6 +11,7 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined
 } from '@ant-design/icons'
+import { InventoryAdjustmentModal } from '@/components/inventory/InventoryAdjustmentModal'
 
 const { Title, Text } = Typography
 const { Search } = Input
@@ -44,6 +45,9 @@ export default function InventoryPage() {
   const [searchText, setSearchText] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [adjustmentModalVisible, setAdjustmentModalVisible] = useState(false)
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState<InventoryItem | null>(null)
+  const [adjustmentLoading, setAdjustmentLoading] = useState(false)
 
   // 🔗 連接真實API - 移除假資料
   const fetchInventory = async () => {
@@ -146,6 +150,42 @@ export default function InventoryPage() {
     }
   }
 
+  // 處理庫存調整
+  const handleInventoryAdjustment = (record: InventoryItem) => {
+    setSelectedInventoryItem(record)
+    setAdjustmentModalVisible(true)
+  }
+
+  // 提交庫存調整
+  const handleAdjustmentSubmit = async (data: any) => {
+    setAdjustmentLoading(true)
+    try {
+      const response = await fetch('/api/inventory/movements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        message.success('庫存調整成功')
+        setAdjustmentModalVisible(false)
+        setSelectedInventoryItem(null)
+        await fetchInventory() // 重新載入庫存
+      } else {
+        message.error(result.error || '庫存調整失敗')
+      }
+    } catch (error) {
+      console.error('庫存調整失敗:', error)
+      message.error('庫存調整失敗，請檢查網路連線')
+    } finally {
+      setAdjustmentLoading(false)
+    }
+  }
+
   const columns = [
     {
       title: '商品編號',
@@ -236,7 +276,7 @@ export default function InventoryPage() {
             type="link"
             icon={<EditOutlined />}
             size="small"
-            onClick={() => message.info(`編輯 ${record.name}`)}
+            onClick={() => handleInventoryAdjustment(record)}
           >
             調整
           </Button>
@@ -374,6 +414,18 @@ export default function InventoryPage() {
           }}
         />
       </Card>
+
+      {/* 庫存調整Modal */}
+      <InventoryAdjustmentModal
+        visible={adjustmentModalVisible}
+        onCancel={() => {
+          setAdjustmentModalVisible(false)
+          setSelectedInventoryItem(null)
+        }}
+        onSubmit={handleAdjustmentSubmit}
+        inventoryItem={selectedInventoryItem}
+        loading={adjustmentLoading}
+      />
     </div>
   )
 }
