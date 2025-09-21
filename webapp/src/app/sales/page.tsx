@@ -404,6 +404,58 @@ export default function SalesPage() {
               </Popconfirm>
             </SuperAdminOnly>
           )}
+
+          {/* 管理員取消/刪除 - Demo 快速處理誤觸 */}
+          <SuperAdminOnly>
+            <Tooltip title="管理員取消 (還原預留庫存)">
+              <Button
+                size="small"
+                onClick={async () => {
+                  const actionKey = `admin-cancel-${record.id}`
+                  setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+                  try {
+                    const res = await fetch(`/api/sales/${record.id}/admin-cancel`, { method: 'POST' })
+                    const result = await res.json()
+                    if (res.ok && result.success) {
+                      message.success('已取消訂單並還原預留庫存')
+                      await loadSales(false)
+                    } else {
+                      message.error(result.error || '取消失敗')
+                    }
+                  } catch (e) {
+                    message.error('取消失敗，請稍後再試')
+                  } finally {
+                    setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+                  }
+                }}
+              >取消</Button>
+            </Tooltip>
+            <Tooltip title="管理員取消並刪除">
+              <Button
+                size="small"
+                danger
+                onClick={async () => {
+                  const actionKey = `admin-delete-${record.id}`
+                  setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+                  try {
+                    const res = await fetch(`/api/sales/${record.id}/admin-cancel?delete=true`, { method: 'POST' })
+                    const result = await res.json()
+                    if (res.ok && result.success) {
+                      message.success('已取消並刪除訂單')
+                      await loadSales(false)
+                    } else {
+                      message.error(result.error || '刪除失敗')
+                    }
+                  } catch (e) {
+                    message.error('刪除失敗，請稍後再試')
+                  } finally {
+                    setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+                  }
+                }}
+                style={{ marginLeft: 4 }}
+              >刪</Button>
+            </Tooltip>
+          </SuperAdminOnly>
         </Space>
       )
     }
