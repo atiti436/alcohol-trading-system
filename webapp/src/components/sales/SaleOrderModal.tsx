@@ -393,13 +393,15 @@ export function SaleOrderModal({
                 min={0}
                 precision={0}
                 value={record.displayPrice}
-                onChange={(v) => handlePriceChange(record.key, {
-                  displayPrice: v || 0,
-                  actualPrice: record.actualPrice,
-                  commission: (record.actualPrice - (v || 0))
-                })}
+                onChange={(v) => {
+                  if (typeof v !== 'number') return
+                  handlePriceChange(record.key, {
+                    displayPrice: v,
+                    actualPrice: record.actualPrice,
+                    commission: (record.actualPrice - v)
+                  })
+                }}
                 style={{ width: '100%' }}
-                formatter={(value) => `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               />
             </div>
             <SuperAdminOnly>
@@ -409,13 +411,15 @@ export function SaleOrderModal({
                   min={0}
                   precision={0}
                   value={record.actualPrice}
-                  onChange={(v) => handlePriceChange(record.key, {
-                    displayPrice: record.displayPrice,
-                    actualPrice: v || 0,
-                    commission: ((v || 0) - record.displayPrice)
-                  })}
+                  onChange={(v) => {
+                    if (typeof v !== 'number') return
+                    handlePriceChange(record.key, {
+                      displayPrice: record.displayPrice,
+                      actualPrice: v,
+                      commission: (v - record.displayPrice)
+                    })
+                  }}
                   style={{ width: '100%' }}
-                  formatter={(value) => `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 />
               </div>
             </SuperAdminOnly>
