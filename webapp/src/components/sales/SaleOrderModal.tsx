@@ -359,7 +359,7 @@ export function SaleOrderModal({
       width: 300,
       render: (_: any, record: SaleOrderItem) => (
         record.product_id && record.product?.id &&
-        (record.variant?.current_price > 0 || record.product?.current_price > 0) ? (
+        ((record.variant?.current_price ?? 0) > 0 || (record.product?.current_price ?? 0) > 0) ? (
           <DualPriceManager
             product_id={record.product_id}
             variantId={record.variantId}
