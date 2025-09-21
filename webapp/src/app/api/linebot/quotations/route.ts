@@ -79,7 +79,7 @@ async function processQuotationCommand(text: string, lineUserId: string) {
           const quoteInfo = parseQuotationLine(parts.slice(1), i+1)
           if (quoteInfo.success) {
             const quotation = await createQuotationRecord(currentCustomer, quoteInfo.product || '', quoteInfo.price || 0, quoteInfo.note || '', recordDate, lineUserId)
-            results.push(`• ${currentCustomer}: ${quoteInfo.product} ${quoteInfo.price.toLocaleString()}元`)
+            results.push(`• ${currentCustomer}: ${quoteInfo.product} ${(quoteInfo.price || 0).toLocaleString()}元`)
           } else {
             errors.push(quoteInfo.error || '報價資訊處理失敗')
           }
@@ -102,7 +102,7 @@ async function processQuotationCommand(text: string, lineUserId: string) {
           const quoteInfo = parseQuotationLine(parts, i+1)
           if (quoteInfo.success) {
             const quotation = await createQuotationRecord(currentCustomer, quoteInfo.product || '', quoteInfo.price || 0, quoteInfo.note || '', recordDate, lineUserId)
-            results.push(`• ${currentCustomer}: ${quoteInfo.product} ${quoteInfo.price.toLocaleString()}元`)
+            results.push(`• ${currentCustomer}: ${quoteInfo.product} ${(quoteInfo.price || 0).toLocaleString()}元`)
           } else {
             errors.push(quoteInfo.error || '報價資訊處理失敗')
           }
