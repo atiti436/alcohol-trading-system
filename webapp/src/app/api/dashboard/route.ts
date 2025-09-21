@@ -141,6 +141,12 @@ async function getSuperAdminDashboard(context: PermissionContext): Promise<Parti
     minStock: 10
   }))
 
+  // 商品類別銷售分布
+  const categoryDistribution = await calculateCategoryDistribution(sales)
+
+  // 客戶分布統計
+  const customerDistribution = await calculateCustomerDistribution()
+
   return {
     // 🔑 關鍵KPI (包含真實數據)
     totalRevenue,
@@ -154,6 +160,8 @@ async function getSuperAdminDashboard(context: PermissionContext): Promise<Parti
     // 詳細資料
     lowStockItems,
     salesTrend: calculateMonthlySalesTrend(sales, true), // true = 包含真實數據
+    categoryDistribution,
+    customerDistribution,
 
     // 快速操作 (超級管理員功能)
     quickActions: getSuperAdminQuickActions()
@@ -349,4 +357,67 @@ function getEmployeeQuickActions() {
     { id: 'update-inventory', title: '更新庫存', icon: 'EditOutlined', url: '/inventory/update' },
     { id: 'process-order', title: '處理訂單', icon: 'ShoppingOutlined', url: '/orders/process' }
   ]
+}
+
+/**
+ * 計算商品類別銷售分布
+ */
+async function calculateCategoryDistribution(sales: any[]) {
+  const categoryData: { [key: string]: number } = {}
+
+  sales.forEach(sale => {
+    sale.items.forEach((item: any) => {
+      const category = item.product?.category || '其他'
+      const amount = item.actual_total_price || item.total_price || 0
+      categoryData[category] = (categoryData[category] || 0) + amount
+    })
+  })
+
+  const colors = ['#1890ff', '#52c41a', '#faad14', '#722ed1', '#eb2f96', '#f5222d']
+
+  return Object.entries(categoryData)
+    .map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length]
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6) // 只顯示前6個類別
+}
+
+/**
+ * 計算客戶分布統計
+ */
+async function calculateCustomerDistribution() {
+  try {
+    const customers = await prisma.customer.findMany({
+      select: {
+        tier: true
+      }
+    })
+
+    const tierData: { [key: string]: number } = {}
+    customers.forEach(customer => {
+      const tier = customer.tier || '一般客戶'
+      tierData[tier] = (tierData[tier] || 0) + 1
+    })
+
+    const tierColors: { [key: string]: string } = {
+      'VIP': '#f5222d',
+      '優質': '#fa541c',
+      '一般': '#1890ff',
+      '新客戶': '#52c41a'
+    }
+
+    return Object.entries(tierData)
+      .map(([name, value]) => ({
+        name: name + '客戶',
+        value,
+        color: tierColors[name] || '#722ed1'
+      }))
+      .sort((a, b) => b.value - a.value)
+  } catch (error) {
+    console.error('計算客戶分布失敗:', error)
+    return [{ name: '暫無數據', value: 1, color: '#d9d9d9' }]
+  }
 }

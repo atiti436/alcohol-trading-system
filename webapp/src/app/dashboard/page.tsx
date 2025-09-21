@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation'
 import { Role } from '@/types/auth'
 import SimpleLineChart from '@/components/charts/SimpleLineChart'
 import SimplePieChart from '@/components/charts/SimplePieChart'
+import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
 
@@ -106,22 +107,25 @@ function SuperAdminDashboard({ data }: { data: any }) {
   // 處理圖表數據格式
   const revenueChart = data.salesTrend?.map((trend: any) => ({
     month: trend.month,
-    value: trend.revenue
-  })) || []
-
-  // 預設圖表數據（如果API沒有返回）
-  const categoryChart = [
-    { name: '威士忌', value: 1200000, color: '#1890ff' },
-    { name: '清酒', value: 680000, color: '#52c41a' },
-    { name: '葡萄酒', value: 420000, color: '#faad14' },
-    { name: '香檳', value: 150000, color: '#722ed1' }
+    value: trend.revenue || 0
+  })) || [
+    // 如果沒有數據，顯示最近6個月的0值數據
+    { month: dayjs().subtract(5, 'month').format('YYYY-MM'), value: 0 },
+    { month: dayjs().subtract(4, 'month').format('YYYY-MM'), value: 0 },
+    { month: dayjs().subtract(3, 'month').format('YYYY-MM'), value: 0 },
+    { month: dayjs().subtract(2, 'month').format('YYYY-MM'), value: 0 },
+    { month: dayjs().subtract(1, 'month').format('YYYY-MM'), value: 0 },
+    { month: dayjs().format('YYYY-MM'), value: 0 }
   ]
 
-  const customerChart = [
-    { name: 'VIP客戶', value: 45, color: '#f5222d' },
-    { name: '優質客戶', value: 128, color: '#fa541c' },
-    { name: '一般客戶', value: 256, color: '#1890ff' },
-    { name: '新客戶', value: 89, color: '#52c41a' }
+  // 商品類別分布 - 使用真實數據或顯示空狀態
+  const categoryChart = data.categoryDistribution?.length > 0 ? data.categoryDistribution : [
+    { name: '暫無數據', value: 1, color: '#d9d9d9' }
+  ]
+
+  // 客戶分布 - 使用真實數據或顯示空狀態
+  const customerChart = data.customerDistribution?.length > 0 ? data.customerDistribution : [
+    { name: '暫無數據', value: 1, color: '#d9d9d9' }
   ]
 
   return (
@@ -291,11 +295,9 @@ function InvestorDashboard({ data }: { data: any }) {
     value: trend.profit
   })) || []
 
-  // 預設商品分布數據
-  const productChart = [
-    { name: '威士忌', value: 180000, color: '#1890ff' },
-    { name: '清酒', value: 120000, color: '#52c41a' },
-    { name: '葡萄酒', value: 54000, color: '#faad14' }
+  // 商品分布數據 - 使用真實數據或顯示空狀態
+  const productChart = data.categoryDistribution?.length > 0 ? data.categoryDistribution : [
+    { name: '暫無數據', value: 1, color: '#d9d9d9' }
   ]
 
   return (

@@ -322,7 +322,7 @@ export function SaleOrderModal({
             ))}
           </Select>
 
-          {record.product.variants && record.product.variants.length > 0 && (
+          {record.product?.variants && record.product.variants.length > 0 && (
             <Select
               style={{ width: '100%' }}
               placeholder="選擇變體"

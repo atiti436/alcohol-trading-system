@@ -160,7 +160,7 @@ export default function InventoryPage() {
   const handleAdjustmentSubmit = async (data: any) => {
     setAdjustmentLoading(true)
     try {
-      const response = await fetch('/api/inventory/movements', {
+      const response = await fetch('/api/inventory/adjustments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

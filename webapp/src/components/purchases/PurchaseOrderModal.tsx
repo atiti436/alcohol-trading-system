@@ -374,8 +374,13 @@ export function PurchaseOrderModal({
     ],
     exchangeRate: [
       { required: true, message: '請輸入匯率' },
-      { type: 'number' as const, min: 0.001, message: '匯率必須大於0' },
-      { type: 'number' as const, max: 1000, message: '匯率不能超過1000' }
+      {
+        type: 'number' as const,
+        min: 0.001,
+        max: 1000,
+        message: '匯率必須在0.001到1000之間',
+        transform: (value: any) => Number(value)
+      }
     ],
     fundingSource: [
       { required: true, message: '請選擇資金來源' }
