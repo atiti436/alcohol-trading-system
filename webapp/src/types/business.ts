@@ -336,6 +336,18 @@ export interface DashboardData {
     icon: string
     url: string
   }>
+
+  // 圖表資料
+  categoryDistribution?: Array<{
+    name: string
+    value: number
+    color: string
+  }>
+  customerDistribution?: Array<{
+    name: string
+    value: number
+    color: string
+  }>
 }
 
 // ========== 投資方數據隔離型別 ==========
