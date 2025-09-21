@@ -215,10 +215,9 @@ export function SaleOrderModal({
     const variant = variantId ? product.variants?.find(v => v.id === variantId) : undefined
     const basePrice = variant?.current_price ?? product.current_price ?? 0
 
-    // 確保價格有效
+    // 價格可能尚未設定，提醒但仍允許選擇（讓使用者可手動輸入價格）
     if (basePrice <= 0) {
-      message.warning(`商品 ${product.name} 的價格未設定，請聯繫管理員`)
-      return
+      message.warning(`商品「${product.name}」目前未設定價格，請於價格區塊手動輸入`)
     }
 
     setOrderItems(prev => prev.map(item =>
@@ -380,8 +379,7 @@ export function SaleOrderModal({
       key: 'price',
       width: 300,
       render: (_: any, record: SaleOrderItem) => (
-        record.product_id && record.product?.id &&
-        ((record.variant?.current_price ?? 0) > 0 || (record.product?.current_price ?? 0) > 0) ? (
+        record.product_id ? (
           <DualPriceManager
             product_id={record.product_id}
             variantId={record.variantId}
