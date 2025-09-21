@@ -53,6 +53,29 @@ async function sendLineMessage(replyToken: string, messages: LineMessage[]) {
 async function handleTextMessage(text: string, userId: string): Promise<LineMessage> {
   console.log(`收到訊息 from ${userId}: ${text}`)
 
+  // 🎯 GAS風格指令處理 - 完全按照GAS邏輯
+  // #報價 格式處理
+  if (text.startsWith('#報價')) {
+    return await handleQuotationCommand(text, userId)
+  }
+
+  // #訂單 格式處理
+  if (text.startsWith('#訂單')) {
+    return await handleOrderCommand(text, userId)
+  }
+
+  // 測試功能
+  if (text.includes('test') || text.includes('測試')) {
+    return {
+      type: 'text' as const,
+      text: '✅ LINE BOT測試成功！\n\n📋 支援格式：\n' +
+            '📦 #訂單 客戶\n商品 價格*數量\n' +
+            '💰 #報價 客戶\n商品 價格\n' +
+            '🔍 成本計算、庫存查詢等\n\n' +
+            '範例：\n#訂單 花花\n大七梅酒 1800*8\n響2025 6000*3'
+    }
+  }
+
   // 成本計算功能
   if (text.includes('成本') || text.includes('計算')) {
     return await handleCostCalculation(text)
@@ -258,6 +281,78 @@ async function callGeminiAPI(text: string, userId: string): Promise<string> {
 • 📊 銷售報表：「今日銷售報表」
 
 請問需要什麼協助嗎？`
+  }
+}
+
+// 🎯 處理報價指令 - 調用我們的報價API
+async function handleQuotationCommand(text: string, userId: string): Promise<LineMessage> {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/linebot/quotations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text,
+        line_user_id: userId
+      })
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      return {
+        type: 'text' as const,
+        text: result.message
+      }
+    } else {
+      return {
+        type: 'text' as const,
+        text: result.error || '報價記錄失敗，請重新嘗試'
+      }
+    }
+  } catch (error) {
+    console.error('報價指令處理失敗:', error)
+    return {
+      type: 'text' as const,
+      text: '❌ 系統錯誤，請稍後再試'
+    }
+  }
+}
+
+// 🎯 處理訂單指令 - 調用我們的訂單API
+async function handleOrderCommand(text: string, userId: string): Promise<LineMessage> {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/linebot/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text,
+        line_user_id: userId
+      })
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      return {
+        type: 'text' as const,
+        text: result.message
+      }
+    } else {
+      return {
+        type: 'text' as const,
+        text: result.error || '訂單記錄失敗，請重新嘗試'
+      }
+    }
+  } catch (error) {
+    console.error('訂單指令處理失敗:', error)
+    return {
+      type: 'text' as const,
+      text: '❌ 系統錯誤，請稍後再試'
+    }
   }
 }
 
