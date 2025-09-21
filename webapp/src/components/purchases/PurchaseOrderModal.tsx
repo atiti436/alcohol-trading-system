@@ -462,6 +462,8 @@ export function PurchaseOrderModal({
                 min={0.001}
                 max={1000}
                 precision={3}
+                parser={(value) => value ? parseFloat(value.replace(/[^\d.]/g, '')) : 0}
+                formatter={(value) => value ? `${value}` : ''}
               />
             </Form.Item>
           </Col>

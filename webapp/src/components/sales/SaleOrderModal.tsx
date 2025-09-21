@@ -213,15 +213,28 @@ export function SaleOrderModal({
     if (!product) return
 
     const variant = variantId ? product.variants?.find(v => v.id === variantId) : undefined
-    const basePrice = variant ? variant.current_price : product.current_price
+    const basePrice = variant?.current_price ?? product.current_price ?? 0
+
+    // 確保價格有效
+    if (basePrice <= 0) {
+      message.warning(`商品 ${product.name} 的價格未設定，請聯繫管理員`)
+      return
+    }
 
     setOrderItems(orderItems.map(item =>
       item.key === key ? {
         ...item,
         product_id,
-        variantId,
-        product,
-        variant,
+        variantId: variantId || undefined,
+        product: {
+          ...product,
+          current_price: product.current_price ?? 0,
+          variants: product.variants || []
+        },
+        variant: variant ? {
+          ...variant,
+          current_price: variant.current_price ?? 0
+        } : undefined,
         displayPrice: basePrice,
         actualPrice: basePrice,
         commission: 0
