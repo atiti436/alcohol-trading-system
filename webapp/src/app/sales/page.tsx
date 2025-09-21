@@ -602,6 +602,17 @@ export default function SalesPage() {
                 onSearch={(value) => setFilters(prev => ({ ...prev, search: value, page: 1 }))}
                 enterButton
               />
+              <Button
+                icon={<SearchOutlined />}
+                onClick={() => {
+                  loadSales()
+                  message.success('已刷新銷售列表')
+                }}
+                style={{ flexShrink: 0 }}
+                title="重新載入銷售列表"
+              >
+                刷新
+              </Button>
               <HideFromInvestor>
                 <Button
                   type="primary"

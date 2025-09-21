@@ -365,7 +365,7 @@ export default function QuotationsPage() {
       {/* 搜尋和篩選 */}
       <Card style={{ marginBottom: 24 }}>
         <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={6}>
             <Input.Search
               placeholder="搜尋客戶、商品或備註"
               allowClear
@@ -413,7 +413,7 @@ export default function QuotationsPage() {
               ))}
             </Select>
           </Col>
-          <Col xs={24} sm={4}>
+          <Col xs={24} sm={3}>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -421,6 +421,20 @@ export default function QuotationsPage() {
               style={{ width: '100%' }}
             >
               新增報價
+            </Button>
+          </Col>
+          <Col xs={24} sm={3}>
+            <Button
+              icon={<SearchOutlined />}
+              onClick={() => {
+                loadCustomers()
+                loadProducts()
+                message.success('已刷新客戶和商品列表')
+              }}
+              style={{ width: '100%' }}
+              title="重新載入客戶和商品列表"
+            >
+              刷新資料
             </Button>
           </Col>
         </Row>
