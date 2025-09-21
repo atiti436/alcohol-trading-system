@@ -386,13 +386,40 @@ export function SaleOrderModal({
       width: 300,
       render: (_: any, record: SaleOrderItem) => (
         record.product_id ? (
-          <DualPriceManager
-            product_id={record.product_id}
-            variantId={record.variantId}
-            quantity={record.quantity}
-            basePrice={record.variant?.current_price || record.product?.current_price || 0}
-            onPriceChange={(prices) => handlePriceChange(record.key, prices)}
-          />
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div>
+              <Text type="secondary" style={{ marginRight: 8 }}>顯示單價</Text>
+              <InputNumber
+                min={0}
+                precision={0}
+                value={record.displayPrice}
+                onChange={(v) => handlePriceChange(record.key, {
+                  displayPrice: v || 0,
+                  actualPrice: record.actualPrice,
+                  commission: (record.actualPrice - (v || 0))
+                })}
+                style={{ width: '100%' }}
+                formatter={(value) => `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              />
+            </div>
+            <SuperAdminOnly>
+              <div>
+                <Text type="secondary" style={{ marginRight: 8 }}>實收單價</Text>
+                <InputNumber
+                  min={0}
+                  precision={0}
+                  value={record.actualPrice}
+                  onChange={(v) => handlePriceChange(record.key, {
+                    displayPrice: record.displayPrice,
+                    actualPrice: v || 0,
+                    commission: ((v || 0) - record.displayPrice)
+                  })}
+                  style={{ width: '100%' }}
+                  formatter={(value) => `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                />
+              </div>
+            </SuperAdminOnly>
+          </Space>
         ) : (
           <Text type="secondary">請先選擇商品</Text>
         )
