@@ -289,9 +289,16 @@ export function SaleOrderModal({
 
       const { totalDisplayAmount, totalActualAmount } = calculateTotals()
 
+      // 後端 API 期望 snake_case 欄位，且需要 prices 陣列
+      const displayPrices = orderItems.map(item => item.displayPrice)
+      const actualPrices = orderItems.map(item => item.actualPrice)
+
       const submitData = {
-        ...values,
-        dueDate: values.dueDate?.toISOString(),
+        customer_id: values.customer_id,
+        funding_source: values.fundingSource,
+        payment_terms: values.paymentTerms,
+        due_date: values.dueDate?.toISOString(),
+        notes: values.notes,
         items: orderItems.map(item => ({
           product_id: item.product_id,
           variant_id: item.variantId,
@@ -302,7 +309,9 @@ export function SaleOrderModal({
           actual_total_price: item.actualPrice * item.quantity
         })),
         total_amount: totalDisplayAmount,
-        actual_amount: totalActualAmount
+        actual_amount: totalActualAmount,
+        displayPrices,
+        actualPrices
       }
 
       onSubmit(submitData)

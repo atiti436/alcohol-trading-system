@@ -363,12 +363,17 @@ export function PurchaseOrderModal({
 
       // 組織提交資料
       const submitData: CreatePurchaseRequest = {
-        ...values,
+        // 後端採用 snake_case 欄位命名
+        supplier: values.supplier,
+        currency: values.currency,
+        exchange_rate: Number(values.exchangeRate),
+        funding_source: values.fundingSource,
+        declaration_number: values.declarationNumber,
         declaration_date: values.declarationDate?.format('YYYY-MM-DD'),
-        total_amount: total_amount,
+        notes: values.notes,
         items: orderItems.map(item => ({
           product_id: item.product_id,
-          product_name: item.product.name,
+          product_name: item.product?.name || '',
           variant_id: item.variant_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
