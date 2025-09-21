@@ -73,12 +73,12 @@ export async function POST(
         })
         availableStock = variant?.available_stock || 0
       } else {
-        // 檢查商品總庫存
-        const product = await prisma.product.findUnique({
-          where: { id: item.product_id },
-          select: { total_available_stock: true }
+        // 檢查商品所有變體的總庫存
+        const variants = await prisma.productVariant.findMany({
+          where: { product_id: item.product_id },
+          select: { available_stock: true }
         })
-        availableStock = product?.total_available_stock || 0
+        availableStock = variants.reduce((sum, variant) => sum + variant.available_stock, 0)
       }
 
       if (availableStock < item.quantity) {
@@ -122,18 +122,9 @@ export async function POST(
             }
           })
         } else {
-          // 預留商品總庫存
-          await tx.product.update({
-            where: { id: item.product_id },
-            data: {
-              total_available_stock: {
-                decrement: item.quantity
-              },
-              total_reserved_stock: {
-                increment: item.quantity
-              }
-            }
-          })
+          // 如果沒有指定變體，需要從該產品的變體中扣除庫存
+          // 這裡簡化處理：要求銷售項目必須指定變體
+          throw new Error(`銷售項目 ${item.product?.name || item.product_id} 必須指定變體`)
         }
       }
 
