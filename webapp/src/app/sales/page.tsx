@@ -478,6 +478,29 @@ export default function SalesPage() {
   // 處理表單提交
   const handleSubmit = async (values: any) => {
     try {
+      console.log('原始表單數據:', values) // 調試輸出
+
+      // 轉換表單數據為API期望的格式
+      const totalAmount = (values.quantity || 1) * (values.unit_price || 0)
+      const apiData = {
+        customer_id: values.customer_id,
+        items: [{
+          product_id: values.product_id,
+          product_name: values.product_name,
+          quantity: values.quantity || 1,
+          unit_price: values.unit_price || 0
+        }],
+        displayPrices: [values.unit_price || 0],
+        actualPrices: [values.unit_price || 0], // 暫時使用相同價格，後續可加入實際價格邏輯
+        total_amount: totalAmount,
+        actual_amount: totalAmount,
+        payment_terms: values.payment_terms || 'CASH',
+        funding_source: values.funding_source || 'COMPANY',
+        notes: values.notes || ''
+      }
+
+      console.log('轉換後的API數據:', apiData) // 調試輸出
+
       const url = editingSale ? `/api/sales/${editingSale.id}` : '/api/sales'
       const method = editingSale ? 'PUT' : 'POST'
 
@@ -486,10 +509,12 @@ export default function SalesPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(values)
+        body: JSON.stringify(apiData)
       })
 
       const result = await response.json()
+
+      console.log('API 回應:', result) // 調試輸出
 
       if (result.success) {
         message.success(editingSale ? '銷售訂單更新成功' : '銷售訂單創建成功')
@@ -498,11 +523,12 @@ export default function SalesPage() {
         form.resetFields()
         loadSales()
       } else {
-        message.error(result.error || '操作失敗')
+        console.error('API 錯誤詳情:', result.error) // 調試輸出
+        message.error(result.error?.message || result.error || '操作失敗')
       }
     } catch (error) {
       message.error('操作失敗')
-      console.error(error)
+      console.error('提交錯誤:', error)
     }
   }
 
@@ -786,6 +812,33 @@ export default function SalesPage() {
               style={{ flex: 1 }}
             >
               <InputNumber placeholder="21000" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="payment_terms"
+              label="付款條件"
+              style={{ flex: 1 }}
+              initialValue="CASH"
+            >
+              <Select placeholder="選擇付款條件">
+                <Option value="CASH">現金</Option>
+                <Option value="WEEKLY">週結</Option>
+                <Option value="MONTHLY">月結</Option>
+                <Option value="SIXTY_DAYS">60天</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              name="funding_source"
+              label="資金來源"
+              style={{ flex: 1 }}
+              initialValue="COMPANY"
+            >
+              <Select placeholder="選擇資金來源">
+                <Option value="COMPANY">公司資金</Option>
+                <Option value="PERSONAL">個人調貨</Option>
+              </Select>
             </Form.Item>
           </div>
 
