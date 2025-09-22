@@ -63,7 +63,7 @@ interface Purchase {
 
 interface PurchaseItem {
   id: string
-  productName: string
+  product_name: string
   quantity: number
   unit_price: number
   total_price: number
@@ -358,8 +358,31 @@ export default function PurchasesPage() {
             </HideFromInvestor>
           )}
 
-          {/* 刪除按鈕 - 只有超級管理員可刪除草稿 */}
-          {record.status === 'DRAFT' && (
+          {/* 撤銷收貨按鈕 - 已收貨狀態可撤銷收貨 */}
+          {record.status === 'RECEIVED' && (
+            <SuperAdminOnly>
+              <Popconfirm
+                title="確定要撤銷此採購單的收貨嗎？"
+                description="將還原庫存並將狀態改回已確認"
+                onConfirm={() => handleUndoReceive(record)}
+                okText="確定"
+                cancelText="取消"
+                okButtonProps={{ loading: actionLoading[`undo-receive-${record.id}`] }}
+              >
+                <Tooltip title="撤銷收貨">
+                  <Button
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16', color: 'white' }}
+                    loading={actionLoading[`undo-receive-${record.id}`]}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </SuperAdminOnly>
+          )}
+
+          {/* 刪除按鈕 - 只有超級管理員可刪除草稿或已確認 */}
+          {['DRAFT', 'CONFIRMED'].includes(record.status) && (
             <SuperAdminOnly>
               <Popconfirm
                 title="確定要刪除此採購單嗎？"
@@ -467,6 +490,35 @@ export default function PurchasesPage() {
     } catch (error) {
       console.error('收貨操作失敗:', error)
       message.error('收貨失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+    }
+  }
+
+  // 處理撤銷收貨
+  const handleUndoReceive = async (purchase: Purchase) => {
+    const actionKey = `undo-receive-${purchase.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
+    try {
+      const response = await fetch(`/api/purchases/${purchase.id}/undo-receive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        message.success('已撤銷收貨，庫存已還原')
+        await loadPurchases(false) // 重新載入列表
+      } else {
+        message.error(result.error || '撤銷收貨失敗')
+      }
+    } catch (error) {
+      console.error('撤銷收貨失敗:', error)
+      message.error('撤銷收貨失敗，請檢查網路連線')
     } finally {
       setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }
@@ -716,8 +768,8 @@ export default function PurchasesPage() {
                   columns={[
                     {
                       title: '商品名稱',
-                      dataIndex: 'productName',
-                      key: 'productName',
+                      dataIndex: 'product_name',
+                      key: 'product_name',
                       width: 200,
                       render: (text: string, record: PurchaseItem) => (
                         <div>
