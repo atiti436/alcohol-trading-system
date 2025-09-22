@@ -167,8 +167,8 @@ export function calculateCompleteCost(input: CostCalculationInput): CompleteCost
     },
     breakdown: {
       baseAmountTWD: twdAmount,
-      importTax: taxResult.costs.importTax,
-      customsDuty: taxResult.costs.customsDuty,
+      importTax: taxResult.costs.importDuty,
+      customsDuty: taxResult.costs.alcoholTax,
       businessTax: taxResult.costs.businessTax,
       shippingFee: taxResult.costs.shippingFee,
       insuranceFee: taxResult.costs.insuranceFee,
