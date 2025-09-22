@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (purchase.status !== 'CONFIRMED') {
+    if (purchase.status !== 'CONFIRMED' && purchase.status !== 'RECEIVED') {
       return NextResponse.json(
         { success: false, error: '只能從已確認的採購單創建進貨記錄' },
         { status: 400 }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         total_value: purchase.total_amount,
         currency: purchase.currency,
         exchange_rate: purchase.exchange_rate,
-        status: 'PENDING',
+        status: purchase.status === 'RECEIVED' ? 'RECEIVED' : 'PENDING',
         alcohol_tax: 0,
         business_tax: 0,
         trade_promotion_fee: 0,

@@ -249,7 +249,10 @@ export default function ImportsPage() {
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            來源：{record.purchaseNumber}
+            來源：
+            <a href={`/purchases?search=${encodeURIComponent(record.purchaseNumber)}`} style={{ textDecoration: 'underline' }}>
+              {record.purchaseNumber}
+            </a>
           </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
             {dayjs(record.created_at).format('YYYY/MM/DD')}

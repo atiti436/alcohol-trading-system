@@ -491,6 +491,14 @@ export default function PurchasesPage() {
 
       if (response.ok && result.success) {
         message.success('收貨成功，庫存已更新')
+        // 確保同步建立/更新進貨記錄（若尚未建立，允許在 RECEIVED 狀態建立）
+        try {
+          await fetch('/api/imports/from-purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ purchaseId: purchase.id })
+          })
+        } catch {}
         await loadPurchases(false) // 重新載入列表
       } else {
         console.error('收貨失敗:', result.error)
