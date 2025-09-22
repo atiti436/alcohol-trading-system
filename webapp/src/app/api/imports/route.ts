@@ -124,20 +124,20 @@ export async function POST(request: NextRequest) {
     // 創建進貨記錄
     const importRecord = await prisma.importRecord.create({
       data: {
-        importNumber,
-        purchaseId: purchase.id,
-        purchaseNumber: purchase.purchaseNumber,
+        import_number: importNumber,
+        purchase_id: purchase.id,
+        purchase_number: purchase.purchaseNumber,
         supplier: purchase.supplier,
-        totalValue: purchase.total_amount,
+        total_value: purchase.total_amount,
         currency: purchase.currency,
-        exchangeRate: purchase.exchangeRate,
-        declarationNumber,
-        declarationDate: declarationDate ? new Date(declarationDate) : undefined,
+        exchange_rate: purchase.exchangeRate,
+        declaration_number: declarationNumber,
+        declaration_date: declarationDate ? new Date(declarationDate) : undefined,
         status: 'PENDING',
         alcohol_tax: 0,
         business_tax: 0,
-        tradePromotionFee: 0,
-        totalTaxes: 0,
+        trade_promotion_fee: 0,
+        total_taxes: 0,
         notes,
         items: {
           create: purchase.items.map(item => ({
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
             dutiable_value: item.total_price * purchase.exchangeRate,
             alcohol_tax: 0,
             business_tax: 0,
-            tariffCode: item.tariffCode
+            tariff_code: item.tariffCode
           }))
         }
       },

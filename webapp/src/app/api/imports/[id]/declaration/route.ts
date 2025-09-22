@@ -86,16 +86,16 @@ export async function POST(
     const updatedImportRecord = await prisma.importRecord.update({
       where: { id: importId },
       data: {
-        declarationNumber,
-        declarationDate: declarationDate ? new Date(declarationDate) : undefined,
-        totalValue: totalValue || importRecord.totalValue,
-        exchangeRate: exchangeRate || importRecord.exchangeRate,
+        declaration_number: declarationNumber,
+        declaration_date: declarationDate ? new Date(declarationDate) : undefined,
+        total_value: totalValue || importRecord.totalValue,
+        exchange_rate: exchangeRate || importRecord.exchangeRate,
         alcohol_tax: totalAlcoholTax,
         business_tax: totalBusinessTax,
-        tradePromotionFee: totalTradePromotionFee,
-        totalTaxes,
+        trade_promotion_fee: totalTradePromotionFee,
+        total_taxes: totalTaxes,
         status: 'PROCESSING',
-        extractedData: extractedData ? JSON.stringify(extractedData) : undefined
+        extracted_data: extractedData ? JSON.stringify(extractedData) : undefined
       },
       include: {
         items: true,
