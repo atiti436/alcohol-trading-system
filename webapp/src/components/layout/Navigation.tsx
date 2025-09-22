@@ -63,6 +63,11 @@ export default function Navigation({ collapsed = false, onCollapse }: Navigation
         label: <Link href="/customers">客戶管理</Link>,
       },
       {
+        key: '/imports',
+        icon: <FileTextOutlined />,
+        label: <Link href="/imports">進貨管理</Link>,
+      },
+      {
         key: '/sales',
         icon: <ShoppingCartOutlined />,
         label: <Link href="/sales">銷售管理</Link>,

@@ -1,0 +1,122 @@
+🚨 給新 AI 同事的緊急備忘錄
+專案背景
+
+專案名稱：alcohol-trading-system (酒類進口貿易管理系統)
+
+技術棧：Next.js + TypeScript + Prisma + PostgreSQL
+
+已部署 120+ 次，正在逐步解決錯誤
+
+✅ 已解決的問題類型 (不要重複犯)
+
+JSX 語法錯誤 - 已修復
+
+UI 組件缺失 (@componentsui) - 已安裝
+
+認證模組問題 (@libauth) - 已修復
+
+camelCase vs snake_case 命名 - 已統一為 snake_case
+
+react-dropzone 套件 - 已安裝
+
+模組匯入錯誤 - 已修復
+
+🎯 當前重點問題
+1. importTax vs importDuty 問題
+typescript
+
+
+ ❌ 錯誤 - 這個屬性不存在
+taxResult.costs.importTax
+
+ ✅ 正確 - 使用這個
+taxResult.costs.importDuty
+2. 可用的稅務屬性清單
+typescript
+
+
+taxResult.costs = {
+  basePrice number;
+  importDuty number;       ✅ 用這個，不是 importTax
+  exciseTax number;
+  commodityTax number;
+  alcoholTax number;
+  businessTax number;
+  tradePromotion number;
+  shippingFee number;
+  insuranceFee number;
+  processingFee number;
+  totalTaxes number;
+  totalCosts number;
+}
+
+
+允許的酒類類型值（完整清單）：
+typescript
+
+
+"default" | "beer" | "whisky" | "vodka" | "rum" | "gin" | "brandy" | "wine" | "sake" | "liqueur" | "spirits" | undefined
+修正第20行：
+3. 資料庫欄位命名規則
+typescript
+
+
+ ✅ 正確 - 統一使用 snake_case
+purchase_number purchaseNumber
+total_value totalValue  
+exchange_rate exchangeRate
+declaration_date declarationDate
+alcohol_percentage alcoholPercentage
+
+ ❌ 錯誤 - 不要用 camelCase 作為資料庫欄位名
+purchaseNumber purchaseNumber   左邊應該是 purchase_number
+🔧 立即執行的修復策略
+步驟 1：全域搜尋替換
+bash
+
+
+# 搜尋並替換所有 importTax
+搜尋：importTax
+替換：importDuty
+步驟 2：檢查這些檔案
+
+srclibcost-calculator.ts
+
+srclibexamplescalculator-usage.ts
+
+任何包含稅務計算的檔案
+
+步驟 3：TypeScript 類型檢查
+typescript
+
+
+
+ 如果遇到類型錯誤，使用 Number() 轉換
+return Number(DEFAULT_EXCHANGE_RATES[rateKey])  1.0
+🚀 部署成功的關鍵提示
+
+一次只修一個錯誤 - TypeScript 編譯器一次只顯示一個錯誤
+
+使用錯誤訊息中的建議 - 比如 Did you mean 'importDuty'
+
+檢查錯誤位置 - 注意檔案路徑和行號
+
+保持命名一致性 - 資料庫用 snake_case，變數用 camelCase_
+
+🎯 預期的下一個錯誤類型
+可能還會遇到：
+
+
+其他檔案中的 importTax 引用
+
+類似的屬性名稱不匹配
+
+類型轉換問題
+
+💡 省時小技巧
+
+看到類似錯誤時，直接參考已解決的模式
+
+使用 TypeScript 錯誤訊息中的建議
+
+優先修復重複出現的錯誤模式
