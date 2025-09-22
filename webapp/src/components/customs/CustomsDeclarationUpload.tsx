@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
+import type { AlcoholType } from '@/lib/tax-calculator'
 import {
   Card,
   Button,
@@ -125,8 +126,7 @@ export default function CustomsDeclarationUpload({ onUploadComplete, disabled }:
 
   // 處理報單數據並計算稅金
   async function processCustomsDeclaration(ocrResult: any, fileName: string): Promise<CustomsDeclarationResult> {
-    const { calculateTaxes, AlcoholType } = await import('@/lib/tax-calculator')
-    type AlcoholTypeValue = keyof typeof import('@/lib/tax-calculator').TAX_RATES.alcohol
+    const { calculateTaxes } = await import('@/lib/tax-calculator')
 
     // 從OCR結果提取基本信息
     const declarationNumber = extractDeclarationNumber(ocrResult.text)
@@ -325,7 +325,7 @@ export default function CustomsDeclarationUpload({ onUploadComplete, disabled }:
     }
   }
 
-  function determineProductType(name: string): 'beer' | 'whisky' | 'vodka' | 'rum' | 'gin' | 'brandy' | 'wine' | 'sake' | 'liqueur' | 'spirits' | 'default' {
+  function determineProductType(name: string): AlcoholType {
     const upperName = name.toUpperCase()
     if (upperName.includes('WHISKY') || upperName.includes('WHISKEY')) return 'whisky'
     if (upperName.includes('SAKE') || upperName.includes('清酒')) return 'sake'
