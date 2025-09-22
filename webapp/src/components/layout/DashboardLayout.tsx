@@ -69,6 +69,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         onClick: () => router.push('/products')
       },
       {
+        key: '/imports',
+        icon: <FileTextOutlined />,
+        label: '進貨管理',
+        onClick: () => router.push('/imports')
+      },
+      {
         key: '/quotations',
         icon: <FileTextOutlined />,
         label: '報價管理',
