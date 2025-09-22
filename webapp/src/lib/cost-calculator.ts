@@ -72,7 +72,7 @@ export interface CompleteCostResult {
   breakdown: {
     baseAmountTWD: number           // 基本金額 (台幣)
     importDuty: number              // 進口關稅
-    customsDuty: number             // 關稅
+    alcoholTax: number              // 酒精稅
     businessTax: number             // 營業稅
     shippingFee: number             // 運費
     insuranceFee: number            // 保險費
@@ -168,7 +168,7 @@ export function calculateCompleteCost(input: CostCalculationInput): CompleteCost
     breakdown: {
       baseAmountTWD: twdAmount,
       importDuty: taxResult.costs.importDuty,
-      customsDuty: taxResult.costs.alcoholTax,
+      alcoholTax: taxResult.costs.alcoholTax,
       businessTax: taxResult.costs.businessTax,
       shippingFee: taxResult.costs.shippingFee,
       insuranceFee: taxResult.costs.insuranceFee,

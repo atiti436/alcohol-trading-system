@@ -165,7 +165,7 @@ async function handleCostCalculation(text: string): Promise<LineMessage> {
 💵 成本分解：
 • 基本價格：NT$${data.costs.basePrice.toLocaleString()}
 • 進口關稅：NT$${data.costs.importDuty.toLocaleString()}
-• 關稅：NT$${data.costs.customsDuty.toLocaleString()}
+• 酒精稅：NT$${data.costs.alcoholTax.toLocaleString()}
 • 營業稅：NT$${data.costs.businessTax.toLocaleString()}
 • 運費：NT$${data.costs.shippingFee.toLocaleString()}
 • 保險費：NT$${data.costs.insuranceFee.toLocaleString()}
