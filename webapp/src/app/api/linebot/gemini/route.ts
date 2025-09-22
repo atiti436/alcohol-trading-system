@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getGeminiApiKey } from '@/lib/keys'
 
 /**
  * 🤖 Room-6: Google Gemini AI 整合 API
  * 核心功能：智慧對話 + 商業領域知識 + 成本分析建議
  */
 
-// Google Gemini API設定
-const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || ''
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
+// Google Gemini API設定：動態讀取（DB 優先，其次環境變數）
 
 // 酒類貿易專業prompt模板
 const BUSINESS_CONTEXT = `
@@ -156,7 +155,7 @@ export async function POST(request: NextRequest) {
   try {
     const { message, userId, messageType = 'general' } = await request.json()
 
-    if (!GEMINI_API_KEY) {
+    const apiKey = await getGeminiApiKey(); if (!apiKey) {
       throw new Error('Google Gemini API key not configured')
     }
 
@@ -168,7 +167,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 選擇適當的模型和提示詞
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' })
+    const genAI = new GoogleGenerativeAI(apiKey); const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' })
     const systemPrompt = getPromptByMessageType(message)
 
     // 如果是成本計算請求，先嘗試結構化分析
@@ -282,3 +281,4 @@ export async function GET() {
     timestamp: new Date().toISOString()
   })
 }
+

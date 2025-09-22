@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getGeminiApiKey } from '@/lib/keys'
 
 /**
  * 🤖 Room-6: 圖片OCR辨識 API
  * 核心功能：報單辨識 + 商品標籤識別 + 價格表解析
  */
-
-// Google Gemini API設定 (支援Vision)
-const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || ''
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
 
 // LINE Bot API設定
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN || ''
@@ -130,10 +127,12 @@ function detectImageType(extractedText: string): 'customs_declaration' | 'produc
 // 使用Gemini Vision進行OCR
 async function performOCR(imageBuffer: Buffer, imageType?: string): Promise<OCRResult> {
   try {
-    if (!GEMINI_API_KEY) {
+    const apiKey = await getGeminiApiKey()
+    if (!apiKey) {
       throw new Error('Gemini API key not configured')
     }
 
+    const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' })
 
     // 準備圖片數據
@@ -259,6 +258,15 @@ export async function POST(request: NextRequest) {
   try {
     const { messageId, imageType, userId } = await request.json()
 
+    // 檢查 Gemini Key 是否配置
+    const apiKey = await getGeminiApiKey()
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Gemini API key not configured' },
+        { status: 503 }
+      )
+    }
+
     if (!messageId) {
       return NextResponse.json(
         { error: 'Message ID is required' },
@@ -328,7 +336,8 @@ export async function POST(request: NextRequest) {
 
 // GET /api/linebot/ocr - OCR服務資訊
 export async function GET() {
-  const isConfigured = !!(GEMINI_API_KEY && LINE_CHANNEL_ACCESS_TOKEN)
+  const key = await getGeminiApiKey()
+  const isConfigured = !!(key && LINE_CHANNEL_ACCESS_TOKEN)
 
   return NextResponse.json({
     service: 'OCR Recognition API',
