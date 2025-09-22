@@ -17,7 +17,7 @@ export function verifyCustomsDeclaration1() {
   // 商品1: LAPHROAIG 33年 50.6% 700ml 44瓶
   const item1Result = calculateTaxes({
     baseAmount: dutiableValueTWD * (30.8 / (30.8 + 11.2)), // 按容量比例分攤
-    productType: 'LAPHROAIG WHISKY',
+    productType: 'whisky',
     alcoholPercentage: 50.6,
     volumeML: 700,
     quantity: 44,
@@ -28,7 +28,7 @@ export function verifyCustomsDeclaration1() {
   // 商品2: CLYNELISH 31年 47.8% 700ml 16瓶
   const item2Result = calculateTaxes({
     baseAmount: dutiableValueTWD * (11.2 / (30.8 + 11.2)), // 按容量比例分攤
-    productType: 'CLYNELISH WHISKY',
+    productType: 'whisky',
     alcoholPercentage: 47.8,
     volumeML: 700,
     quantity: 16,
@@ -93,7 +93,7 @@ export function verifyCustomsDeclaration2() {
   // 使用總計算（簡化版本）
   const totalResult = calculateTaxes({
     baseAmount: dutiableValueTWD,
-    productType: 'JAPANESE WHISKY',
+    productType: 'whisky',
     alcoholPercentage: 43, // 取主要商品酒精度
     volumeML: 700,
     quantity: Math.round(71.095), // 總公升數
