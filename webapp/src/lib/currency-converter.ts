@@ -67,7 +67,7 @@ export function getDefaultExchangeRate(
   // 轉為台幣
   if (toCurrency === 'TWD') {
     const rateKey = `${fromCurrency}_TWD` as keyof typeof DEFAULT_EXCHANGE_RATES
-    return DEFAULT_EXCHANGE_RATES[rateKey] || 1.0
+    return Number(DEFAULT_EXCHANGE_RATES[rateKey]) || 1.0
   }
 
   // 其他幣別間轉換 (透過台幣中轉)
