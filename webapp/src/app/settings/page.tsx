@@ -196,22 +196,24 @@ export default function SettingsPage() {
                       <Text>自動備份</Text>
                       <Switch defaultChecked />
                     </div>
-                    <Form.Item label="備份頻率">
-                      <Select defaultValue="daily" style={{ width: '100%' }}>
+                    <div>
+                      <Text strong>備份頻率:</Text>
+                      <Select defaultValue="daily" style={{ width: '100%', marginTop: 8 }}>
                         <Option value="hourly">每小時</Option>
                         <Option value="daily">每日</Option>
                         <Option value="weekly">每週</Option>
                         <Option value="monthly">每月</Option>
                       </Select>
-                    </Form.Item>
-                    <Form.Item label="保留期限">
-                      <Select defaultValue="30" style={{ width: '100%' }}>
+                    </div>
+                    <div>
+                      <Text strong>保留期限:</Text>
+                      <Select defaultValue="30" style={{ width: '100%', marginTop: 8 }}>
                         <Option value="7">7 天</Option>
                         <Option value="30">30 天</Option>
                         <Option value="90">90 天</Option>
                         <Option value="365">1 年</Option>
                       </Select>
-                    </Form.Item>
+                    </div>
                     <Button type="primary">立即備份</Button>
                   </Space>
                 </Card>
