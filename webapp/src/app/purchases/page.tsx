@@ -20,7 +20,8 @@ import {
   Spin,
   Empty,
   Skeleton,
-  Result
+  Result,
+  Alert
 } from 'antd'
 import {
   PlusOutlined,
@@ -34,6 +35,7 @@ import {
   ShoppingCartOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import dayjs from 'dayjs'
 import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
@@ -88,6 +90,7 @@ interface PurchaseFilters {
  */
 export default function PurchasesPage() {
   const { data: session } = useSession()
+  const router = useRouter()
   const [purchases, setPurchases] = useState<Purchase[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -107,6 +110,8 @@ export default function PurchasesPage() {
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [receiveModeVisible, setReceiveModeVisible] = useState(false)
+  const [selectedForReceive, setSelectedForReceive] = useState<Purchase | null>(null)
 
   // 載入採購單列表
   const loadPurchases = async (showLoading = true) => {
@@ -361,7 +366,7 @@ export default function PurchasesPage() {
                   type="default"
                   style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
                   loading={actionLoading[`receive-${record.id}`]}
-                  onClick={() => handleReceive(record)}
+                  onClick={() => { setSelectedForReceive(record); setReceiveModeVisible(true) }}
                 />
               </Tooltip>
             </HideFromInvestor>
@@ -541,6 +546,38 @@ export default function PurchasesPage() {
     }
   }
 
+  // 進口（走報單）：轉進貨並導向進貨管理
+  const handleReceiveImportMode = async () => {
+    if (!selectedForReceive) return
+    const purchase = selectedForReceive
+    const actionKey = `receive-import-${purchase.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+    try {
+      await fetch('/api/imports/from-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchaseId: purchase.id })
+      })
+      setReceiveModeVisible(false)
+      if (purchase.purchaseNumber) {
+        router.push(`/imports?search=${encodeURIComponent(purchase.purchaseNumber)}`)
+      } else {
+        router.push('/imports')
+      }
+    } catch (e) {
+      message.error('轉進貨失敗，請稍後重試')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+    }
+  }
+
+  // 國內（免報單）：直接收貨
+  const handleReceiveDomesticMode = async () => {
+    if (!selectedForReceive) return
+    await handleReceive(selectedForReceive)
+    setReceiveModeVisible(false)
+  }
+
   // 處理刪除
   const handleDelete = async (id: string) => {
     const actionKey = `delete-${id}`
@@ -704,6 +741,30 @@ export default function PurchasesPage() {
         editingPurchase={editingPurchase}
         loading={submitting}
       />
+
+      {/* 收貨模式選擇彈窗 */}
+      <Modal
+        title="選擇收貨模式"
+        open={receiveModeVisible}
+        onCancel={() => setReceiveModeVisible(false)}
+        footer={null}
+      >
+        <div style={{ display: 'grid', gap: 12 }}>
+          <Alert
+            type="info"
+            message="進口件建議走『轉進貨→報單→稅金審核→收貨入庫』；國內調貨可直接收貨。"
+            showIcon
+          />
+          <Space>
+            <Button type="primary" onClick={handleReceiveImportMode}>
+              進口（走報單）
+            </Button>
+            <Button onClick={handleReceiveDomesticMode}>
+              國內（直接收貨）
+            </Button>
+          </Space>
+        </div>
+      </Modal>
 
       {/* 查看詳情Modal */}
       <Modal
