@@ -131,7 +131,7 @@ export function toTWD(amount: number, fromCurrency: SupportedCurrency, customRat
 export function fromTWD(twdAmount: number, toCurrency: SupportedCurrency): number {
   if (toCurrency === 'TWD') return twdAmount
 
-  const rate = getExchangeRate('TWD', toCurrency)
+  const rate = getDefaultExchangeRate('TWD', toCurrency)
   return Math.round(twdAmount * rate * 100) / 100 // 保留兩位小數
 }
 
