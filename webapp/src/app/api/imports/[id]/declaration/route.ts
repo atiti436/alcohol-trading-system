@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
-import { calculateTaxes } from '@/lib/tax-calculator'
+import { calculateTaxes, AlcoholType } from '@/lib/tax-calculator'
 
 export async function POST(
   request: NextRequest,
@@ -119,7 +119,7 @@ export async function POST(
 }
 
 // 根據商品名稱判斷酒類類型
-function determineProductType(productName: string): string {
+function determineProductType(productName: string): AlcoholType {
   const upperName = productName.toUpperCase()
 
   if (upperName.includes('WHISKY') || upperName.includes('WHISKEY')) return 'whisky'
@@ -131,6 +131,7 @@ function determineProductType(productName: string): string {
   if (upperName.includes('GIN')) return 'gin'
   if (upperName.includes('BRANDY')) return 'brandy'
   if (upperName.includes('LIQUEUR') || upperName.includes('利口酒')) return 'liqueur'
+  if (upperName.includes('SPIRITS') || upperName.includes('烈酒')) return 'spirits'
 
-  return 'spirits' // 預設為烈酒
+  return 'default' // 預設為一般酒類
 }

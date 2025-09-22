@@ -31,6 +31,8 @@ const { Title, Text } = Typography
 const { Option } = Select
 const { TextArea } = Input
 
+type AlcoholType = 'beer' | 'whisky' | 'vodka' | 'rum' | 'gin' | 'brandy' | 'wine' | 'sake' | 'liqueur' | 'spirits' | 'default'
+
 interface CustomsItem {
   name: string
   quantity: number
@@ -39,7 +41,7 @@ interface CustomsItem {
   dutiableValue: number
   alcoholTax: number
   businessTax: number
-  productType?: string
+  productType?: AlcoholType
 }
 
 interface CustomsDeclarationReviewProps {
@@ -128,7 +130,7 @@ export default function CustomsDeclarationReview({
   }
 
   // 判斷酒類類型
-  const determineProductType = (name: string): string => {
+  const determineProductType = (name: string): AlcoholType => {
     const upperName = name.toUpperCase()
     if (upperName.includes('WHISKY') || upperName.includes('WHISKEY')) return 'whisky'
     if (upperName.includes('SAKE') || upperName.includes('清酒')) return 'sake'
@@ -139,7 +141,8 @@ export default function CustomsDeclarationReview({
     if (upperName.includes('GIN')) return 'gin'
     if (upperName.includes('BRANDY')) return 'brandy'
     if (upperName.includes('LIQUEUR') || upperName.includes('利口酒')) return 'liqueur'
-    return 'spirits'
+    if (upperName.includes('SPIRITS') || upperName.includes('烈酒')) return 'spirits'
+    return 'default'
   }
 
   // 更新商品項目

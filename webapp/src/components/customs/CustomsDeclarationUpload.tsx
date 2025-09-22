@@ -125,7 +125,8 @@ export default function CustomsDeclarationUpload({ onUploadComplete, disabled }:
 
   // 處理報單數據並計算稅金
   async function processCustomsDeclaration(ocrResult: any, fileName: string): Promise<CustomsDeclarationResult> {
-    const { calculateTaxes } = await import('@/lib/tax-calculator')
+    const { calculateTaxes, AlcoholType } = await import('@/lib/tax-calculator')
+    type AlcoholTypeValue = keyof typeof import('@/lib/tax-calculator').TAX_RATES.alcohol
 
     // 從OCR結果提取基本信息
     const declarationNumber = extractDeclarationNumber(ocrResult.text)
@@ -324,7 +325,7 @@ export default function CustomsDeclarationUpload({ onUploadComplete, disabled }:
     }
   }
 
-  function determineProductType(name: string): string {
+  function determineProductType(name: string): 'beer' | 'whisky' | 'vodka' | 'rum' | 'gin' | 'brandy' | 'wine' | 'sake' | 'liqueur' | 'spirits' | 'default' {
     const upperName = name.toUpperCase()
     if (upperName.includes('WHISKY') || upperName.includes('WHISKEY')) return 'whisky'
     if (upperName.includes('SAKE') || upperName.includes('清酒')) return 'sake'
@@ -335,7 +336,8 @@ export default function CustomsDeclarationUpload({ onUploadComplete, disabled }:
     if (upperName.includes('GIN')) return 'gin'
     if (upperName.includes('BRANDY')) return 'brandy'
     if (upperName.includes('LIQUEUR') || upperName.includes('利口酒')) return 'liqueur'
-    return 'spirits'
+    if (upperName.includes('SPIRITS') || upperName.includes('烈酒')) return 'spirits'
+    return 'default'
   }
 
   return (
