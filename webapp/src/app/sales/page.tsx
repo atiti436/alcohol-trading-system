@@ -881,7 +881,7 @@ export default function SalesPage() {
                       render: (record: SaleItem) => (
                         <div>
                           <div style={{ fontWeight: 'bold' }}>
-                            {record.product?.name_zh || '未知商品'}
+                            {record.product?.name || '未知商品'}
                           </div>
                           {record.product?.product_code && (
                             <div style={{ fontSize: '12px', color: '#666' }}>
