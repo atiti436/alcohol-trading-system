@@ -164,7 +164,7 @@ async function handleCostCalculation(text: string): Promise<LineMessage> {
 
 💵 成本分解：
 • 基本價格：NT$${data.costs.basePrice.toLocaleString()}
-• 進口稅：NT$${data.costs.importTax.toLocaleString()}
+• 進口關稅：NT$${data.costs.importDuty.toLocaleString()}
 • 關稅：NT$${data.costs.customsDuty.toLocaleString()}
 • 營業稅：NT$${data.costs.businessTax.toLocaleString()}
 • 運費：NT$${data.costs.shippingFee.toLocaleString()}
@@ -181,8 +181,8 @@ async function handleCostCalculation(text: string): Promise<LineMessage> {
       // Fallback到簡單計算
       const exchangeRate = 0.21
       const costInTwd = amount * exchangeRate
-      const importTax = costInTwd * 0.15
-      const totalCost = costInTwd + importTax
+      const importDuty = costInTwd * 0.15
+      const totalCost = costInTwd + importDuty
 
       return {
         type: 'text' as const,
@@ -190,7 +190,7 @@ async function handleCostCalculation(text: string): Promise<LineMessage> {
 
 原價：¥${amount.toLocaleString()}
 台幣：NT$${costInTwd.toLocaleString()}
-進口稅：NT$${importTax.toLocaleString()}
+進口關稅：NT$${importDuty.toLocaleString()}
 總成本：NT$${totalCost.toLocaleString()}
 
 ※ 建議使用專業版本獲得更精確計算`

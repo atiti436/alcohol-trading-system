@@ -129,19 +129,19 @@ function generateCostAnalysis(data: any) {
   const twd = amount * exchangeRate
 
   // 成本結構
-  const importTax = twd * 0.15 // 15%進口稅
+  const importDuty = twd * 0.15 // 15%進口關稅
   const shippingFee = Math.min(twd * 0.05, 10000) // 運費，最高1萬
   const insuranceFee = twd * 0.002 // 保險費0.2%
   const handlingFee = 500 // 手續費
 
-  const totalCost = twd + importTax + shippingFee + insuranceFee + handlingFee
+  const totalCost = twd + importDuty + shippingFee + insuranceFee + handlingFee
   const markup = totalCost * 0.3 // 建議30%毛利
   const suggestedPrice = totalCost + markup
 
   return {
     originalAmount: amount,
     twd,
-    importTax,
+    importDuty,
     shippingFee,
     insuranceFee,
     handlingFee,
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
 📊 詳細成本分解：
 💰 原價：¥${costAnalysis.originalAmount.toLocaleString()}
 💱 台幣：NT$${costAnalysis.twd.toLocaleString()}
-🏛️ 進口稅：NT$${costAnalysis.importTax.toLocaleString()}
+🏛️ 進口關稅：NT$${costAnalysis.importDuty.toLocaleString()}
 🚢 運費：NT$${costAnalysis.shippingFee.toLocaleString()}
 🛡️ 保險：NT$${costAnalysis.insuranceFee.toLocaleString()}
 📝 手續費：NT$${costAnalysis.handlingFee.toLocaleString()}

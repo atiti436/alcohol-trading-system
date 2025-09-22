@@ -32,7 +32,7 @@ export function example1_BasicImportCost() {
   console.log(`- 原始金額: ¥${result.currency.originalAmount.toLocaleString()}`)
   console.log(`- 使用匯率: ${result.currency.exchangeRate}`)
   console.log(`- 台幣金額: NT$ ${result.currency.twdAmount.toLocaleString()}`)
-  console.log(`- 進口稅: NT$ ${result.breakdown.importTax.toLocaleString()}`)
+  console.log(`- 進口關稅: NT$ ${result.breakdown.importDuty.toLocaleString()}`)
   console.log(`- 關稅: NT$ ${result.breakdown.customsDuty.toLocaleString()}`)
   console.log(`- 營業稅: NT$ ${result.breakdown.businessTax.toLocaleString()}`)
   console.log(`- 運費: NT$ ${result.breakdown.shippingFee.toLocaleString()}`)
@@ -107,7 +107,7 @@ export function example4_TaxOnlyCalculation() {
   })
 
   console.log(`基本金額: NT$ ${taxResult.costs.basePrice.toLocaleString()}`)
-  console.log(`進口稅 (20%): NT$ ${taxResult.costs.importTax.toLocaleString()}`)
+  console.log(`進口關稅: NT$ ${taxResult.costs.importDuty.toLocaleString()}`)
   console.log(`關稅 (15%): NT$ ${taxResult.costs.customsDuty.toLocaleString()}`)
   console.log(`營業稅 (5%): NT$ ${taxResult.costs.businessTax.toLocaleString()}`)
   console.log(`總稅費: NT$ ${taxResult.costs.totalTaxes.toLocaleString()}`)

@@ -118,7 +118,7 @@ export interface CostCalculationResult {
   }
   costs: {
     basePrice: number
-    importTax: number
+    importDuty: number
     customsDuty: number
     businessTax: number
     shippingFee: number

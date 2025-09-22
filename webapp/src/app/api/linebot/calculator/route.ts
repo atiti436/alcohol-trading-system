@@ -67,7 +67,7 @@ interface CalculationResult {
   }
   costs: {
     basePrice: number
-    importTax: number
+    importDuty: number
     customsDuty: number
     businessTax: number
     shippingFee: number
@@ -150,15 +150,15 @@ async function calculateCosts(request: CalculationRequest): Promise<CalculationR
   const productTaxRates = getProductTaxRates(productType)
 
   // 3. 計算各項成本
-  const importTax = includeTax ? baseAmount * productTaxRates.import_tax : 0
+  const importDuty = includeTax ? baseAmount * productTaxRates.import_tax : 0
   const customsDuty = includeTax ? baseAmount * productTaxRates.customs : 0
-  const businessTax = includeTax ? (baseAmount + importTax + customsDuty) * TAX_RATES.business_tax : 0
+  const businessTax = includeTax ? (baseAmount + importDuty + customsDuty) * TAX_RATES.business_tax : 0
 
   const shippingFee = includeShipping ? calculateShippingFee(baseAmount, quantity) : 0
   const insuranceFee = includeShipping ? baseAmount * TAX_RATES.insurance_rate : 0
   const processingFee = TAX_RATES.processing_fee
 
-  const totalCosts = importTax + customsDuty + businessTax + shippingFee + insuranceFee + processingFee
+  const totalCosts = importDuty + customsDuty + businessTax + shippingFee + insuranceFee + processingFee
   const totalCost = baseAmount + totalCosts
 
   // 4. 定價建議
@@ -188,7 +188,7 @@ async function calculateCosts(request: CalculationRequest): Promise<CalculationR
     },
     costs: {
       basePrice: baseAmount,
-      importTax,
+      importDuty,
       customsDuty,
       businessTax,
       shippingFee,
