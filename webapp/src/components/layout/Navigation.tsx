@@ -29,6 +29,7 @@ import {
   RobotOutlined
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
+import { buildMenuItems } from './menuItems'
 
 const { Sider } = Layout
 
@@ -44,66 +45,10 @@ export default function Navigation({ collapsed = false, onCollapse }: Navigation
 
   // 根據用戶角色顯示不同菜單
   const getMenuItems = (): MenuProps['items'] => {
-    const role = session?.user?.role || 'EMPLOYEE'
-
-    const baseItems = [
-      {
-        key: '/dashboard',
-        icon: <DashboardOutlined />,
-        label: <Link href="/dashboard">首頁儀表板</Link>,
-      },
-      {
-        key: '/products',
-        icon: <ShoppingOutlined />,
-        label: <Link href="/products">商品管理</Link>,
-      },
-      {
-        key: '/customers',
-        icon: <UserOutlined />,
-        label: <Link href="/customers">客戶管理</Link>,
-      },
-      {
-        key: '/imports',
-        icon: <FileTextOutlined />,
-        label: <Link href="/imports">進貨管理</Link>,
-      },
-      {
-        key: '/sales',
-        icon: <ShoppingCartOutlined />,
-        label: <Link href="/sales">銷售管理</Link>,
-      },
-      {
-        key: '/shipping',
-        icon: <TruckOutlined />,
-        label: <Link href="/shipping">出貨管理</Link>,
-      },
-      {
-        key: '/statements',
-        icon: <FileSearchOutlined />,
-        label: <Link href="/statements">對帳管理</Link>,
-      },
-      {
-        key: '/reports',
-        icon: <BarChartOutlined />,
-        label: <Link href="/reports">報表分析</Link>,
-      },
-      {
-        key: '/linebot',
-        icon: <RobotOutlined />,
-        label: <Link href="/linebot">LINE BOT助手</Link>,
-      },
-    ]
-
-    // 老闆專屬菜單
-    if (role === 'SUPER_ADMIN') {
-      baseItems.push({
-        key: '/admin',
-        icon: <SettingOutlined />,
-        label: <Link href="/admin">系統管理</Link>,
-      })
-    }
-
-    return baseItems
+    const role = (session?.user?.role || 'EMPLOYEE') as any
+    const keys = ['/dashboard','/products','/customers','/imports','/sales','/shipping','/statements','/reports','/linebot']
+    if (role === 'SUPER_ADMIN') keys.push('/admin')
+    return buildMenuItems(keys, role, { useLinkLabel: true })
   }
 
   const userMenuItems: MenuProps['items'] = [

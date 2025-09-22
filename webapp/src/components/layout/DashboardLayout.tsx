@@ -1,35 +1,12 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  Layout,
-  Menu,
-  Button,
-  Avatar,
-  Dropdown,
-  Typography,
-  Space,
-  Badge,
-  MenuProps
-} from 'antd'
-import {
-  DashboardOutlined,
-  UserOutlined,
-  ShoppingOutlined,
-  AppstoreOutlined,
-  DollarOutlined,
-  BarChartOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  BellOutlined,
-  ShopOutlined,
-  FileTextOutlined
-} from '@ant-design/icons'
+import { Layout, Menu, Button, Avatar, Dropdown, Typography, Space, Badge, MenuProps } from 'antd'
+import { UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, ShopOutlined } from '@ant-design/icons'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Role } from '@/types/auth'
+import { buildMenuItems } from './menuItems'
 
 const { Sider, Content, Header } = Layout
 const { Text } = Typography
@@ -44,99 +21,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
 
-  // 根據角色配置選單項目
-  const getMenuItems = (userRole: Role): MenuProps['items'] => {
-    const commonItems = [
-      {
-        key: '/dashboard',
-        icon: <DashboardOutlined />,
-        label: '首頁總覽',
-        onClick: () => router.push('/dashboard')
-      }
-    ]
-
-    const adminItems = [
-      {
-        key: '/customers',
-        icon: <UserOutlined />,
-        label: '客戶管理',
-        onClick: () => router.push('/customers')
-      },
-      {
-        key: '/products',
-        icon: <ShoppingOutlined />,
-        label: '商品管理',
-        onClick: () => router.push('/products')
-      },
-      {
-        key: '/imports',
-        icon: <FileTextOutlined />,
-        label: '進貨管理',
-        onClick: () => router.push('/imports')
-      },
-      {
-        key: '/quotations',
-        icon: <FileTextOutlined />,
-        label: '報價管理',
-        onClick: () => router.push('/quotations')
-      },
-      {
-        key: '/purchases',
-        icon: <ShoppingOutlined />,
-        label: '採購管理',
-        onClick: () => router.push('/purchases')
-      },
-      {
-        key: '/inventory',
-        icon: <AppstoreOutlined />,
-        label: '庫存管理',
-        onClick: () => router.push('/inventory')
-      },
-      {
-        key: '/sales',
-        icon: <DollarOutlined />,
-        label: '銷售管理',
-        onClick: () => router.push('/sales')
-      },
-      {
-        key: '/reports',
-        icon: <BarChartOutlined />,
-        label: '報表分析',
-        onClick: () => router.push('/reports')
-      }
-    ]
-
-    const superAdminItems = [
-      {
-        key: '/settings',
-        icon: <SettingOutlined />,
-        label: '系統設定',
-        onClick: () => router.push('/settings')
-      }
-    ]
-
-    // 根據角色組合選單
+  // 依角色取用統一的選單鍵集合（避免索引位移）
+  const getMenuKeysByRole = (userRole: Role): string[] => {
     if (userRole === Role.SUPER_ADMIN) {
-      return [...commonItems, ...adminItems, ...superAdminItems]
-    } else if (userRole === Role.INVESTOR) {
-      return [
-        ...commonItems,
-        adminItems[0], // 客戶管理
-        adminItems[1], // 商品管理
-        adminItems[2], // 報價管理
-        adminItems[5], // 銷售管理（會過濾資料）
-        adminItems[6]  // 報表分析（會過濾資料）
-      ]
-    } else {
-      return [
-        ...commonItems,
-        adminItems[0], // 客戶管理
-        adminItems[1], // 商品管理
-        adminItems[2], // 報價管理
-        adminItems[3], // 採購管理
-        adminItems[4]  // 庫存管理
-      ]
+      return ['/dashboard','/customers','/products','/quotations','/purchases','/imports','/inventory','/sales','/reports','/settings']
     }
+    if (userRole === Role.INVESTOR) {
+      return ['/dashboard','/customers','/products','/quotations','/sales','/reports']
+    }
+    return ['/dashboard','/customers','/products','/quotations','/purchases','/imports','/inventory']
   }
 
   // 使用者選單
@@ -208,7 +101,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
-          items={session?.user?.role ? getMenuItems(session.user.role) : []}
+          items={session?.user?.role ? buildMenuItems(getMenuKeysByRole(session.user.role), session.user.role as any, { onClickPath: (p) => router.push(p) }) : []}
         />
       </Sider>
 
