@@ -132,7 +132,16 @@ export default function PurchasesPage() {
       const result = await response.json()
 
       if (result.success) {
-        setPurchases(result.data.purchases)
+        // 將部分欄位轉為前端使用的 camelCase
+        const mapped = (result.data.purchases || []).map((p: any) => ({
+          ...p,
+          purchaseNumber: p.purchase_number,
+          fundingSource: p.funding_source,
+          exchangeRate: p.exchange_rate,
+          declarationNumber: p.declaration_number,
+          declarationDate: p.declaration_date,
+        }))
+        setPurchases(mapped)
         setTotal(result.data.total)
         setError(null)
       } else {

@@ -134,7 +134,27 @@ export default function ImportsPage() {
       const result = await response.json()
 
       if (result.success) {
-        setImports(result.data.imports)
+        const mapped = (result.data.imports || []).map((rec: any) => ({
+          id: rec.id,
+          importNumber: rec.import_number,
+          purchaseId: rec.purchase_id,
+          purchaseNumber: rec.purchase_number,
+          supplier: rec.supplier,
+          declarationNumber: rec.declaration_number,
+          declarationDate: rec.declaration_date,
+          status: rec.status,
+          totalValue: rec.total_value,
+          currency: rec.currency,
+          exchangeRate: rec.exchange_rate,
+          alcoholTax: rec.alcohol_tax,
+          businessTax: rec.business_tax,
+          tradePromotionFee: rec.trade_promotion_fee,
+          totalTaxes: rec.total_taxes,
+          created_at: rec.created_at,
+          items: rec.items,
+          _count: rec._count,
+        }))
+        setImports(mapped)
         setTotal(result.data.total)
         setError(null)
       } else {
@@ -161,7 +181,15 @@ export default function ImportsPage() {
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
-          setPendingPurchases(result.data.purchases)
+          const mapped = (result.data.purchases || []).map((p: any) => ({
+            ...p,
+            purchaseNumber: p.purchase_number,
+            fundingSource: p.funding_source,
+            exchangeRate: p.exchange_rate,
+            declarationNumber: p.declaration_number,
+            declarationDate: p.declaration_date,
+          }))
+          setPendingPurchases(mapped)
         }
       }
     } catch (error) {
@@ -365,6 +393,17 @@ export default function ImportsPage() {
               />
             </Tooltip>
           )}
+
+          {(record.status === 'PROCESSING' || record.status === 'CUSTOMS_CLEARED') && (
+            <Tooltip title="收貨入庫">
+              <Button
+                icon={<CheckCircleOutlined />}
+                size="small"
+                type="primary"
+                onClick={() => handleReceiveImport(record)}
+              />
+            </Tooltip>
+          )}
         </Space>
       )
     }
@@ -380,6 +419,39 @@ export default function ImportsPage() {
   const handleUploadDeclaration = (importRecord: ImportRecord) => {
     setSelectedImport(importRecord)
     setDeclarationModalVisible(true)
+  }
+
+  // 從進貨記錄執行收貨入庫（串接既有採購收貨API）
+  const handleReceiveImport = async (importRecord: ImportRecord) => {
+    try {
+      const actualQty = (importRecord.items || []).reduce((sum, it: any) => sum + (it.quantity || 0), 0)
+      const receiveData = {
+        actual_quantity: actualQty,
+        exchange_rate: importRecord.exchangeRate || 1.0,
+        loss_type: 'NONE',
+        loss_quantity: 0,
+        inspection_fee: 0,
+        allocation_method: 'BY_AMOUNT',
+        additional_costs: []
+      }
+
+      const resp = await fetch(`/api/purchases/${importRecord.purchaseId}/receive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(receiveData)
+      })
+      const result = await resp.json()
+      if (resp.ok && result.success) {
+        await fetch(`/api/imports/${importRecord.id}/receive`, { method: 'POST' })
+        message.success('收貨完成，庫存已更新')
+        await loadImports(false)
+      } else {
+        message.error(result.error?.message || result.error || '收貨失敗')
+      }
+    } catch (error) {
+      console.error('進貨收貨失敗:', error)
+      message.error('收貨失敗，請稍後再試')
+    }
   }
 
   // 處理報單上傳完成 - 顯示審核界面
