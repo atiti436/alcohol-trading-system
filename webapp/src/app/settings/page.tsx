@@ -11,6 +11,7 @@ import {
   LockOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
+import ApiKeySettings from '@/components/settings/ApiKeySettings'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -245,6 +246,16 @@ export default function SettingsPage() {
                     </Button>
                   </Space>
                 </Card>
+              </Col>
+            </Row>
+          </TabPane>
+
+        {/* API 設定 - 只有管理員可見 */}
+        {isAdmin && (
+          <TabPane tab="API 設定" key="api">
+            <Row gutter={[24, 24]}>
+              <Col span={24}>
+                <ApiKeySettings />
               </Col>
             </Row>
           </TabPane>

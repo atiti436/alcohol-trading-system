@@ -538,3 +538,61 @@ model ShippingItem {
 
   @@map("shipping_items")
 }
+
+model ImportRecord {
+  id                   String   @id @default(cuid())
+  import_number        String   @unique
+  purchase_id          String
+  purchase_number      String
+  supplier             String
+  declaration_number   String?
+  declaration_date     DateTime?
+  total_value          Float
+  currency             String   @default("TWD")
+  exchange_rate        Float    @default(1.0)
+  status               String   @default("PENDING") // PENDING, PROCESSING, CUSTOMS_CLEARED, RECEIVED, COMPLETED
+  alcohol_tax          Float    @default(0)
+  business_tax         Float    @default(0)
+  trade_promotion_fee  Float    @default(0)
+  total_taxes          Float    @default(0)
+  extracted_data       String?  @db.Text
+  notes                String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  // Relations
+  items ImportItem[]
+
+  @@map("import_records")
+}
+
+model ImportItem {
+  id                   String   @id @default(cuid())
+  import_record_id     String
+  product_name         String
+  quantity             Int
+  alcohol_percentage   Float    @default(40)
+  volume               Int      @default(700) // ml
+  dutiable_value       Float
+  alcohol_tax          Float    @default(0)
+  business_tax         Float    @default(0)
+  tariff_code          String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  // Relations
+  import_record ImportRecord @relation(fields: [import_record_id], references: [id], onDelete: Cascade)
+
+  @@map("import_items")
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("system_settings")
+}
