@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // 檢查是否已經創建過進貨記錄
     const existingImport = await prisma.importRecord.findFirst({
-      where: { purchaseId }
+      where: { purchase_id: purchaseId }
     })
 
     if (existingImport) {

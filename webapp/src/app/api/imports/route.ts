@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { importNumber: { contains: search, mode: 'insensitive' } },
+        { import_number: { contains: search, mode: 'insensitive' } },
         { supplier: { contains: search, mode: 'insensitive' } },
-        { declarationNumber: { contains: search, mode: 'insensitive' } }
+        { declaration_number: { contains: search, mode: 'insensitive' } }
       ]
     }
 
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     // 檢查是否已經創建過進貨記錄
     const existingImport = await prisma.importRecord.findFirst({
-      where: { purchaseId }
+      where: { purchase_id: purchaseId }
     })
 
     if (existingImport) {
