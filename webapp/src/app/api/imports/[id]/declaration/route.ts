@@ -88,8 +88,8 @@ export async function POST(
       data: {
         declaration_number: declarationNumber,
         declaration_date: declarationDate ? new Date(declarationDate) : undefined,
-        total_value: totalValue || importRecord.totalValue,
-        exchange_rate: exchangeRate || importRecord.exchangeRate,
+        total_value: totalValue || importRecord.total_value,
+        exchange_rate: exchangeRate || importRecord.exchange_rate,
         alcohol_tax: totalAlcoholTax,
         business_tax: totalBusinessTax,
         trade_promotion_fee: totalTradePromotionFee,
