@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
         declarationNumber,
         declarationDate: declarationDate ? new Date(declarationDate) : undefined,
         status: 'PENDING',
-        alcoholTax: 0,
-        businessTax: 0,
+        alcohol_tax: 0,
+        business_tax: 0,
         tradePromotionFee: 0,
         totalTaxes: 0,
         notes,
@@ -143,11 +143,11 @@ export async function POST(request: NextRequest) {
           create: purchase.items.map(item => ({
             product_name: item.product_name,
             quantity: item.quantity,
-            alcoholPercentage: 40, // 預設值，待報單識別更新
+            alcohol_percentage: 40, // 預設值，待報單識別更新
             volume: 700, // 預設值
-            dutiableValue: item.total_price * purchase.exchangeRate,
-            alcoholTax: 0,
-            businessTax: 0,
+            dutiable_value: item.total_price * purchase.exchangeRate,
+            alcohol_tax: 0,
+            business_tax: 0,
             tariffCode: item.tariffCode
           }))
         }

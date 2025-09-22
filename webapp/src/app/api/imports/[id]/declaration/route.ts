@@ -69,11 +69,11 @@ export async function POST(
         data: {
           product_name: item.product_name,
           quantity: item.quantity,
-          alcoholPercentage: item.alcoholPercentage,
+          alcohol_percentage: item.alcoholPercentage,
           volume: item.volume,
-          dutiableValue: item.dutiableValue,
-          alcoholTax: taxResult.costs.alcoholTax,
-          businessTax: taxResult.costs.businessTax
+          dutiable_value: item.dutiableValue,
+          alcohol_tax: taxResult.costs.alcoholTax,
+          business_tax: taxResult.costs.businessTax
         }
       })
     })
@@ -90,8 +90,8 @@ export async function POST(
         declarationDate: declarationDate ? new Date(declarationDate) : undefined,
         totalValue: totalValue || importRecord.totalValue,
         exchangeRate: exchangeRate || importRecord.exchangeRate,
-        alcoholTax: totalAlcoholTax,
-        businessTax: totalBusinessTax,
+        alcohol_tax: totalAlcoholTax,
+        business_tax: totalBusinessTax,
         tradePromotionFee: totalTradePromotionFee,
         totalTaxes,
         status: 'PROCESSING',
