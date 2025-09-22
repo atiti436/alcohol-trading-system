@@ -14,8 +14,12 @@ export const DEFAULT_EXCHANGE_RATES = {
   USD_TWD: 31.5,      // 美元對台幣 (參考值)
   EUR_TWD: 34.2,      // 歐元對台幣 (參考值)
   GBP_TWD: 39.8,      // 英鎊對台幣 (參考值)
-  TWD_TWD: 1.0        // 台幣對台幣
+  TWD_TWD: 1.0,       // 台幣對台幣
+  updated: '2025-01-01T00:00:00.000Z'  // 更新時間
 } as const
+
+// 為了向後兼容，建立別名
+export const EXCHANGE_RATES = DEFAULT_EXCHANGE_RATES
 
 // ==================== 型別定義 ====================
 
