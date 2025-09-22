@@ -61,11 +61,11 @@ export async function POST(request: NextRequest) {
       data: {
         import_number: importNumber,
         purchase_id: purchase.id,
-        purchase_number: purchase.purchaseNumber,
+        purchase_number: purchase.purchase_number,
         supplier: purchase.supplier,
         total_value: purchase.total_amount,
         currency: purchase.currency,
-        exchange_rate: purchase.exchangeRate,
+        exchange_rate: purchase.exchange_rate,
         status: 'PENDING',
         alcohol_tax: 0,
         business_tax: 0,
@@ -77,10 +77,10 @@ export async function POST(request: NextRequest) {
             quantity: item.quantity,
             alcohol_percentage: 40, // 預設值，待報單識別更新
             volume: 700, // 預設值
-            dutiable_value: item.total_price * purchase.exchangeRate,
+            dutiable_value: item.total_price * purchase.exchange_rate,
             alcohol_tax: 0,
             business_tax: 0,
-            tariff_code: item.tariffCode
+            tariff_code: item.tariff_code
           }))
         }
       },
