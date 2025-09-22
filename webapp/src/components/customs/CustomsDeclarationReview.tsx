@@ -3,45 +3,33 @@
 import { useState, useEffect } from 'react'
 import {
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card'
-import {
-  Button
-} from '@/components/ui/button'
-import {
+  Button,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table'
-import {
-  Input
-} from '@/components/ui/input'
-import {
-  Label
-} from '@/components/ui/label'
-import {
+  Input,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+  Alert,
+  Tag,
+  Divider,
+  Row,
+  Col,
+  Typography,
+  Space,
+  InputNumber,
+  Tooltip,
+  Spin
+} from 'antd'
 import {
-  CheckCircle,
-  AlertCircle,
-  Edit3,
-  Calculator,
-  FileText,
-  Save
-} from 'lucide-react'
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  EditOutlined,
+  CalculatorOutlined,
+  FileTextOutlined,
+  SaveOutlined
+} from '@ant-design/icons'
+
+const { Title, Text } = Typography
+const { Option } = Select
+const { TextArea } = Input
 
 interface CustomsItem {
   name: string
@@ -51,7 +39,7 @@ interface CustomsItem {
   dutiableValue: number
   alcoholTax: number
   businessTax: number
-  productType?: string // 新增：酒類分類
+  productType?: string
 }
 
 interface CustomsDeclarationReviewProps {
@@ -79,7 +67,7 @@ export default function CustomsDeclarationReview({
   const [currency, setCurrency] = useState(data.currency)
   const [exchangeRate, setExchangeRate] = useState(data.exchangeRate)
   const [items, setItems] = useState<CustomsItem[]>(data.items)
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editingKey, setEditingKey] = useState<string>('')
   const [recalculating, setRecalculating] = useState(false)
 
   // 酒類類型選項（含稅率資訊）
@@ -189,287 +177,369 @@ export default function CustomsDeclarationReview({
     onConfirm(finalData)
   }
 
-  return (
-    <div className="space-y-6">
-      {/* 報單基本資訊 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            報單基本資訊
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="declarationNumber">報單號碼</Label>
-              <Input
-                id="declarationNumber"
-                value={declarationNumber}
-                onChange={(e) => setDeclarationNumber(e.target.value)}
-                placeholder="請輸入報單號碼"
-              />
-            </div>
-            <div>
-              <Label htmlFor="totalValue">總價值</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="totalValue"
-                  type="number"
-                  value={totalValue}
-                  onChange={(e) => setTotalValue(parseFloat(e.target.value) || 0)}
-                />
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TWD">TWD</SelectItem>
-                    <SelectItem value="JPY">JPY</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+  // 是否正在編輯
+  const isEditing = (record: any) => record.key === editingKey
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="exchangeRate">匯率</Label>
-              <Input
-                id="exchangeRate"
-                type="number"
-                step="0.0001"
-                value={exchangeRate}
-                onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 1)}
-              />
-            </div>
-            <div className="flex items-end">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  台幣金額：NT$ {(totalValue * exchangeRate).toLocaleString()}
-                </AlertDescription>
-              </Alert>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+  // 編輯
+  const edit = (record: any) => {
+    setEditingKey(record.key)
+  }
 
-      {/* 商品明細 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
-            商品明細與稅金計算
-            {recalculating && <Badge variant="secondary">計算中...</Badge>}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>商品名稱</TableHead>
-                <TableHead className="w-32">稅率分類</TableHead>
-                <TableHead className="w-20">數量</TableHead>
-                <TableHead className="w-24">酒精度(%)</TableHead>
-                <TableHead className="w-24">容量(ml)</TableHead>
-                <TableHead className="w-32">完稅價格</TableHead>
-                <TableHead className="w-32">菸酒稅</TableHead>
-                <TableHead className="w-32">營業稅</TableHead>
-                <TableHead className="w-20">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    {editingIndex === index ? (
-                      <Input
-                        value={item.name}
-                        onChange={(e) => updateItem(index, 'name', e.target.value)}
-                        className="min-w-[200px]"
-                      />
-                    ) : (
-                      <div>
-                        <div className="font-medium">{item.name}</div>
-                        <Badge variant="outline" className="mt-1">
-                          {item.productType || determineProductType(item.name)}
-                        </Badge>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingIndex === index ? (
-                      <div>
-                        <Select
-                          value={item.productType || determineProductType(item.name)}
-                          onValueChange={(value) => updateItem(index, 'productType', value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {alcoholTypes.map(type => (
-                              <SelectItem key={type.value} value={type.value}>
-                                <div>
-                                  <div className="font-medium">{type.label}</div>
-                                  <div className="text-xs text-gray-500">{type.rate}</div>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {(item.productType === 'liqueur' || (!item.productType && determineProductType(item.name) === 'liqueur')) && (
-                          <div className="text-xs text-amber-600 mt-1">
-                            {liqueurNote}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="text-sm font-medium">
-                          {alcoholTypes.find(t => t.value === (item.productType || determineProductType(item.name)))?.label}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {getTaxRateInfo(item.productType || determineProductType(item.name))}
-                        </div>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingIndex === index ? (
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
-                        className="w-20"
-                      />
-                    ) : (
-                      item.quantity
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingIndex === index ? (
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={item.alcoholPercentage}
-                        onChange={(e) => updateItem(index, 'alcoholPercentage', parseFloat(e.target.value) || 0)}
-                        className="w-24"
-                      />
-                    ) : (
-                      `${item.alcoholPercentage}%`
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingIndex === index ? (
-                      <Input
-                        type="number"
-                        value={item.volume}
-                        onChange={(e) => updateItem(index, 'volume', parseInt(e.target.value) || 0)}
-                        className="w-24"
-                      />
-                    ) : (
-                      `${item.volume}ml`
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingIndex === index ? (
-                      <Input
-                        type="number"
-                        value={item.dutiableValue}
-                        onChange={(e) => updateItem(index, 'dutiableValue', parseFloat(e.target.value) || 0)}
-                        className="w-32"
-                      />
-                    ) : (
-                      `NT$ ${item.dutiableValue.toLocaleString()}`
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-orange-600 font-medium">
-                      NT$ {item.alcoholTax.toLocaleString()}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-blue-600 font-medium">
-                      NT$ {item.businessTax.toLocaleString()}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {editingIndex === index ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditingIndex(null)}
-                      >
-                        <Save className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setEditingIndex(index)}
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
+  // 保存
+  const save = async (key: string) => {
+    setEditingKey('')
+  }
+
+  // 取消編輯
+  const cancel = () => {
+    setEditingKey('')
+  }
+
+  // 表格欄位定義
+  const columns = [
+    {
+      title: '商品名稱',
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+      render: (text: string, record: any, index: number) => {
+        const editable = isEditing(record)
+        return editable ? (
+          <Input
+            value={record.name}
+            onChange={(e) => updateItem(index, 'name', e.target.value)}
+          />
+        ) : (
+          <div>
+            <div style={{ fontWeight: 'bold' }}>{text}</div>
+            <Tag color="blue" style={{ marginTop: 4 }}>
+              {record.productType || determineProductType(record.name)}
+            </Tag>
+          </div>
+        )
+      }
+    },
+    {
+      title: '稅率分類',
+      dataIndex: 'productType',
+      key: 'productType',
+      width: 150,
+      render: (text: string, record: any, index: number) => {
+        const editable = isEditing(record)
+        const currentType = record.productType || determineProductType(record.name)
+
+        return editable ? (
+          <div>
+            <Select
+              value={currentType}
+              style={{ width: '100%' }}
+              onChange={(value) => updateItem(index, 'productType', value)}
+            >
+              {alcoholTypes.map(type => (
+                <Option key={type.value} value={type.value}>
+                  <div>
+                    <div style={{ fontWeight: 'bold' }}>{type.label}</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{type.rate}</div>
+                  </div>
+                </Option>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* 稅金總計 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>稅金總計</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="space-y-2">
-              <div className="text-sm text-gray-500">菸酒稅總計</div>
-              <div className="text-xl font-bold text-orange-600">
-                NT$ {items.reduce((sum, item) => sum + item.alcoholTax, 0).toLocaleString()}
+            </Select>
+            {currentType === 'liqueur' && (
+              <div style={{ fontSize: '10px', color: '#fa8c16', marginTop: 4 }}>
+                {liqueurNote}
               </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div style={{ fontWeight: 'bold' }}>
+              {alcoholTypes.find(t => t.value === currentType)?.label}
             </div>
-            <div className="space-y-2">
-              <div className="text-sm text-gray-500">營業稅總計</div>
-              <div className="text-xl font-bold text-blue-600">
-                NT$ {items.reduce((sum, item) => sum + item.businessTax, 0).toLocaleString()}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm text-gray-500">稅金總計</div>
-              <div className="text-2xl font-bold text-red-600">
-                NT$ {calculateTotalTaxes().toLocaleString()}
-              </div>
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              {getTaxRateInfo(currentType)}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )
+      }
+    },
+    {
+      title: '數量',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      width: 80,
+      align: 'center' as const,
+      render: (text: number, record: any, index: number) => {
+        const editable = isEditing(record)
+        return editable ? (
+          <InputNumber
+            value={record.quantity}
+            min={1}
+            onChange={(value) => updateItem(index, 'quantity', value || 1)}
+          />
+        ) : text
+      }
+    },
+    {
+      title: '酒精度(%)',
+      dataIndex: 'alcoholPercentage',
+      key: 'alcoholPercentage',
+      width: 100,
+      align: 'center' as const,
+      render: (text: number, record: any, index: number) => {
+        const editable = isEditing(record)
+        return editable ? (
+          <InputNumber
+            value={record.alcoholPercentage}
+            min={0}
+            max={100}
+            step={0.1}
+            onChange={(value) => updateItem(index, 'alcoholPercentage', value || 0)}
+          />
+        ) : `${text}%`
+      }
+    },
+    {
+      title: '容量(ml)',
+      dataIndex: 'volume',
+      key: 'volume',
+      width: 100,
+      align: 'center' as const,
+      render: (text: number, record: any, index: number) => {
+        const editable = isEditing(record)
+        return editable ? (
+          <InputNumber
+            value={record.volume}
+            min={1}
+            onChange={(value) => updateItem(index, 'volume', value || 1)}
+          />
+        ) : `${text}ml`
+      }
+    },
+    {
+      title: '完稅價格',
+      dataIndex: 'dutiableValue',
+      key: 'dutiableValue',
+      width: 120,
+      align: 'right' as const,
+      render: (text: number, record: any, index: number) => {
+        const editable = isEditing(record)
+        return editable ? (
+          <InputNumber
+            value={record.dutiableValue}
+            min={0}
+            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+            parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+            onChange={(value) => updateItem(index, 'dutiableValue', value || 0)}
+          />
+        ) : `NT$ ${text.toLocaleString()}`
+      }
+    },
+    {
+      title: '菸酒稅',
+      dataIndex: 'alcoholTax',
+      key: 'alcoholTax',
+      width: 120,
+      align: 'right' as const,
+      render: (text: number) => (
+        <span style={{ color: '#fa541c', fontWeight: 'bold' }}>
+          NT$ {text.toLocaleString()}
+        </span>
+      )
+    },
+    {
+      title: '營業稅',
+      dataIndex: 'businessTax',
+      key: 'businessTax',
+      width: 120,
+      align: 'right' as const,
+      render: (text: number) => (
+        <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
+          NT$ {text.toLocaleString()}
+        </span>
+      )
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      render: (text: any, record: any) => {
+        const editable = isEditing(record)
+        return editable ? (
+          <Space>
+            <Button
+              size="small"
+              icon={<SaveOutlined />}
+              onClick={() => save(record.key)}
+            />
+            <Button
+              size="small"
+              onClick={cancel}
+            >
+              取消
+            </Button>
+          </Space>
+        ) : (
+          <Button
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => edit(record)}
+          >
+            編輯
+          </Button>
+        )
+      }
+    }
+  ]
 
-      {/* 操作按鈕 */}
-      <div className="flex justify-end space-x-4">
-        <Button variant="outline" onClick={onCancel} disabled={loading}>
-          取消
-        </Button>
-        <Button onClick={handleConfirm} disabled={loading || recalculating}>
-          <CheckCircle className="h-4 w-4 mr-2" />
-          {loading ? '處理中...' : '確認並保存'}
-        </Button>
+  // 準備表格數據
+  const tableData = items.map((item, index) => ({
+    ...item,
+    key: index.toString()
+  }))
+
+  return (
+    <Spin spinning={recalculating} tip="重新計算稅金中...">
+      <div style={{ padding: '0 0 24px 0' }}>
+        {/* 報單基本資訊 */}
+        <Card
+          title={
+            <Space>
+              <FileTextOutlined />
+              報單基本資訊
+            </Space>
+          }
+          style={{ marginBottom: 24 }}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <div style={{ marginBottom: 16 }}>
+                <Text strong>報單號碼：</Text>
+                <Input
+                  value={declarationNumber}
+                  onChange={(e) => setDeclarationNumber(e.target.value)}
+                  placeholder="請輸入報單號碼"
+                  style={{ marginTop: 4 }}
+                />
+              </div>
+            </Col>
+            <Col span={12}>
+              <div style={{ marginBottom: 16 }}>
+                <Text strong>總價值：</Text>
+                <Space style={{ marginTop: 4, width: '100%' }}>
+                  <InputNumber
+                    value={totalValue}
+                    onChange={(value) => setTotalValue(value || 0)}
+                    style={{ flex: 1 }}
+                  />
+                  <Select value={currency} onChange={setCurrency} style={{ width: 80 }}>
+                    <Option value="TWD">TWD</Option>
+                    <Option value="JPY">JPY</Option>
+                    <Option value="USD">USD</Option>
+                    <Option value="EUR">EUR</Option>
+                  </Select>
+                </Space>
+              </div>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <div style={{ marginBottom: 16 }}>
+                <Text strong>匯率：</Text>
+                <InputNumber
+                  value={exchangeRate}
+                  step={0.0001}
+                  onChange={(value) => setExchangeRate(value || 1)}
+                  style={{ marginTop: 4, width: '100%' }}
+                />
+              </div>
+            </Col>
+            <Col span={12}>
+              <Alert
+                message={`台幣金額：NT$ ${(totalValue * exchangeRate).toLocaleString()}`}
+                type="info"
+                showIcon
+                style={{ marginTop: 20 }}
+              />
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 商品明細 */}
+        <Card
+          title={
+            <Space>
+              <CalculatorOutlined />
+              商品明細與稅金計算
+              {recalculating && <Tag color="processing">計算中</Tag>}
+            </Space>
+          }
+          style={{ marginBottom: 24 }}
+        >
+          <Table
+            columns={columns}
+            dataSource={tableData}
+            pagination={false}
+            size="small"
+            scroll={{ x: 'max-content' }}
+          />
+        </Card>
+
+        {/* 稅金總計 */}
+        <Card title="稅金總計" style={{ marginBottom: 24 }}>
+          <Row gutter={16} style={{ textAlign: 'center' }}>
+            <Col span={8}>
+              <div style={{ padding: '16px 0' }}>
+                <div style={{ fontSize: '14px', color: '#666' }}>菸酒稅總計</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fa541c' }}>
+                  NT$ {items.reduce((sum, item) => sum + item.alcoholTax, 0).toLocaleString()}
+                </div>
+              </div>
+            </Col>
+            <Col span={8}>
+              <div style={{ padding: '16px 0' }}>
+                <div style={{ fontSize: '14px', color: '#666' }}>營業稅總計</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                  NT$ {items.reduce((sum, item) => sum + item.businessTax, 0).toLocaleString()}
+                </div>
+              </div>
+            </Col>
+            <Col span={8}>
+              <div style={{ padding: '16px 0' }}>
+                <div style={{ fontSize: '14px', color: '#666' }}>稅金總計</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#f5222d' }}>
+                  NT$ {calculateTotalTaxes().toLocaleString()}
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* 操作按鈕 */}
+        <div style={{ textAlign: 'right', marginBottom: 24 }}>
+          <Space>
+            <Button onClick={onCancel} disabled={loading}>
+              取消
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={handleConfirm}
+              disabled={loading || recalculating}
+            >
+              {loading ? '處理中...' : '確認並保存'}
+            </Button>
+          </Space>
+        </div>
+
+        {/* 提示信息 */}
+        <Alert
+          message="請仔細檢查OCR識別結果"
+          description="確認商品資訊和稅金計算正確後再提交。修改完稅價格、酒精度、容量或數量後將自動重新計算稅金。"
+          type="info"
+          showIcon
+        />
       </div>
-
-      {/* 提示信息 */}
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          請仔細檢查OCR識別結果，確認商品資訊和稅金計算正確後再提交。修改完稅價格、酒精度、容量或數量後將自動重新計算稅金。
-        </AlertDescription>
-      </Alert>
-    </div>
+    </Spin>
   )
 }

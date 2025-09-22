@@ -2,11 +2,26 @@
 
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import {
+  Card,
+  Button,
+  Progress,
+  Alert,
+  Upload,
+  Typography,
+  Space,
+  Spin
+} from 'antd'
+import {
+  UploadOutlined,
+  FileTextOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  LoadingOutlined
+} from '@ant-design/icons'
+
+const { Title, Text } = Typography
+const { Dragger } = Upload
 
 interface CustomsDeclarationUploadProps {
   onUploadComplete: (result: CustomsDeclarationResult) => void
@@ -40,13 +55,10 @@ export default function CustomsDeclarationUpload({ onUploadComplete, disabled }:
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (disabled || acceptedFiles.length === 0) return
-
-    const file = acceptedFiles[0]
-    if (file.type !== 'application/pdf') {
+  const handleUpload = async (file: File) => {
+    if (disabled || file.type !== 'application/pdf') {
       setError('請上傳PDF格式的報單文件')
-      return
+      return false
     }
 
     setUploading(true)
@@ -107,16 +119,9 @@ export default function CustomsDeclarationUpload({ onUploadComplete, disabled }:
         setSuccess(null)
       }, 3000)
     }
-  }, [disabled, onUploadComplete])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf']
-    },
-    maxFiles: 1,
-    disabled: disabled || uploading
-  })
+    return false // 阻止預設上傳行為
+  }
 
   // 處理報單數據並計算稅金
   async function processCustomsDeclaration(ocrResult: any, fileName: string): Promise<CustomsDeclarationResult> {
@@ -322,79 +327,90 @@ export default function CustomsDeclarationUpload({ onUploadComplete, disabled }:
   function determineProductType(name: string): string {
     const upperName = name.toUpperCase()
     if (upperName.includes('WHISKY') || upperName.includes('WHISKEY')) return 'whisky'
-    if (upperName.includes('SAKE')) return 'sake'
-    if (upperName.includes('WINE')) return 'wine'
-    if (upperName.includes('BEER')) return 'beer'
+    if (upperName.includes('SAKE') || upperName.includes('清酒')) return 'sake'
+    if (upperName.includes('WINE') || upperName.includes('葡萄酒')) return 'wine'
+    if (upperName.includes('BEER') || upperName.includes('啤酒')) return 'beer'
+    if (upperName.includes('VODKA')) return 'vodka'
+    if (upperName.includes('RUM')) return 'rum'
+    if (upperName.includes('GIN')) return 'gin'
+    if (upperName.includes('BRANDY')) return 'brandy'
+    if (upperName.includes('LIQUEUR') || upperName.includes('利口酒')) return 'liqueur'
     return 'spirits'
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+    <Card style={{ width: '100%' }}>
+      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+        <Title level={4} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <FileTextOutlined />
           報單上傳與處理
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div
-          {...getRootProps()}
-          className={`
-            border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-            ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
-            ${disabled || uploading ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
-        >
-          <input {...getInputProps()} />
+        </Title>
 
-          <div className="flex flex-col items-center gap-3">
+        <Dragger
+          name="file"
+          multiple={false}
+          accept=".pdf"
+          beforeUpload={handleUpload}
+          disabled={disabled || uploading}
+          showUploadList={false}
+          style={{ marginBottom: 24 }}
+        >
+          <div style={{ padding: '40px 20px' }}>
             {uploading ? (
-              <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+              <LoadingOutlined style={{ fontSize: 48, color: '#1890ff' }} />
             ) : (
-              <Upload className="h-12 w-12 text-gray-400" />
+              <UploadOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />
             )}
 
-            <div>
-              <p className="text-lg font-medium">
-                {uploading ? '處理中...' : isDragActive ? '放開文件以上傳' : '拖拽PDF報單到此處'}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                或點擊選擇文件 (僅支援PDF格式)
-              </p>
+            <div style={{ marginTop: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                {uploading ? '處理中...' : '拖拽PDF報單到此處或點擊上傳'}
+              </Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: 14 }}>
+                僅支援PDF格式的海關進口報單
+              </Text>
             </div>
           </div>
-        </div>
+        </Dragger>
 
         {uploading && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>處理進度</span>
-              <span>{progress}%</span>
-            </div>
-            <Progress value={progress} className="w-full" />
+          <div style={{ marginBottom: 24 }}>
+            <Text style={{ display: 'block', marginBottom: 8 }}>
+              處理進度：{progress}%
+            </Text>
+            <Progress percent={progress} status="active" />
           </div>
         )}
 
         {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <Alert
+            message="處理失敗"
+            description={error}
+            type="error"
+            showIcon
+            icon={<ExclamationCircleOutlined />}
+            style={{ marginBottom: 24, textAlign: 'left' }}
+          />
         )}
 
         {success && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription className="text-green-700">{success}</AlertDescription>
-          </Alert>
+          <Alert
+            message="處理成功"
+            description={success}
+            type="success"
+            showIcon
+            icon={<CheckCircleOutlined />}
+            style={{ marginBottom: 24, textAlign: 'left' }}
+          />
         )}
 
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>• 支援的報單格式：海關進口報單PDF</p>
-          <p>• 系統將自動識別商品信息並計算相應稅金</p>
-          <p>• 處理完成後可進行手動調整確認</p>
+        <div style={{ fontSize: 12, color: '#8c8c8c', textAlign: 'left' }}>
+          <div style={{ marginBottom: 4 }}>• 支援的報單格式：海關進口報單PDF</div>
+          <div style={{ marginBottom: 4 }}>• 系統將自動識別商品信息並計算相應稅金</div>
+          <div>• 處理完成後可進行手動調整確認</div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   )
 }
