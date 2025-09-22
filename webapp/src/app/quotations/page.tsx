@@ -1,13 +1,14 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Button, Input, Select, Space, Tag, Typography, Statistic, Row, Col, Modal, Form, message, DatePicker, Dropdown, MenuProps } from 'antd'
+import { Card, Table, Button, Input, Select, Space, Tag, Typography, Statistic, Row, Col, Modal, Form, message, DatePicker, Dropdown, MenuProps, Popconfirm } from 'antd'
 import {
   FileTextOutlined,
   SearchOutlined,
   PlusOutlined,
   EyeOutlined,
   EditOutlined,
+  DeleteOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -73,6 +74,9 @@ export default function QuotationsPage() {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null)
   const [form] = Form.useForm()
+  const [deleteLoading, setDeleteLoading] = useState<{ [key: string]: boolean }>({})
+  const [viewModalVisible, setViewModalVisible] = useState(false)
+  const [viewingQuotation, setViewingQuotation] = useState<Quotation | null>(null)
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -164,6 +168,12 @@ export default function QuotationsPage() {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
+  // 處理查看詳情
+  const handleViewQuotation = (quotation: Quotation) => {
+    setViewingQuotation(quotation)
+    setViewModalVisible(true)
+  }
+
   // 處理編輯報價
   const handleEditQuotation = (quotation: Quotation) => {
     setEditingQuotation(quotation)
@@ -200,6 +210,30 @@ export default function QuotationsPage() {
       }
     } catch (error) {
       message.error('狀態更新失敗')
+    }
+  }
+
+  // 處理刪除報價
+  const handleDeleteQuotation = async (quotationId: string) => {
+    setDeleteLoading(prev => ({ ...prev, [quotationId]: true }))
+    try {
+      const response = await fetch(`/api/quotations/${quotationId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        message.success('報價已刪除')
+        loadQuotations()
+        loadStats()
+      } else {
+        message.error(data.error || '刪除報價失敗')
+      }
+    } catch (error) {
+      message.error('刪除報價失敗')
+    } finally {
+      setDeleteLoading(prev => ({ ...prev, [quotationId]: false }))
     }
   }
 
@@ -383,6 +417,13 @@ export default function QuotationsPage() {
           <Space size="small">
             <Button
               type="text"
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => handleViewQuotation(record)}
+              title="查看詳情"
+            />
+            <Button
+              type="text"
               icon={<EditOutlined />}
               size="small"
               onClick={() => handleEditQuotation(record)}
@@ -402,6 +443,25 @@ export default function QuotationsPage() {
                 title="更多操作"
               />
             </Dropdown>
+            <Popconfirm
+              title="確定要刪除此報價嗎？"
+              description="刪除後將無法復原"
+              onConfirm={() => handleDeleteQuotation(record.id)}
+              okText="確定"
+              cancelText="取消"
+              okButtonProps={{
+                loading: deleteLoading[record.id]
+              }}
+            >
+              <Button
+                type="text"
+                icon={<DeleteOutlined />}
+                size="small"
+                danger
+                loading={deleteLoading[record.id]}
+                title="刪除報價"
+              />
+            </Popconfirm>
           </Space>
         )
       }
@@ -689,6 +749,86 @@ export default function QuotationsPage() {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* 查看詳情 Modal */}
+      <Modal
+        title="報價詳情"
+        open={viewModalVisible}
+        onCancel={() => {
+          setViewModalVisible(false)
+          setViewingQuotation(null)
+        }}
+        footer={null}
+        width="80%"
+        style={{ maxWidth: '700px' }}
+      >
+        {viewingQuotation && (
+          <div>
+            <div style={{ marginBottom: '24px' }}>
+              <h3>基本資訊</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div><strong>報價單號：</strong>{viewingQuotation.quote_number}</div>
+                <div><strong>狀態：</strong>{getStatusTag(viewingQuotation.status)}</div>
+                <div><strong>客戶：</strong>{viewingQuotation.customer.name} ({viewingQuotation.customer.customer_code})</div>
+                <div><strong>客戶等級：</strong>
+                  <Tag color={viewingQuotation.customer.tier === 'VIP' ? 'gold' : 'blue'}>
+                    {viewingQuotation.customer.tier}
+                  </Tag>
+                </div>
+                <div><strong>來源：</strong>{getSourceTag(viewingQuotation.source)}</div>
+                <div><strong>報價人：</strong>{viewingQuotation.quoter.name}</div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <h3>商品資訊</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div><strong>商品名稱：</strong>{viewingQuotation.product_name}</div>
+                <div><strong>商品代碼：</strong>{viewingQuotation.product?.product_code || '自訂商品'}</div>
+                <div><strong>數量：</strong>{viewingQuotation.quantity.toLocaleString()} 支</div>
+                <div><strong>單價：</strong>${viewingQuotation.unit_price.toLocaleString()}</div>
+                <div><strong>總金額：</strong>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#1890ff' }}>
+                    ${viewingQuotation.total_amount.toLocaleString()}
+                  </span>
+                </div>
+                <div><strong>有效期限：</strong>
+                  {viewingQuotation.valid_until
+                    ? dayjs(viewingQuotation.valid_until).format('YYYY年MM月DD日')
+                    : '無期限'
+                  }
+                </div>
+              </div>
+            </div>
+
+            {viewingQuotation.special_notes && (
+              <div style={{ marginBottom: '24px' }}>
+                <h3>特殊備註</h3>
+                <div style={{ padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '6px' }}>
+                  {viewingQuotation.special_notes}
+                </div>
+              </div>
+            )}
+
+            {viewingQuotation.line_user_id && (
+              <div style={{ marginBottom: '24px' }}>
+                <h3>LINE Bot 資訊</h3>
+                <div style={{ padding: '12px', backgroundColor: '#e6f7ff', borderRadius: '6px' }}>
+                  <div><strong>LINE User ID：</strong>{viewingQuotation.line_user_id}</div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3>時間記錄</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div><strong>建立時間：</strong>{dayjs(viewingQuotation.created_at).format('YYYY年MM月DD日 HH:mm:ss')}</div>
+                <div><strong>報價人員：</strong>{viewingQuotation.quoter.email}</div>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

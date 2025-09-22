@@ -717,30 +717,57 @@ export default function PurchasesPage() {
                     {
                       title: '商品名稱',
                       dataIndex: 'productName',
-                      key: 'productName'
+                      key: 'productName',
+                      width: 200,
+                      render: (text: string, record: PurchaseItem) => (
+                        <div>
+                          <div style={{ fontWeight: 'bold' }}>{text}</div>
+                          {record.tariffCode && (
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              稅則：{record.tariffCode}
+                            </div>
+                          )}
+                        </div>
+                      )
                     },
                     {
                       title: '數量',
                       dataIndex: 'quantity',
                       key: 'quantity',
                       width: 80,
-                      align: 'center'
+                      align: 'center' as const
                     },
                     {
-                      title: '單價',
+                      title: '外幣單價',
                       dataIndex: 'unit_price',
                       key: 'unit_price',
                       width: 100,
-                      align: 'right',
+                      align: 'right' as const,
                       render: (price: number) => price.toLocaleString()
                     },
                     {
-                      title: '小計',
+                      title: '外幣小計',
                       dataIndex: 'total_price',
                       key: 'total_price',
                       width: 100,
-                      align: 'right',
+                      align: 'right' as const,
                       render: (price: number) => price.toLocaleString()
+                    },
+                    {
+                      title: '完稅價格',
+                      dataIndex: 'dutiableValue',
+                      key: 'dutiableValue',
+                      width: 100,
+                      align: 'right' as const,
+                      render: (value: number) => value ? `$${value.toLocaleString()}` : '-'
+                    },
+                    {
+                      title: '進口稅率',
+                      dataIndex: 'importDutyRate',
+                      key: 'importDutyRate',
+                      width: 80,
+                      align: 'center' as const,
+                      render: (rate: number) => rate ? `${rate}%` : '-'
                     }
                   ]}
                 />

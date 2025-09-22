@@ -800,9 +800,159 @@ export default function SalesPage() {
           width: '90vw'
         }}
       >
-        {/* 詳情內容將在下一步實作 */}
         {editingSale && (
-          <div>銷售訂單: {editingSale.sale_number}</div>
+          <div>
+            <div style={{ marginBottom: '24px' }}>
+              <h3>基本資訊</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div><strong>銷售單號：</strong>{editingSale.sale_number}</div>
+                <div><strong>狀態：</strong>
+                  <Tag color={editingSale.status === 'CONFIRMED' ? 'blue' : editingSale.status === 'SHIPPED' ? 'green' : 'default'}>
+                    {editingSale.status === 'DRAFT' ? '草稿' :
+                     editingSale.status === 'CONFIRMED' ? '已確認' :
+                     editingSale.status === 'SHIPPED' ? '已出貨' :
+                     editingSale.status === 'DELIVERED' ? '已交付' : '已取消'}
+                  </Tag>
+                </div>
+                <div><strong>客戶：</strong>{editingSale.customer?.name}</div>
+                <div><strong>資金來源：</strong>
+                  <Tag color={editingSale.funding_source === 'COMPANY' ? 'blue' : 'orange'}>
+                    {editingSale.funding_source === 'COMPANY' ? '公司資金' : '個人調貨'}
+                  </Tag>
+                </div>
+                <div><strong>付款狀況：</strong>
+                  <Tag color={editingSale.is_paid ? 'green' : 'orange'}>
+                    {editingSale.is_paid ? '已付款' : '未付款'}
+                  </Tag>
+                </div>
+                <div><strong>建立時間：</strong>{dayjs(editingSale.created_at).format('YYYY/MM/DD HH:mm')}</div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <h3>金額資訊</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div><strong>顯示總額：</strong>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#1890ff' }}>
+                    ${editingSale.total_amount.toLocaleString()}
+                  </span>
+                </div>
+                <HideFromInvestor>
+                  {editingSale.actual_amount && editingSale.actual_amount !== editingSale.total_amount && (
+                    <div><strong>實際收取：</strong>
+                      <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#52c41a' }}>
+                        ${editingSale.actual_amount.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {editingSale.commission && editingSale.commission > 0 && (
+                    <div><strong>抽成金額：</strong>
+                      <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#fa8c16' }}>
+                        ${editingSale.commission.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </HideFromInvestor>
+              </div>
+            </div>
+
+            {editingSale.notes && (
+              <div style={{ marginBottom: '24px' }}>
+                <h3>備註</h3>
+                <div style={{ padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '6px' }}>
+                  {editingSale.notes}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3>銷售明細 ({editingSale.items?.length || 0} 項)</h3>
+              {editingSale.items && editingSale.items.length > 0 ? (
+                <Table
+                  size="small"
+                  dataSource={editingSale.items}
+                  rowKey="id"
+                  pagination={false}
+                  columns={[
+                    {
+                      title: '商品',
+                      key: 'product',
+                      width: 200,
+                      render: (record: SaleItem) => (
+                        <div>
+                          <div style={{ fontWeight: 'bold' }}>
+                            {record.product?.name_zh || '未知商品'}
+                          </div>
+                          {record.product?.product_code && (
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              {record.product.product_code}
+                            </div>
+                          )}
+                          {record.variant?.variant_code && (
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              變體: {record.variant.variant_code}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    },
+                    {
+                      title: '數量',
+                      dataIndex: 'quantity',
+                      key: 'quantity',
+                      width: 80,
+                      align: 'center' as const
+                    },
+                    {
+                      title: '單價',
+                      key: 'unit_price',
+                      width: 120,
+                      align: 'right' as const,
+                      render: (record: SaleItem) => (
+                        <div>
+                          <div style={{ fontWeight: 'bold' }}>
+                            ${record.unit_price.toLocaleString()}
+                          </div>
+                          <HideFromInvestor>
+                            {record.actual_unit_price && record.actual_unit_price !== record.unit_price && (
+                              <div style={{ fontSize: '12px', color: '#52c41a' }}>
+                                實收: ${record.actual_unit_price.toLocaleString()}
+                              </div>
+                            )}
+                          </HideFromInvestor>
+                        </div>
+                      )
+                    },
+                    {
+                      title: '小計',
+                      key: 'total_price',
+                      width: 120,
+                      align: 'right' as const,
+                      render: (record: SaleItem) => (
+                        <div>
+                          <div style={{ fontWeight: 'bold' }}>
+                            ${record.total_price.toLocaleString()}
+                          </div>
+                          <HideFromInvestor>
+                            {record.actual_total_price && record.actual_total_price !== record.total_price && (
+                              <div style={{ fontSize: '12px', color: '#52c41a' }}>
+                                實收: ${record.actual_total_price.toLocaleString()}
+                              </div>
+                            )}
+                          </HideFromInvestor>
+                        </div>
+                      )
+                    }
+                  ]}
+                  scroll={{ x: 'max-content' }}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+                  暫無銷售明細
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </Modal>
     </div>
