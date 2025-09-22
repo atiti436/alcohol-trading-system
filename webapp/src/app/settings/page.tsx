@@ -36,7 +36,7 @@ export default function SettingsPage() {
   }
 
   // 只有SUPER_ADMIN能看到完整設定
-  const isAdmin = session?.user?.role === 'SUPER_ADMIN'
+  const isAdmin = session?.user?.role === 'SUPER_ADMIN';
 
   return (
     <div style={{ padding: 0 }}>
