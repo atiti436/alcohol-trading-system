@@ -230,8 +230,8 @@ export function PurchaseOrderModal({
   const selectedCurrency = form.getFieldValue('currency') || 'TWD'
   const selectedExchangeRate = form.getFieldValue('exchangeRate') || 1
 
-  // 計算台幣金額 - 修正：外幣金額除以匯率才是台幣
-  const twd_amount = selectedCurrency === 'TWD' ? total_amount : total_amount / selectedExchangeRate
+  // 計算台幣金額 - 正確公式：外幣金額 × 匯率 = 台幣金額
+  const twd_amount = selectedCurrency === 'TWD' ? total_amount : total_amount * selectedExchangeRate
 
   // 幣別變更處理
   const handleCurrencyChange = (currency: string) => {
