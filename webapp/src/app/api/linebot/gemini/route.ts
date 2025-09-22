@@ -266,12 +266,13 @@ export async function POST(request: NextRequest) {
 
 // GET /api/linebot/gemini - 健康檢查
 export async function GET() {
-  const isConfigured = !!GEMINI_API_KEY
+  const key = await getGeminiApiKey()
+  const isConfigured = !!key
 
   return NextResponse.json({
     status: 'Gemini AI integration',
     configured: isConfigured,
-    model: 'gemini-pro',
+    model: 'gemini-2.5-pro',
     features: [
       'intelligent_conversation',
       'cost_calculation',
