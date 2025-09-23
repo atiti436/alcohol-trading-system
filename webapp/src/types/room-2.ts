@@ -149,6 +149,8 @@ export interface ProductVariant {
   serial_number?: string
   condition: string       // 商品狀況
   stock_quantity: number
+  reserved_stock?: number  // 已預留庫存（UI 顯示使用，可選）
+  available_stock?: number // 可用庫存（UI 顯示使用，可選）
   cost_price: number     // 實際成本
   created_at: Date
   updated_at: Date

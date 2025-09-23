@@ -344,7 +344,17 @@ export function SaleOrderModal({
           >
             {products.map(product => (
               <Option key={product.id} value={product.id}>
-                {product.name} ({product.product_code})
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>{product.name}</span>
+                  <span style={{ color: '#999', fontSize: '12px' }}>
+                    {product.product_code}
+                    {product.variants && product.variants.length > 0 && (
+                      <span style={{ color: '#1890ff', marginLeft: '8px' }}>
+                        📦 {product.variants.length}個版本
+                      </span>
+                    )}
+                  </span>
+                </div>
               </Option>
             ))}
           </Select>
@@ -352,14 +362,25 @@ export function SaleOrderModal({
           {record.product?.variants && record.product.variants.length > 0 && (
             <Select
               style={{ width: '100%' }}
-              placeholder="選擇變體"
+              placeholder="⚠️ 請選擇版本 (必選)"
               value={record.variantId || undefined}
               onChange={(value) => handleProductChange(record.key, record.product_id, value)}
               allowClear
+              notFoundContent="無可用版本"
             >
               {record.product.variants.map(variant => (
                 <Option key={variant.id} value={variant.id}>
-                  {variant.description} ({variant.variant_code})
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 'bold' }}>
+                      {variant.description}
+                    </span>
+                    <span style={{ color: '#999', fontSize: '12px' }}>
+                      {variant.variant_code} | 庫存: {variant.available_stock || variant.stock_quantity || 0}瓶
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                    {variant.condition || '狀況良好'} | NT$ {variant.current_price?.toLocaleString()}
+                  </div>
                 </Option>
               ))}
             </Select>
