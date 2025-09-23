@@ -7,45 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ===== Enums (restored) =====
-enum Role {
-  SUPER_ADMIN
-  INVESTOR
-  EMPLOYEE
-}
-
-enum CustomerTier {
-  VIP
-  REGULAR
-  PREMIUM
-  NEW
-}
-
-enum PaymentTerms {
-  CASH
-  WEEKLY
-  MONTHLY
-  SIXTY_DAYS
-}
-
-enum AlcoholCategory {
-  WHISKY
-  WINE
-  SAKE
-  BEER
-  SPIRITS
-  LIQUEUR
-  OTHER
-}
-
-enum VariantType {
-  A // Normal
-  B // Annual Limited
-  C // Commemorative
-  D // Special Limited
-  X // Damaged
-}
-
 model User {
   id                          String               @id @default(cuid())
   email                       String               @unique
