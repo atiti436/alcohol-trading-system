@@ -144,8 +144,15 @@ export default function ProductsPage() {
             {record.name}
           </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            {record.volume_ml}ml • {record.alc_percentage}% • {record.weight_kg}kg
+            {record.volume_ml}ml • {record.alc_percentage}% • 酒液: {record.weight_kg}kg
           </div>
+          {(record.package_weight_kg || record.accessory_weight_kg || record.total_weight_kg) && (
+            <div style={{ fontSize: '11px', color: '#999' }}>
+              {record.package_weight_kg && `包裝: ${record.package_weight_kg}kg `}
+              {record.accessory_weight_kg && `附件: ${record.accessory_weight_kg}kg `}
+              {record.total_weight_kg && `總重: ${record.total_weight_kg}kg`}
+            </div>
+          )}
           {record.supplier && (
             <div style={{ fontSize: '12px', color: '#666' }}>
               供應商: {record.supplier}
@@ -180,14 +187,14 @@ export default function ProductsPage() {
       width: 120,
       render: (record: Product) => (
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 'bold' }}>
-            ${record.current_price.toLocaleString()}
+          <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
+            目前: ${record.current_price.toLocaleString()}
           </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
             標準: ${record.standard_price.toLocaleString()}
           </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            最低: ${record.min_price.toLocaleString()}
+          <div style={{ fontSize: '12px', color: '#999' }}>
+            底線: ${record.min_price.toLocaleString()}
           </div>
         </div>
       )
@@ -487,12 +494,21 @@ export default function ProductsPage() {
             </Form.Item>
           </div>
 
+          <div style={{ marginBottom: '8px' }}>
+            <Text strong>價格設定</Text>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+              <span style={{ color: '#666' }}>標準價格</span> (市場基準) ≥
+              <span style={{ color: '#1890ff' }}> 目前價格</span> (實際售價) ≥
+              <span style={{ color: '#999' }}> 最低價格</span> (保本底線)
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: '16px' }}>
             <Form.Item
               name="standard_price"
               label="標準價格"
               rules={[{ required: true, message: '請輸入標準價格' }]}
               style={{ flex: 1 }}
+              tooltip="市場基準價或官方建議售價"
             >
               <InputNumber placeholder="21000" style={{ width: '100%' }} />
             </Form.Item>
@@ -501,6 +517,7 @@ export default function ProductsPage() {
               label="目前價格"
               rules={[{ required: true, message: '請輸入目前價格' }]}
               style={{ flex: 1 }}
+              tooltip="當前實際銷售價格，可因市場調整"
             >
               <InputNumber placeholder="21000" style={{ width: '100%' }} />
             </Form.Item>
@@ -509,6 +526,7 @@ export default function ProductsPage() {
               label="最低價格"
               rules={[{ required: true, message: '請輸入最低價格' }]}
               style={{ flex: 1 }}
+              tooltip="最低可接受售價，確保不虧本"
             >
               <InputNumber placeholder="18000" style={{ width: '100%' }} />
             </Form.Item>
@@ -538,6 +556,99 @@ export default function ProductsPage() {
             <Form.Item name="has_accessories" label="有附件" valuePropName="checked" style={{ flex: 1 }}>
               <Switch />
             </Form.Item>
+          </div>
+
+          {/* 空瓶費申報 - 重量資訊 */}
+          <div style={{ background: '#f5f5f5', padding: '16px', borderRadius: '6px', marginBottom: '16px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '12px' }}>空瓶費申報重量</div>
+
+            {/* 空瓶重量 - 永遠顯示 */}
+            <Form.Item
+              name="weight_kg"
+              label="空瓶重量 (kg)"
+              tooltip="酒瓶本身重量，不含包裝和附件"
+              style={{ marginBottom: '16px' }}
+            >
+              <InputNumber
+                placeholder="0.8"
+                step={0.1}
+                min={0}
+                precision={2}
+                style={{ width: '200px' }}
+              />
+            </Form.Item>
+
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              {/* 有外盒時顯示外盒重量 */}
+              <Form.Item shouldUpdate>
+                {({ getFieldValue }) => {
+                  const hasBox = getFieldValue('has_box')
+                  return hasBox ? (
+                    <Form.Item
+                      name="package_weight_kg"
+                      label="外盒重量 (kg)"
+                      tooltip="外盒包裝重量"
+                      style={{ minWidth: '180px' }}
+                    >
+                      <InputNumber
+                        placeholder="0.5"
+                        step={0.1}
+                        min={0}
+                        precision={2}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  ) : null
+                }}
+              </Form.Item>
+
+              {/* 有附件時顯示附件重量 */}
+              <Form.Item shouldUpdate>
+                {({ getFieldValue }) => {
+                  const hasAccessories = getFieldValue('has_accessories')
+                  return hasAccessories ? (
+                    <Form.Item
+                      name="accessory_weight_kg"
+                      label="附件重量 (kg)"
+                      tooltip="證書、木盒等附件重量"
+                      style={{ minWidth: '180px' }}
+                    >
+                      <InputNumber
+                        placeholder="0.2"
+                        step={0.1}
+                        min={0}
+                        precision={2}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  ) : null
+                }}
+              </Form.Item>
+
+              {/* 總重量 - 有任何額外重量時顯示 */}
+              <Form.Item shouldUpdate>
+                {({ getFieldValue }) => {
+                  const hasBox = getFieldValue('has_box')
+                  const hasAccessories = getFieldValue('has_accessories')
+                  return (hasBox || hasAccessories) ? (
+                    <Form.Item
+                      name="total_weight_kg"
+                      label="總重量 (kg)"
+                      tooltip="包含酒液、包裝、附件的總重量"
+                      style={{ minWidth: '180px' }}
+                    >
+                      <InputNumber
+                        placeholder="1.7"
+                        step={0.1}
+                        min={0}
+                        precision={2}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  ) : null
+                }}
+              </Form.Item>
+            </div>
           </div>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
