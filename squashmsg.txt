@@ -1,0 +1,1 @@
+chore: squash merge feature/variant-display-ui (variant display UX improvements) 

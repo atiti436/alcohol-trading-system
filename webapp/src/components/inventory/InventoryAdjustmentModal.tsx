@@ -29,6 +29,9 @@ interface InventoryItem {
     variant_code: string
     stock_quantity: number
     available_stock: number
+    // 補齊 UI 會用到的欄位（可選）
+    description?: string
+    variant_type?: string
   }>
 }
 

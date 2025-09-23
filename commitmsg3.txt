@@ -1,0 +1,1 @@
+chore: protect test endpoint (dev-only) and add PR template 
