@@ -16,7 +16,8 @@ import {
   Tooltip,
   InputNumber,
   Switch,
-  Badge
+  Badge,
+  Typography
 } from 'antd'
 import {
   PlusOutlined,
@@ -36,6 +37,7 @@ import type {
 
 const { Search } = Input
 const { Option } = Select
+const { Text } = Typography
 
 /**
  * 🏠 Room-2: 商品管理頁面
