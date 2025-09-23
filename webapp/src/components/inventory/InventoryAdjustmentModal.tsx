@@ -179,14 +179,22 @@ export function InventoryAdjustmentModal({
       width: 150,
       render: (_: any, record: AdjustmentItem) => (
         <Select
-          placeholder="選擇變體"
+          placeholder="⚠️ 請選擇版本"
           value={record.variant_id || undefined}
           onChange={(value) => handleVariantChange(record.key, value)}
           style={{ width: '100%' }}
+          notFoundContent="無可用版本"
         >
           {inventoryItem?.variants.map(variant => (
             <Option key={variant.id} value={variant.id}>
-              {variant.variant_code}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 'bold' }}>
+                  {variant.description || variant.variant_type}
+                </span>
+                <span style={{ color: '#999', fontSize: '12px' }}>
+                  {variant.variant_code} | 庫存: {variant.available_stock || variant.stock_quantity || 0}瓶
+                </span>
+              </div>
             </Option>
           ))}
         </Select>

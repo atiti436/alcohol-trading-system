@@ -275,16 +275,27 @@ export function PurchaseOrderModal({
       width: 150,
       render: (_: any, record: PurchaseOrderItem) => (
         <Select
-          placeholder="選擇變體"
+          placeholder="⚠️ 請選擇版本 (必選)"
           value={record.variant_id || undefined}
           onChange={(value) => handleVariantChange(record.key, value)}
           style={{ width: '100%' }}
           disabled={!record.product_id}
           allowClear
+          notFoundContent="無可用版本"
         >
           {record.product?.variants?.map(variant => (
             <Option key={variant.id} value={variant.id}>
-              {variant.variant_code}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 'bold' }}>
+                  {variant.description || variant.variant_type}
+                </span>
+                <span style={{ color: '#999', fontSize: '12px' }}>
+                  {variant.variant_code}
+                </span>
+              </div>
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                {variant.condition || '狀況良好'} | NT$ {variant.current_price?.toLocaleString()}
+              </div>
             </Option>
           ))}
         </Select>
