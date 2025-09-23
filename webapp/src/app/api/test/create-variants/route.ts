@@ -4,6 +4,13 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
+  // 安全保護：僅在開發環境啟用，避免誤上線
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json(
+      { error: 'This test endpoint is disabled outside development.' },
+      { status: 404 }
+    )
+  }
   try {
     console.log('🎯 開始創建測試變體...')
 

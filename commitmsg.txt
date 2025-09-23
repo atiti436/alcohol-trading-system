@@ -1,0 +1,1 @@
+chore: variant display and types 
