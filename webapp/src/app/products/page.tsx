@@ -734,7 +734,7 @@ export default function ProductsPage() {
                   return (hasBox || hasAccessories) ? (
                     <Form.Item
                       label="總重量 (kg) - 自動計算"
-                      tooltip="自動計算：酒液 + 空瓶 + 外盒 + 附件重量"
+              tooltip="自動計算：空瓶 + 外盒 + 附件重量"
                       style={{ minWidth: '200px' }}
                     >
                       <Form.Item shouldUpdate noStyle>
@@ -876,7 +876,7 @@ export default function ProductsPage() {
                           size="small"
                           icon={<EditOutlined />}
                           onClick={() => handleEditVariant(record)}
-                          tooltip="編輯變體"
+                          
                         />
                         <Popconfirm
                           title="確定要刪除此變體嗎？"
@@ -888,7 +888,7 @@ export default function ProductsPage() {
                             size="small"
                             danger
                             icon={<DeleteOutlined />}
-                            tooltip="刪除變體"
+                            
                           />
                         </Popconfirm>
                       </Space>
