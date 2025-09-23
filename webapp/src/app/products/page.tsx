@@ -62,7 +62,10 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [variantsModalVisible, setVariantsModalVisible] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductWithVariants | null>(null)
+  const [variantModalVisible, setVariantModalVisible] = useState(false)
+  const [editingVariant, setEditingVariant] = useState<any>(null)
   const [form] = Form.useForm()
+  const [variantForm] = Form.useForm()
 
   // 載入商品列表
   const loadProducts = async () => {
@@ -295,6 +298,83 @@ export default function ProductsPage() {
     setVariantsModalVisible(true)
   }
 
+  // 處理新增變體
+  const handleAddVariant = () => {
+    if (!selectedProduct) return
+    setEditingVariant(null)
+    variantForm.resetFields()
+    variantForm.setFieldsValue({
+      variant_type: 'A', // 預設值
+      condition: 'Normal'
+    })
+    setVariantModalVisible(true)
+  }
+
+  // 處理編輯變體
+  const handleEditVariant = (variant: any) => {
+    setEditingVariant(variant)
+    variantForm.setFieldsValue(variant)
+    setVariantModalVisible(true)
+  }
+
+  // 處理變體提交
+  const handleVariantSubmit = async (values: any) => {
+    try {
+      const variantData = {
+        ...values,
+        product_id: selectedProduct?.id,
+        variant_code: `${selectedProduct?.product_code}-${values.variant_type}`,
+        sku: `${selectedProduct?.product_code}-${values.variant_type}-${selectedProduct?.volume_ml}-${Math.round(selectedProduct?.alc_percentage || 0)}`
+      }
+
+      const url = editingVariant
+        ? `/api/products/${selectedProduct?.id}/variants/${editingVariant.id}`
+        : `/api/products/${selectedProduct?.id}/variants`
+
+      const method = editingVariant ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(variantData)
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        message.success(editingVariant ? '變體更新成功' : '變體新增成功')
+        setVariantModalVisible(false)
+        loadProducts() // 重新載入商品列表
+      } else {
+        message.error(result.error || '操作失敗')
+      }
+    } catch (error) {
+      message.error('操作失敗')
+      console.error(error)
+    }
+  }
+
+  // 處理刪除變體
+  const handleDeleteVariant = async (variant: any) => {
+    try {
+      const response = await fetch(`/api/products/${selectedProduct?.id}/variants/${variant.id}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        message.success('變體刪除成功')
+        loadProducts() // 重新載入商品列表
+      } else {
+        message.error(result.error || '刪除失敗')
+      }
+    } catch (error) {
+      message.error('刪除失敗')
+      console.error(error)
+    }
+  }
+
   // 處理刪除
   const handleDelete = async (id: string) => {
     try {
@@ -441,6 +521,25 @@ export default function ProductsPage() {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          onValuesChange={(changedValues) => {
+            if (
+              'weight_kg' in changedValues ||
+              'package_weight_kg' in changedValues ||
+              'accessory_weight_kg' in changedValues ||
+              'has_box' in changedValues ||
+              'has_accessories' in changedValues
+            ) {
+              try {
+                const { weight_kg, package_weight_kg, accessory_weight_kg, has_box, has_accessories } =
+                  form.getFieldsValue(['weight_kg','package_weight_kg','accessory_weight_kg','has_box','has_accessories']) as any
+                const base = Number(weight_kg) || 0
+                const pkg = has_box ? (Number(package_weight_kg) || 0) : 0
+                const acc = has_accessories ? (Number(accessory_weight_kg) || 0) : 0
+                const total = Number((base + pkg + acc).toFixed(2))
+                form.setFieldsValue({ total_weight_kg: total })
+              } catch (e) {}
+            }
+          }}
         >
           <div style={{ display: 'flex', gap: '16px' }}>
             <Form.Item
@@ -634,18 +733,46 @@ export default function ProductsPage() {
                   const hasAccessories = getFieldValue('has_accessories')
                   return (hasBox || hasAccessories) ? (
                     <Form.Item
-                      name="total_weight_kg"
-                      label="總重量 (kg)"
-                      tooltip="包含酒液、包裝、附件的總重量"
-                      style={{ minWidth: '180px' }}
+                      label="總重量 (kg) - 自動計算"
+                      tooltip="自動計算：酒液 + 空瓶 + 外盒 + 附件重量"
+                      style={{ minWidth: '200px' }}
                     >
-                      <InputNumber
-                        placeholder="1.7"
-                        step={0.1}
-                        min={0}
-                        precision={2}
-                        style={{ width: '100%' }}
-                      />
+                      <Form.Item shouldUpdate noStyle>
+                        {({ getFieldValue }) => {
+                          const alcoholWeight = getFieldValue('weight_kg') || 0
+                          const packageWeight = hasBox ? (getFieldValue('package_weight_kg') || 0) : 0
+                          const accessoryWeight = hasAccessories ? (getFieldValue('accessory_weight_kg') || 0) : 0
+                          const totalWeight = alcoholWeight * 2 + packageWeight + accessoryWeight // 酒液*2當作酒液+空瓶
+
+                          // 自動更新表單值
+                          if (totalWeight > 0) {
+                            setTimeout(() => {
+                              form.setFieldValue('total_weight_kg', parseFloat(totalWeight.toFixed(2)))
+                            }, 0)
+                          }
+
+                          return (
+                            <div style={{
+                              padding: '8px 12px',
+                              background: '#f0f8ff',
+                              border: '1px solid #d1ecf1',
+                              borderRadius: '6px',
+                              fontWeight: 'bold',
+                              color: '#31708f'
+                            }}>
+                              {totalWeight.toFixed(2)} kg
+                              <div style={{ fontSize: '11px', fontWeight: 'normal', marginTop: '2px' }}>
+                                酒液+空瓶:{(alcoholWeight * 2).toFixed(1)}kg
+                                {packageWeight > 0 && ` + 外盒:${packageWeight}kg`}
+                                {accessoryWeight > 0 && ` + 附件:${accessoryWeight}kg`}
+                              </div>
+                            </div>
+                          )
+                        }}
+                      </Form.Item>
+                      <Form.Item name="total_weight_kg" noStyle>
+                        <input type="hidden" />
+                      </Form.Item>
                     </Form.Item>
                   ) : null
                 }}
@@ -671,8 +798,21 @@ export default function ProductsPage() {
         title={`${selectedProduct?.name} - 變體管理`}
         open={variantsModalVisible}
         onCancel={() => setVariantsModalVisible(false)}
-        footer={null}
-        width={800}
+        footer={
+          <Space>
+            <Button onClick={() => setVariantsModalVisible(false)}>
+              關閉
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAddVariant}
+            >
+              新增變體
+            </Button>
+          </Space>
+        }
+        width={900}
       >
         {selectedProduct && (
           <div>
@@ -725,6 +865,34 @@ export default function ProductsPage() {
                     dataIndex: 'condition',
                     key: 'condition',
                     render: (condition: string) => condition || '狀況良好'
+                  },
+                  {
+                    title: '操作',
+                    key: 'actions',
+                    width: 120,
+                    render: (record: any) => (
+                      <Space>
+                        <Button
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => handleEditVariant(record)}
+                          tooltip="編輯變體"
+                        />
+                        <Popconfirm
+                          title="確定要刪除此變體嗎？"
+                          onConfirm={() => handleDeleteVariant(record)}
+                          okText="確定"
+                          cancelText="取消"
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            tooltip="刪除變體"
+                          />
+                        </Popconfirm>
+                      </Space>
+                    )
                   }
                 ]}
               />
@@ -737,6 +905,173 @@ export default function ProductsPage() {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* 變體新增/編輯Modal */}
+      <Modal
+        title={editingVariant ? '編輯變體' : '新增變體'}
+        open={variantModalVisible}
+        onCancel={() => setVariantModalVisible(false)}
+        onOk={() => variantForm.submit()}
+        confirmLoading={loading}
+        width={600}
+        okText="確定"
+        cancelText="取消"
+      >
+        <Form
+          form={variantForm}
+          layout="vertical"
+          onFinish={handleVariantSubmit}
+        >
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="variant_type"
+              label="變體類型"
+              rules={[{ required: true, message: '請選擇變體類型' }]}
+              style={{ flex: 1 }}
+            >
+              <Select placeholder="選擇變體類型">
+                <Option value="A">A - 一般版</Option>
+                <Option value="B">B - 年度限定</Option>
+                <Option value="C">C - 紀念版</Option>
+                <Option value="D">D - 特殊限定</Option>
+                <Option value="X">X - 損傷品</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              name="description"
+              label="變體描述"
+              rules={[{ required: true, message: '請輸入變體描述' }]}
+              style={{ flex: 2 }}
+            >
+              <Input placeholder="例：盒損版、收藏版、限定版" />
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="base_price"
+              label="基礎價格"
+              rules={[{ required: true, message: '請輸入基礎價格' }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber
+                placeholder="21000"
+                style={{ width: '100%' }}
+                min={0}
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              />
+            </Form.Item>
+            <Form.Item
+              name="current_price"
+              label="目前價格"
+              rules={[{ required: true, message: '請輸入目前價格' }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber
+                placeholder="21000"
+                style={{ width: '100%' }}
+                min={0}
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              />
+            </Form.Item>
+            <Form.Item
+              name="cost_price"
+              label="成本價格"
+              style={{ flex: 1 }}
+            >
+              <InputNumber
+                placeholder="15000"
+                style={{ width: '100%' }}
+                min={0}
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              />
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="stock_quantity"
+              label="庫存數量"
+              style={{ flex: 1 }}
+            >
+              <InputNumber
+                placeholder="0"
+                style={{ width: '100%' }}
+                min={0}
+              />
+            </Form.Item>
+            <Form.Item
+              name="available_stock"
+              label="可用庫存"
+              style={{ flex: 1 }}
+            >
+              <InputNumber
+                placeholder="0"
+                style={{ width: '100%' }}
+                min={0}
+              />
+            </Form.Item>
+            <Form.Item
+              name="weight_kg"
+              label="重量 (kg)"
+              style={{ flex: 1 }}
+            >
+              <InputNumber
+                placeholder="1.2"
+                style={{ width: '100%' }}
+                min={0}
+                step={0.1}
+                precision={2}
+              />
+            </Form.Item>
+          </div>
+
+          <Form.Item
+            name="condition"
+            label="商品狀況"
+            rules={[{ required: true, message: '請輸入商品狀況' }]}
+          >
+            <Input placeholder="例：原裝無盒、外盒破損酒體完好、限量收藏盒" />
+          </Form.Item>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="production_year"
+              label="生產年份"
+              style={{ flex: 1 }}
+            >
+              <InputNumber
+                placeholder="2023"
+                style={{ width: '100%' }}
+                min={1900}
+                max={new Date().getFullYear()}
+              />
+            </Form.Item>
+            <Form.Item
+              name="serial_number"
+              label="序號"
+              style={{ flex: 1 }}
+            >
+              <Input placeholder="選填，如有特殊序號" />
+            </Form.Item>
+          </div>
+
+          <Form.Item name="discount_rate" label="折扣率 (%)">
+            <InputNumber
+              placeholder="0"
+              style={{ width: '200px' }}
+              min={0}
+              max={100}
+              step={0.1}
+              precision={1}
+            />
+          </Form.Item>
+
+          <Form.Item name="limited_edition" label="限量版" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   )
