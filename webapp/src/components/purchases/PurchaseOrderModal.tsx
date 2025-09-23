@@ -290,7 +290,7 @@ export function PurchaseOrderModal({
                   {variant.description || variant.variant_type}
                 </span>
                 <span style={{ color: '#999', fontSize: '12px' }}>
-                  {variant.variant_code}
+                  {variant.variant_code} | 庫存: {variant.available_stock || variant.stock_quantity || 0}瓶
                 </span>
               </div>
               <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>

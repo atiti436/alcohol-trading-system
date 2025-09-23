@@ -565,12 +565,63 @@ export default function ProductsPage() {
           <div>
             <p>商品編號: {selectedProduct.product_code}</p>
             <p>變體數量: {selectedProduct._count.variants} 個</p>
-            {/* TODO: 這裡可以加入變體的詳細管理功能 */}
-            <div style={{ background: '#f5f5f5', padding: '16px', marginTop: '16px' }}>
-              <p style={{ margin: 0, color: '#666' }}>
-                變體管理功能開發中...
-              </p>
-            </div>
+
+            {selectedProduct.variants && selectedProduct.variants.length > 0 ? (
+              <Table
+                dataSource={selectedProduct.variants}
+                pagination={false}
+                size="small"
+                columns={[
+                  {
+                    title: '變體編號',
+                    dataIndex: 'variant_code',
+                    key: 'variant_code',
+                    width: 120
+                  },
+                  {
+                    title: '描述',
+                    dataIndex: 'description',
+                    key: 'description',
+                    render: (desc: string, record: any) => (
+                      <span style={{ fontWeight: 'bold' }}>
+                        {desc || record.variant_type || '未設定'}
+                      </span>
+                    )
+                  },
+                  {
+                    title: '價格',
+                    dataIndex: 'current_price',
+                    key: 'current_price',
+                    width: 100,
+                    render: (price: number) => `NT$ ${price?.toLocaleString() || 0}`
+                  },
+                  {
+                    title: '庫存',
+                    key: 'stock',
+                    width: 80,
+                    render: (record: any) => (
+                      <span style={{
+                        color: (record.available_stock || record.stock_quantity || 0) > 0 ? 'green' : 'red'
+                      }}>
+                        {record.available_stock || record.stock_quantity || 0}瓶
+                      </span>
+                    )
+                  },
+                  {
+                    title: '狀況',
+                    dataIndex: 'condition',
+                    key: 'condition',
+                    render: (condition: string) => condition || '狀況良好'
+                  }
+                ]}
+              />
+            ) : (
+              <div style={{ background: '#f5f5f5', padding: '16px', marginTop: '16px' }}>
+                <p style={{ margin: 0, color: '#666' }}>
+                  此商品尚無變體資料
+                </p>
+              </div>
+            )}
           </div>
         )}
       </Modal>
