@@ -67,6 +67,37 @@ export default function ProductsPage() {
   const [form] = Form.useForm()
   const [variantForm] = Form.useForm()
 
+  // 變體代碼/SKU 自動生成工具（簡單 slug 規則）
+  const slugify = (s: string) => (s || '')
+    .toString()
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  const buildVariantCode = (productCode: string, vtype: string, label: string) => {
+    const parts: string[] = []
+    if (productCode) parts.push(productCode)
+    if (vtype) parts.push(vtype)
+    const lab = slugify(label)
+    if (lab) parts.push(lab)
+    return parts.join('-')
+  }
+
+  const buildSKU = (
+    productCode: string,
+    vtype: string,
+    label: string,
+    volume?: number,
+    alc?: number
+  ) => {
+    const code = buildVariantCode(productCode, vtype, label)
+    const vol = typeof volume === 'number' ? String(volume) : ''
+    const alcPart = typeof alc === 'number' ? String(Math.round(alc)) : ''
+    const tail = [vol, alcPart].filter(Boolean).join('-')
+    return tail ? `${code}-${tail}` : code
+  }
+
   // 載入商品列表
   const loadProducts = async () => {
     setLoading(true)
@@ -922,6 +953,21 @@ export default function ProductsPage() {
           form={variantForm}
           layout="vertical"
           onFinish={handleVariantSubmit}
+          onValuesChange={(changed) => {
+            const label = (variantForm.getFieldValue('variant_label') || '') as string
+            const vtype = (variantForm.getFieldValue('variant_type') || '') as string
+            const p = selectedProduct
+            if (!p) return
+            if ('variant_label' in (changed || {})) {
+              const currentDesc = variantForm.getFieldValue('description')
+              if (!currentDesc && label) {
+                variantForm.setFieldsValue({ description: `${p.name} ${label}` })
+              }
+            }
+            const variant_code = buildVariantCode(p.product_code, vtype, label)
+            const sku = buildSKU(p.product_code, vtype, label, p.volume_ml, p.alc_percentage)
+            variantForm.setFieldsValue({ variant_code, sku })
+          }}
         >
           <div style={{ display: 'flex', gap: '16px' }}>
             <Form.Item
@@ -945,6 +991,23 @@ export default function ProductsPage() {
               style={{ flex: 2 }}
             >
               <Input placeholder="例：盒損版、收藏版、限定版" />
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              name="variant_label"
+              label="變體標籤"
+              tooltip="輸入簡短標籤（例如：2021、歐洲版、禮盒）"
+              style={{ flex: 1 }}
+            >
+              <Input placeholder="例如：2021 或 歐洲版" />
+            </Form.Item>
+            <Form.Item name="variant_code" label="變體代碼" style={{ flex: 1 }}>
+              <Input placeholder="自動生成，可修改" />
+            </Form.Item>
+            <Form.Item name="sku" label="SKU" style={{ flex: 1 }}>
+              <Input placeholder="自動生成，可修改" />
             </Form.Item>
           </div>
 
