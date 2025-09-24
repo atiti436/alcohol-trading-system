@@ -24,10 +24,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // 依角色取用統一的選單鍵集合（避免索引位移）
   const getMenuKeysByRole = (userRole: Role): string[] => {
     if (userRole === Role.SUPER_ADMIN) {
-      return ['/dashboard','/customers','/products','/quotations','/purchases','/imports','/inventory','/sales','/reports','/settings']
+      return ['/dashboard','/customers','/products','/quotations','/purchases','/imports','/inventory','/sales','/reports','/users','/settings']
     }
     if (userRole === Role.INVESTOR) {
       return ['/dashboard','/customers','/products','/quotations','/sales','/reports']
+    }
+    if (userRole === Role.PENDING) {
+      return ['/dashboard']  // 待審核用戶只能看到首頁
     }
     return ['/dashboard','/customers','/products','/quotations','/purchases','/imports','/inventory']
   }
@@ -60,6 +63,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         return '投資方'
       case Role.EMPLOYEE:
         return '員工'
+      case Role.PENDING:
+        return '待審核'
       default:
         return '使用者'
     }
@@ -101,7 +106,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
-          items={session?.user?.role ? buildMenuItems(getMenuKeysByRole(session.user.role), session.user.role as any, { onClickPath: (p) => router.push(p) }) : []}
+          items={session?.user?.role ? buildMenuItems(getMenuKeysByRole(session.user.role), session.user.role, { onClickPath: (p) => router.push(p) }) : []}
         />
       </Sider>
 

@@ -30,13 +30,20 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role as Role
           token.investor_id = dbUser.investor_id || undefined
         } else {
-          // 首次登入的新使用者，預設為超級管理員角色（老闆）
+          // 檢查是否為管理員MAIL
+          const adminEmails = [
+            'manpan.whisky@gmail.com',  // 老闆MAIL
+          ]
+
+          const isAdmin = adminEmails.includes(user.email!.toLowerCase())
+
+          // 首次登入的新使用者
           const newUser = await prisma.user.create({
             data: {
               email: user.email!,
               name: user.name!,
               image: user.image,
-              role: Role.SUPER_ADMIN,
+              role: isAdmin ? Role.SUPER_ADMIN : Role.PENDING,  // 管理員直接通過，其他人待審核
             },
           })
           token.id = newUser.id

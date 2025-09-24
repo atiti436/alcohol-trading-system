@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation'
 import { Role } from '@/types/auth'
 import SimpleLineChart from '@/components/charts/SimpleLineChart'
 import SimplePieChart from '@/components/charts/SimplePieChart'
+import PendingApprovalDashboard from '@/components/dashboard/PendingApprovalDashboard'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -85,6 +86,8 @@ export default function Dashboard() {
         return <InvestorDashboard data={dashboardData} />
       case Role.EMPLOYEE:
         return <EmployeeDashboard data={dashboardData} />
+      case Role.PENDING:
+        return <PendingApprovalDashboard />
       default:
         return <div>角色未識別</div>
     }

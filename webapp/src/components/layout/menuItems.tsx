@@ -13,17 +13,17 @@ import {
   SettingOutlined,
   TruckOutlined,
   FileSearchOutlined,
-  RobotOutlined
+  RobotOutlined,
+  TeamOutlined
 } from '@ant-design/icons'
-
-export type AppRole = 'SUPER_ADMIN' | 'INVESTOR' | 'EMPLOYEE'
+import { Role } from '@/types/auth'
 
 export interface MenuItemConfig {
   key: string
   path: string
   label: string
   icon: React.ReactNode
-  roles?: AppRole[] // 若省略則所有角色可見
+  roles?: Role[] // 若省略則所有角色可見
 }
 
 export const MENU_ITEMS: Record<string, MenuItemConfig> = {
@@ -56,21 +56,21 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     path: '/purchases',
     label: '採購管理',
     icon: <ShoppingOutlined />,
-    roles: ['SUPER_ADMIN', 'EMPLOYEE']
+    roles: [Role.SUPER_ADMIN, Role.EMPLOYEE]
   },
   '/imports': {
     key: '/imports',
     path: '/imports',
     label: '進貨管理',
     icon: <FileTextOutlined />,
-    roles: ['SUPER_ADMIN', 'EMPLOYEE']
+    roles: [Role.SUPER_ADMIN, Role.EMPLOYEE]
   },
   '/inventory': {
     key: '/inventory',
     path: '/inventory',
     label: '庫存管理',
     icon: <ShoppingOutlined />,
-    roles: ['SUPER_ADMIN', 'EMPLOYEE']
+    roles: [Role.SUPER_ADMIN, Role.EMPLOYEE]
   },
   '/sales': {
     key: '/sales',
@@ -89,7 +89,7 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     path: '/settings',
     label: '系統設定',
     icon: <SettingOutlined />,
-    roles: ['SUPER_ADMIN']
+    roles: [Role.SUPER_ADMIN]
   },
   '/shipping': {
     key: '/shipping',
@@ -109,16 +109,23 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     label: 'LINE BOT助手',
     icon: <RobotOutlined />,
   },
+  '/users': {
+    key: '/users',
+    path: '/users',
+    label: '用戶管理',
+    icon: <TeamOutlined />,
+    roles: ['SUPER_ADMIN']
+  },
   '/admin': {
     key: '/admin',
     path: '/admin',
     label: '系統管理',
     icon: <SettingOutlined />,
-    roles: ['SUPER_ADMIN']
+    roles: [Role.SUPER_ADMIN]
   }
 }
 
-export function buildMenuItems(keys: string[], role: AppRole, opts?: {
+export function buildMenuItems(keys: string[], role: Role, opts?: {
   useLinkLabel?: boolean
   onClickPath?: (path: string) => void
 }): MenuProps['items'] {
@@ -137,4 +144,3 @@ export function buildMenuItems(keys: string[], role: AppRole, opts?: {
       onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
     }))
 }
-

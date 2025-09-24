@@ -2,7 +2,8 @@
 export enum Role {
   SUPER_ADMIN = 'SUPER_ADMIN',
   INVESTOR = 'INVESTOR',
-  EMPLOYEE = 'EMPLOYEE'
+  EMPLOYEE = 'EMPLOYEE',
+  PENDING = 'PENDING'  // 待審核狀態
 }
 
 // 使用者介面

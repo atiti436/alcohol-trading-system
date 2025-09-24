@@ -181,6 +181,28 @@ export function withAppAuth(
 }
 
 /**
+ * App Router版本 - 僅允許非 PENDING 的已認證使用者
+ * 多數受保護 API 應使用此包裝，避免待審核帳號呼叫內部API。
+ */
+export function withAppActiveUser(
+  handler: AppRouteHandler,
+  requiredRoles?: Role[]
+): (req: NextRequest) => Promise<NextResponse> {
+  return withAppAuth(async (req, res, context) => {
+    if (context.role === Role.PENDING) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: '帳戶待審核，暫無權限'
+        }
+      }, { status: 403 })
+    }
+    return handler(req, res, context)
+  }, requiredRoles)
+}
+
+/**
  * App Router版本 - 僅超級管理員權限
  */
 export function withAppSuperAdmin(handler: AppRouteHandler) {

@@ -1,0 +1,1 @@
+feat(variants): add label-based auto-generation for variant_code and SKU in modal 

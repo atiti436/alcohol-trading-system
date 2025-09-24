@@ -1,0 +1,1 @@
+feat(products): auto-calc total_weight_kg on form changes 

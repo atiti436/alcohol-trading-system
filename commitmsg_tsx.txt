@@ -1,0 +1,1 @@
+fix(ui): import Typography and use Text for price section 

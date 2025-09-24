@@ -1,0 +1,1 @@
+fix(inventory): add optional description and variant_type to local variant type 

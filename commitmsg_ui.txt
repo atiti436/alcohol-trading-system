@@ -1,0 +1,1 @@
+chore(ui): update variant display in purchase modal and products page 

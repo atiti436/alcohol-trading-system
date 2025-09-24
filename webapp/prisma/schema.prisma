@@ -503,6 +503,7 @@ enum Role {
   SUPER_ADMIN
   INVESTOR
   EMPLOYEE
+  PENDING
 }
 
 enum PaymentTerms {

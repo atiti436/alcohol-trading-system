@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withAppAuth } from '@/modules/auth/middleware/permissions'
+import { withAppActiveUser } from '@/modules/auth/middleware/permissions'
 import { filterSalesData } from '@/modules/auth/utils/data-filter'
 import { prisma } from '@/lib/prisma'
 import { PermissionContext, Role } from '@/types/auth'
@@ -22,7 +22,7 @@ type SaleWithRelations = Sale & {
  * GET /api/sales - 獲取銷售資料
  * 🚨 關鍵：根據角色自動過濾敏感資料
  */
-export const GET = withAppAuth(async (
+export const GET = withAppActiveUser(async (
   req: NextRequest,
   res: NextResponse,
   context: PermissionContext
@@ -137,7 +137,7 @@ export const GET = withAppAuth(async (
  * POST /api/sales - 建立新銷售單
  * 🚨 只有超級管理員和員工可以建立銷售單
  */
-export const POST = withAppAuth(async (
+export const POST = withAppActiveUser(async (
   req: NextRequest,
   res: NextResponse,
   context: PermissionContext
