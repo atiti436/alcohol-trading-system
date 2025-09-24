@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  eslint: {
+    // 在建置時忽略 ESLint，因為 CI 已經執行過 lint 檢查
+    ignoreDuringBuilds: true
+  }
 };
 
 module.exports = nextConfig;
