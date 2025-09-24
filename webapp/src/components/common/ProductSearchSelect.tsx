@@ -403,7 +403,7 @@ export default function ProductSearchSelect({
             name="estimated_price"
             label="預估售價 (NT$)"
           >
-            <InputNumber
+            <InputNumber<number>
               min={0}
               style={{ width: '100%' }}
               formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
