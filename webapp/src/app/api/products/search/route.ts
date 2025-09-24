@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma' 
+import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
@@ -35,15 +36,15 @@ export async function GET(request: NextRequest) {
     const searchConditions = searchTerms.map(term => ({
       OR: [
         // 產品名稱包含關鍵字
-        { name: { contains: term, mode: 'insensitive' } },
+        { name: { contains: term, mode: Prisma.QueryMode.insensitive } },
         // 產品編號包含關鍵字
-        { product_code: { contains: term, mode: 'insensitive' } },
+        { product_code: { contains: term, mode: Prisma.QueryMode.insensitive } },
         // 供應商包含關鍵字
-        { supplier: { contains: term, mode: 'insensitive' } },
+        { supplier: { contains: term, mode: Prisma.QueryMode.insensitive } },
         // 變體描述包含關鍵字
-        { variants: { some: { description: { contains: term, mode: 'insensitive' } } } },
+        { variants: { some: { description: { contains: term, mode: Prisma.QueryMode.insensitive } } } },
         // 變體代碼包含關鍵字
-        { variants: { some: { variant_code: { contains: term, mode: 'insensitive' } } } }
+        { variants: { some: { variant_code: { contains: term, mode: Prisma.QueryMode.insensitive } } } }
       ]
     }))
 
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
       const brandResults = await prisma.product.findMany({
         where: {
           is_active: true,
-          name: { contains: query, mode: 'insensitive' }
+          name: { contains: query, mode: Prisma.QueryMode.insensitive }
         },
         select: { name: true },
         take: 10
