@@ -569,6 +569,19 @@ enum AuditAction {
   SENSITIVE_ACCESS
 }
 
+// 資源類型
+enum ResourceType {
+  USERS
+  CUSTOMERS
+  PRODUCTS
+  SALES
+  PURCHASES
+  INVENTORY
+  SETTINGS
+  REPORTS
+  LINEBOT
+}
+
 // 審計資源類型
 enum AuditResourceType {
   USERS
