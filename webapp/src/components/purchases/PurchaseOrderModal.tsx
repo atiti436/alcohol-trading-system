@@ -29,7 +29,7 @@ import {
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor } from '@/components/auth/RoleGuard'
-import { CreatePurchaseRequest, ProductWithVariants, ProductVariant } from '@/types/room-2'
+import { CreatePurchaseRequest, ProductWithVariants, ProductVariant, AlcoholCategory } from '@/types/room-2'
 import ProductSearchSelect from '@/components/common/ProductSearchSelect'
 
 const { Option } = Select
@@ -234,7 +234,7 @@ export function PurchaseOrderModal({
           name: selection.productName,
           product_code: selection.productCode,
           supplier: selection.supplier || '',
-          category: 'WHISKY', // 預設值
+          category: AlcoholCategory.WHISKY, // 預設值
           volume_ml: 750,
           alc_percentage: 40,
           weight_kg: 1.5,
