@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -78,7 +78,7 @@ export default function SalesPage() {
   const [submitting, setSubmitting] = useState(false)
 
   // 載入銷售訂單列表
-  const loadSales = async (showLoading = true) => {
+  const loadSales = useCallback(async (showLoading = true) => {
     if (showLoading) {
       setLoading(true)
     }
@@ -121,11 +121,11 @@ export default function SalesPage() {
         setInitialLoading(false)
       }
     }
-  }
+  }, [filters, initialLoading])
 
   useEffect(() => {
     loadSales()
-  }, [filters])
+  }, [filters, loadSales])
 
   // 獲取狀態顏色（基於付款狀態）
   // 狀態標籤顏色

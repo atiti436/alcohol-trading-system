@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Card,
   Row,
@@ -136,10 +136,10 @@ export default function ReportsPage() {
     if (dateRange) {
       loadReportData()
     }
-  }, [activeTab, dateRange, period])
+  }, [activeTab, dateRange, period, loadReportData])
 
   // 載入報表數據
-  const loadReportData = async () => {
+  const loadReportData = useCallback(async () => {
     if (!dateRange) return
 
     setLoading(true)
@@ -178,7 +178,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeTab, dateRange, period, loadReportData])
 
   // 導出報表
   const exportReport = () => {

@@ -194,11 +194,11 @@ export default function ProductSearchSelect({
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>
                 <Text>{product.name}</Text>
-                <Tag color="blue" size="small" style={{ marginLeft: 8 }}>
+                <Tag color="blue" style={{ marginLeft: 8 }}>
                   {product.product_code}
                 </Tag>
                 {product.match_info.score > 8 && (
-                  <Tag color="gold" size="small" icon={<StarOutlined />}>
+                  <Tag color="gold" icon={<StarOutlined />}>
                     精確匹配
                   </Tag>
                 )}

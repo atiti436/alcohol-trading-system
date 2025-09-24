@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -114,7 +114,7 @@ export default function PurchasesPage() {
   const [selectedForReceive, setSelectedForReceive] = useState<Purchase | null>(null)
 
   // 載入採購單列表
-  const loadPurchases = async (showLoading = true) => {
+  const loadPurchases = useCallback(async (showLoading = true) => {
     if (showLoading) {
       setLoading(true)
     }
@@ -167,11 +167,11 @@ export default function PurchasesPage() {
         setInitialLoading(false)
       }
     }
-  }
+  }, [filters, initialLoading])
 
   useEffect(() => {
     loadPurchases()
-  }, [filters])
+  }, [filters, loadPurchases])
 
   // 狀態標籤顏色
   const getStatusColor = (status: string) => {

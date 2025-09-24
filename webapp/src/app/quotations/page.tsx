@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, Table, Button, Input, Select, Space, Tag, Typography, Statistic, Row, Col, Modal, Form, message, DatePicker, Dropdown, MenuProps, Popconfirm } from 'antd'
 import {
   FileTextOutlined,
@@ -85,7 +85,7 @@ export default function QuotationsPage() {
   })
 
   // 載入報價列表
-  const loadQuotations = async (page = 1) => {
+  const loadQuotations = useCallback(async (page = 1) => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -108,7 +108,7 @@ export default function QuotationsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.limit, filters])
 
   // 載入客戶列表
   const loadCustomers = async () => {
@@ -158,7 +158,7 @@ export default function QuotationsPage() {
 
   useEffect(() => {
     loadQuotations(1)
-  }, [filters])
+  }, [filters, loadQuotations])
 
   const handleSearch = (value: string) => {
     setFilters(prev => ({ ...prev, search: value }))
