@@ -151,12 +151,12 @@ export async function GET(request: NextRequest) {
         const filteredVariants = product.variants.filter(variant => {
           // 個人調貨判斷邏輯：
           // 1. 檢查庫存量是否為小批量 (通常個人調貨量較小)
-          // 2. 檢查產品描述或變種代碼是否包含個人標記
-          // 3. 使用 condition 欄位來標記個人調貨 (可用 "Personal" 等值)
+          // 2. 檢查產品描述是否包含個人標記
+          // 3. 檢查變種代碼是否包含個人調貨標記 (如 'P' 前綴)
           const isPersonalTransfer = (
-            variant.condition?.toLowerCase().includes('personal') ||
             variant.description?.toLowerCase().includes('personal') ||
             variant.description?.toLowerCase().includes('private') ||
+            variant.variant_code?.toLowerCase().includes('personal') ||
             (variant.stock_quantity && variant.stock_quantity < 10 && variant.variant_code?.includes('P'))
           )
 
