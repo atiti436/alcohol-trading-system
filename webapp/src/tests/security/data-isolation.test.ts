@@ -119,9 +119,11 @@ describe('🔒 投資方數據隔離測試', () => {
 
       // 可以看到完整的敏感資料
       const companySale = filtered.find((sale: any) => sale.fundingSource === 'COMPANY')
-      expect(companySale.actual_amount).toBe(1200)
-      expect(companySale.commission).toBe(200)
-      expect(companySale.total_amount).toBe(1000)
+      expect(companySale).toBeDefined()
+      const cs = companySale as any
+      expect(cs.actual_amount).toBe(1200)
+      expect(cs.commission).toBe(200)
+      expect(cs.total_amount).toBe(1000)
     })
 
     test('🔍 員工看到基本資料但不含財務敏感資訊', () => {
