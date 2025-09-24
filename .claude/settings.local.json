@@ -11,7 +11,8 @@
       "Bash(cat:*)",
       "Bash(npm run lint)",
       "Bash(git fetch:*)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

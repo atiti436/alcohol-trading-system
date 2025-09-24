@@ -1,1 +1,0 @@
-fix(prisma): restore missing enums; UI tweaks on products page 

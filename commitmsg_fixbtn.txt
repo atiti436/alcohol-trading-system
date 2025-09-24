@@ -1,1 +1,0 @@
-fix(products): remove invalid Button tooltip props; correct auto-calc tooltip text 
