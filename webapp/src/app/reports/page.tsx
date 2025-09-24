@@ -132,13 +132,7 @@ export default function ReportsPage() {
     setDateRange([threeMonthsAgo, now])
   }, [])
 
-  useEffect(() => {
-    if (dateRange) {
-      loadReportData()
-    }
-  }, [activeTab, dateRange, period, loadReportData])
-
-  // 載入報表數據
+  // 載入報表數據（放在依賴此函式的 useEffect 之前）
   const loadReportData = useCallback(async () => {
     if (!dateRange) return
 
@@ -178,7 +172,15 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
+  }, [activeTab, dateRange, period])
+
+  useEffect(() => {
+    if (dateRange) {
+      loadReportData()
+    }
   }, [activeTab, dateRange, period, loadReportData])
+
+  // （已移至前方，確保 useEffect 依賴時機正確）
 
   // 導出報表
   const exportReport = () => {

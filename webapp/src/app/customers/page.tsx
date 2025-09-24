@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -67,7 +67,7 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
 
   // 載入客戶列表
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     setLoading(true)
     try {
       const queryParams = new URLSearchParams()
@@ -92,11 +92,11 @@ export default function CustomersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, loadCustomers])
 
   useEffect(() => {
     loadCustomers()
-  }, [filters])
+  }, [filters, loadCustomers])
 
   // 客戶分級標籤顏色
   const getTierColor = (tier: CustomerTier) => {

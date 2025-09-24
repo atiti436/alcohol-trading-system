@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, Table, Row, Col, Statistic, Typography, Space, Button, Input, Select, Tag, Modal, Form, InputNumber, message } from 'antd'
 import {
   AppstoreOutlined,
@@ -50,7 +50,7 @@ export default function InventoryPage() {
   const [adjustmentLoading, setAdjustmentLoading] = useState(false)
 
   // 🔗 連接真實API - 移除假資料
-  const fetchInventory = async () => {
+  const fetchInventory = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -104,11 +104,11 @@ export default function InventoryPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchText, categoryFilter, statusFilter, fetchInventory])
 
   useEffect(() => {
     fetchInventory()
-  }, [searchText, categoryFilter, statusFilter])
+  }, [searchText, categoryFilter, statusFilter, fetchInventory])
 
   // 📊 計算真實統計數據
   const statistics = {

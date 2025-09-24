@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -113,7 +113,7 @@ export default function ImportsPage() {
   const [ocrResult, setOcrResult] = useState<any>(null)
 
   // 載入進貨記錄
-  const loadImports = async (showLoading = true) => {
+  const loadImports = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true)
     setError(null)
 
@@ -172,7 +172,7 @@ export default function ImportsPage() {
       setLoading(false)
       if (initialLoading) setInitialLoading(false)
     }
-  }
+  }, [filters, initialLoading])
 
   // 載入待進貨的採購單
   const loadPendingPurchases = async () => {
@@ -200,7 +200,7 @@ export default function ImportsPage() {
   useEffect(() => {
     loadImports()
     loadPendingPurchases()
-  }, [filters])
+  }, [filters, loadImports])
 
   // 狀態標籤顏色
   const getStatusColor = (status: string) => {

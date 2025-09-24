@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -99,7 +99,7 @@ export default function ProductsPage() {
   }
 
   // 載入商品列表
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     setLoading(true)
     try {
       const queryParams = new URLSearchParams()
@@ -124,11 +124,11 @@ export default function ProductsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   useEffect(() => {
     loadProducts()
-  }, [filters])
+  }, [filters, loadProducts])
 
   // 酒類分類中文名稱
   const getCategoryName = (category: AlcoholCategory) => {
