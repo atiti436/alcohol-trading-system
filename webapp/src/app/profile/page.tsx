@@ -174,7 +174,7 @@ export default function ProfilePage() {
                   <Form.Item
                     label={
                       <>
-                        電話 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}
+                        電話 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange">範例資料</Tag>}
                       </>
                     }
                     name="phone"
@@ -186,7 +186,7 @@ export default function ProfilePage() {
                   <Form.Item
                     label={
                       <>
-                        部門 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}
+                        部門 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange">範例資料</Tag>}
                       </>
                     }
                     name="department"
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                   <Form.Item
                     label={
                       <>
-                        職位 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}
+                        職位 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange">範例資料</Tag>}
                       </>
                     }
                     name="position"
@@ -272,7 +272,7 @@ export default function ProfilePage() {
               <Space>
                 <SettingOutlined />
                 <span>通知設定</span>
-                <Tag color="orange" size="small">開發中</Tag>
+                <Tag color="orange">開發中</Tag>
               </Space>
             }
           >

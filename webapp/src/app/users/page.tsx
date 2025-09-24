@@ -63,17 +63,6 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [roleModalVisible, setRoleModalVisible] = useState(false)
 
-  // 檢查是否為管理員
-  if (session?.user?.role !== Role.SUPER_ADMIN) {
-    return (
-      <div style={{ textAlign: 'center', padding: '100px 20px' }}>
-        <ExclamationCircleOutlined style={{ fontSize: 48, color: '#ff4d4f', marginBottom: 16 }} />
-        <Title level={3}>權限不足</Title>
-        <Text type="secondary">只有管理員可以訪問用戶管理頁面</Text>
-      </div>
-    )
-  }
-
   // 載入用戶列表
   const loadUsers = async (page = 1, status = statusFilter) => {
     if (!session?.user?.id) return
@@ -239,6 +228,17 @@ export default function UsersPage() {
       ),
     },
   ]
+
+  // 檢查是否為管理員
+  if (session?.user?.role !== Role.SUPER_ADMIN) {
+    return (
+      <div style={{ textAlign: 'center', padding: '100px 20px' }}>
+        <ExclamationCircleOutlined style={{ fontSize: 48, color: '#ff4d4f', marginBottom: 16 }} />
+        <Title level={3}>權限不足</Title>
+        <Text type="secondary">只有管理員可以訪問用戶管理頁面</Text>
+      </div>
+    )
+  }
 
   return (
     <div style={{ padding: 0 }}>
