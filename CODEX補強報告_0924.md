@@ -247,3 +247,26 @@ const settings = {
 ---
 
 🎯 **總結**: 所有 CODEX 報告中標註的未完成項目已全部實作完成，並且在安全性、可維護性、和功能完整性方面都有顯著提升。系統現在具備了完整的個人調貨保護機制、審計追蹤能力，以及 LineBot 功能框架。
+
+---
+
+## 🤖 AI-to-AI 補充備註（無歧義傳遞）
+
+- 審計日誌落地:
+  - `src/lib/audit-log.ts` 目前記錄到 console，未落 DB 表；若要合規追蹤，請建立 audit_logs 表並接入。
+- LineBot 框架:
+  - `linebot/settings`、`linebot/test`、`linebot/webhook` 已就緒；實測需正確的 LINE env 與 `NEXTAUTH_URL`。
+- 權限覆蓋:
+  - 核心敏感 API 已加保護；建議後續逐步擴大到所有路由，保持一致。
+- Prisma 命名:
+  - where 條件一律使用 snake_case（如 `is_paid`, `funding_source`）。
+- Customer 個人調貨:
+  - Prisma enum 無 `PERSONAL`；以 `notes` 關鍵字為主，避免誤導性條件。
+- Dynamic server 警示:
+  - 屬正常（headers/cookies/session）；若要清警示，可在 API 檔案首加 `export const dynamic = 'force-dynamic'` 與 `export const revalidate = 0`。
+- CI/部署:
+  - 已移除 `prebuild`；CI 先檢查再 build。若需嚴格把關，主分支可將 build 改為阻斷。加速可用 `paths-ignore`、`concurrency`、`.next/cache`。
+- 個人調貨識別:
+  - 目前使用 heuristics（描述/變體碼/數量）；中期建議 schema 新增 `is_personal_transfer` 由流程標記。
+- 新 API 過濾守則:
+  - 若輸出含 `actual_*`/`commission` 等敏感欄位，請共用 `data-filter` 或等效刪敏邏輯。
