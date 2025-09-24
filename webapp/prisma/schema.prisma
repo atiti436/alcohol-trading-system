@@ -24,6 +24,7 @@ model User {
   created_purchases           Purchase[]
   created_quotations          Quotation[]
   created_sales               Sale[]
+  created_cashflow_records    CashFlowRecord[]
 
   @@map("users")
 }
@@ -593,4 +594,42 @@ enum AuditResourceType {
   SETTINGS
   REPORTS
   LINEBOT
+  CASHFLOW
+}
+
+// 💰 簡單收支記錄模型
+model CashFlowRecord {
+  id               String           @id @default(cuid())
+  type             CashFlowType     // 收入或支出
+  amount           Float            // 金額
+  description      String           // 描述
+  category         String?          // 分類（可選）
+  funding_source   FundingSource    // 資金來源：投資方或個人墊付
+  transaction_date DateTime         // 交易日期
+  reference        String?          // 參考編號（發票號碼、訂單編號等）
+  notes            String?          // 備註
+  created_by       String           // 記錄創建者
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+
+  // 關聯
+  creator          User             @relation(fields: [created_by], references: [id])
+
+  @@map("cashflow_records")
+  @@index([type])
+  @@index([funding_source])
+  @@index([transaction_date])
+  @@index([created_by])
+}
+
+// 收支類型
+enum CashFlowType {
+  INCOME   // 收入
+  EXPENSE  // 支出
+}
+
+// 資金來源
+enum FundingSource {
+  INVESTOR  // 投資方資金
+  PERSONAL  // 個人墊付
 }

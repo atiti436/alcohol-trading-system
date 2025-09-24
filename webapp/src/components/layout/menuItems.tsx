@@ -109,6 +109,18 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     label: 'LINE BOT助手',
     icon: <RobotOutlined />,
   },
+  '/finance': {
+    key: '/finance',
+    path: '/finance',
+    label: '財務管理',
+    icon: <BarChartOutlined />,
+  },
+  '/finance/cashflow': {
+    key: '/finance/cashflow',
+    path: '/finance/cashflow',
+    label: '收支記錄',
+    icon: <FileTextOutlined />,
+  },
   '/users': {
     key: '/users',
     path: '/users',
