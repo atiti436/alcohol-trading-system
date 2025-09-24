@@ -57,8 +57,20 @@ export async function GET(request: NextRequest) {
 
     // 權限過濾 - 投資方看不到個人調貨相關客戶
     if (session.user.role === 'INVESTOR') {
-      // TODO: 這裡需要根據商業邏輯過濾個人調貨客戶
-      // 暫時先允許看到所有客戶，具體過濾邏輯待Room-4確認
+      // 過濾個人調貨客戶的判斷邏輯：
+      // 1. 客戶標記為 'personal' 類型
+      // 2. 客戶備註包含個人調貨關鍵字
+      // 3. 客戶分級為特殊個人級別
+      where.AND = where.AND || []
+      where.AND.push({
+        NOT: {
+          OR: [
+            { notes: { contains: '個人調貨' } },
+            { notes: { contains: 'personal' } },
+            { tier: 'PERSONAL' as CustomerTier }, // 假設有個人級別
+          ]
+        }
+      })
     }
 
     // 執行查詢

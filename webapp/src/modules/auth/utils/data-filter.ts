@@ -1,4 +1,5 @@
 import { Role, PermissionContext } from '@/types/auth'
+import { logSensitiveAccess, logDataFiltering } from '@/lib/audit-log'
 
 /**
  * 銷售資料過濾（核心商業邏輯）
@@ -77,25 +78,38 @@ export function filterSalesData<T extends Record<string, any>>(
 /**
  * 敏感資料存取記錄 (審計功能)
  */
-function logSensitiveAccess(
+async function logInternalDataAccess(
   dataType: string,
   userId: string,
+  userEmail: string,
   role: Role,
   recordCount: number
 ) {
-  // 這裡可以整合到實際的審計系統
+  // 整合到審計日誌系統
   console.log(`[AUDIT] ${new Date().toISOString()} - User ${userId} (${role}) accessed ${recordCount} ${dataType} records`)
 
-  // TODO: 整合到資料庫審計日誌
-  // await prisma.auditLog.create({
-  //   data: {
-  //     user_id: userId,
-  //     user_role: role,
-  //     data_type: dataType,
-  //     record_count: recordCount,
-  //     timestamp: new Date()
-  //   }
-  // })
+  // 記錄敏感資料存取到審計日誌
+  await logSensitiveAccess({
+    userId,
+    userEmail,
+    userRole: role,
+    action: 'READ',
+    resourceType: dataType.toUpperCase() as any,
+    sensitiveFields: dataType === 'sales' ? ['actual_price', 'commission', 'personal_purchases'] : undefined,
+  })
+
+  // 如果有資料過濾，記錄過濾事件
+  if (role === Role.INVESTOR) {
+    await logDataFiltering({
+      userId,
+      userEmail,
+      userRole: role,
+      resourceType: dataType,
+      originalCount: recordCount,
+      filteredCount: recordCount,
+      filterCriteria: ['investor_data_protection', 'hide_sensitive_pricing']
+    })
+  }
 }
 
 /**

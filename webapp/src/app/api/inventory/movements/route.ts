@@ -100,9 +100,19 @@ export async function GET(request: NextRequest) {
     // 🔒 數據過濾 - 投資方不能看到個人調貨相關異動
     const filteredMovements = movements.filter(movement => {
       if (session.user.role === 'INVESTOR') {
-        // TODO: 根據實際業務邏輯過濾個人調貨相關異動
-        // 暫時假設所有異動都可見
-        return true
+        // 個人調貨異動過濾邏輯：
+        // 1. 檢查異動類型是否為個人調貨相關
+        // 2. 檢查備註是否包含個人調貨關鍵字
+        // 3. 檢查異動位置是否為個人區域
+        const isPersonalMovement = (
+          movement.movement_type === 'PERSONAL_TRANSFER' ||
+          movement.notes?.includes('個人調貨') ||
+          movement.notes?.includes('personal') ||
+          movement.location?.toLowerCase().includes('personal')
+        )
+
+        // 投資方不能看到個人調貨相關異動
+        return !isPersonalMovement
       }
       return true
     }).map(movement => {

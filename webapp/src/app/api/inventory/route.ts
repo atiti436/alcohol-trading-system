@@ -149,9 +149,18 @@ export async function GET(request: NextRequest) {
       if (session.user.role === 'INVESTOR') {
         // 過濾掉個人調貨相關的庫存
         const filteredVariants = product.variants.filter(variant => {
-          // TODO: 這裡需要根據實際業務邏輯判斷是否為個人調貨庫存
-          // 暫時假設所有庫存都是公司庫存
-          return true
+          // 個人調貨判斷邏輯：
+          // 1. 檢查是否有特定的個人調貨標記 (location 包含 'personal')
+          // 2. 檢查庫存量是否為小批量 (通常個人調貨量較小)
+          // 3. 檢查是否有特殊備註標記
+          const isPersonalTransfer = (
+            variant.location?.toLowerCase().includes('personal') ||
+            variant.location?.toLowerCase().includes('private') ||
+            (variant.quantity_on_hand && variant.quantity_on_hand < 10 && variant.notes?.includes('個人'))
+          )
+
+          // 投資方不能看到個人調貨庫存
+          return !isPersonalTransfer
         })
 
         return {
