@@ -290,24 +290,6 @@ model SaleItem {
   @@map("sale_items")
 }
 
-model AuditLog {
-  id                     String   @id @default(cuid())
-  user_id                String
-  user_email             String
-  user_role              Role
-  action                 String
-  table_name             String
-  record_id              String?
-  sensitive_fields       Json?
-  ip_address             String?
-  user_agent             String?
-  timestamp              DateTime @default(now())
-  accessed_actual_price  Boolean  @default(false)
-  accessed_commission    Boolean  @default(false)
-  accessed_personal_data Boolean  @default(false)
-
-  @@map("audit_logs")
-}
 
 model AccountingEntry {
   id              String         @id @default(cuid())
@@ -551,4 +533,51 @@ enum QuotationStatus {
   ACCEPTED
   REJECTED
   EXPIRED
+}
+
+// 審計日誌模型
+model AuditLog {
+  id              String   @id @default(cuid())
+  user_id         String
+  user_email      String
+  user_role       Role
+  action          AuditAction
+  resource_type   AuditResourceType
+  resource_id     String?
+  details         Json?
+  ip_address      String?
+  user_agent      String?
+  additional_info Json?
+  created_at      DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([user_id])
+  @@index([created_at])
+  @@index([action])
+  @@index([resource_type])
+}
+
+// 審計操作類型
+enum AuditAction {
+  READ
+  WRITE
+  DELETE
+  LOGIN
+  LOGOUT
+  PERMISSION_CHANGE
+  DATA_FILTERING
+  SENSITIVE_ACCESS
+}
+
+// 審計資源類型
+enum AuditResourceType {
+  USERS
+  CUSTOMERS
+  PRODUCTS
+  SALES
+  PURCHASES
+  INVENTORY
+  SETTINGS
+  REPORTS
+  LINEBOT
 }

@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/modules/auth/providers/nextauth'
+import { withAppActiveUser } from '@/modules/auth/middleware/permissions'
+import { Role } from '@/types/auth'
 
 /**
  * POST /api/inventory/adjustments - 創建庫存調整記錄
  */
-export async function POST(request: NextRequest) {
+export const POST = withAppActiveUser(async (request: NextRequest, response: NextResponse, context: any) => {
   try {
-    // 權限檢查
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: '未登入' }, { status: 401 })
-    }
+    const { session } = context
 
     const body = await request.json()
     const { product_id, adjustment_type, notes, adjustments } = body
@@ -113,4 +109,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+}, [Role.SUPER_ADMIN, Role.EMPLOYEE])

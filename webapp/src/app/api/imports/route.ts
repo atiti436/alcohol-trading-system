@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
+import { withAppActiveUser } from '@/modules/auth/middleware/permissions'
+import { Role } from '@/types/auth'
 
-export async function GET(request: NextRequest) {
+export const GET = withAppActiveUser(async (request: NextRequest, response: NextResponse, context: any) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ success: false, error: '未授權' }, { status: 401 })
-    }
+    const { session } = context
 
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
@@ -68,14 +65,11 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = withAppActiveUser(async (request: NextRequest, response: NextResponse, context: any) => {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ success: false, error: '未授權' }, { status: 401 })
-    }
+    const { session } = context
 
     const body = await request.json()
     const {
@@ -170,4 +164,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+}, [Role.SUPER_ADMIN, Role.EMPLOYEE])
