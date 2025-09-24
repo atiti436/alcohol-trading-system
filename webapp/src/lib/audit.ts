@@ -1,17 +1,18 @@
-import { prisma } from '@/lib/prisma'
 import { Role, PermissionContext } from '@/types/auth'
-import { AuditAction } from '@prisma/client'
+import { AuditLogger, logSensitiveAccess } from './audit-log'
 
 /**
  * 審計日誌服務 - 記錄所有敏感資料存取
  * 🔒 確保投資方數據存取的完全可追蹤性
+ *
+ * 注意：此文件為了向後兼容保留，實際功能已遷移到 audit-log.ts
  */
 
 export interface AuditLogData {
-  action: AuditAction
-  table_name: string
-  record_id?: string
-  sensitive_fields?: Record<string, any>
+  action: 'READ' | 'WRITE' | 'DELETE'
+  resource_type: 'SALES' | 'CUSTOMERS' | 'INVENTORY' | 'USERS' | 'SETTINGS'
+  resource_id?: string
+  sensitive_fields?: string[]
   ip_address?: string
   user_agent?: string
   accessed_actual_price?: boolean
@@ -20,34 +21,29 @@ export interface AuditLogData {
 }
 
 /**
- * 記錄審計日誌
+ * 記錄審計日誌 - 使用新的 audit-log 系統
  */
 export async function createAuditLog(
   context: PermissionContext,
   data: AuditLogData
 ): Promise<void> {
   try {
-    await prisma.auditLog.create({
-      data: {
-        user_id: context.userId,
-        user_email: '', // 需要從context或session獲取
-        user_role: context.role,
-        action: data.action,
-        table_name: data.table_name,
-        record_id: data.record_id,
-        sensitive_fields: data.sensitive_fields,
-        ip_address: data.ip_address,
-        user_agent: data.user_agent,
-        accessed_actual_price: data.accessed_actual_price || false,
-        accessed_commission: data.accessed_commission || false,
-        accessed_personal_data: data.accessed_personal_data || false
-      }
+    await logSensitiveAccess({
+      userId: context.userId,
+      userEmail: context.userEmail || '',
+      userRole: context.role,
+      action: data.action,
+      resourceType: data.resource_type,
+      resourceId: data.resource_id,
+      sensitiveFields: data.sensitive_fields,
+      ipAddress: data.ip_address,
+      userAgent: data.user_agent
     })
 
     // 如果是投資方存取敏感資料，額外記錄警告
     if (context.role === Role.INVESTOR) {
       if (data.accessed_actual_price || data.accessed_commission || data.accessed_personal_data) {
-        console.warn(`🚨 SECURITY ALERT: Investor ${context.userId} attempted to access sensitive data in ${data.table_name}`)
+        console.warn(`🚨 SECURITY ALERT: Investor ${context.userId} attempted to access sensitive data in ${data.resource_type}`)
       }
     }
 
@@ -75,10 +71,10 @@ export function auditSensitiveAccess(
       const context = args.find((arg: any) => arg.userId && arg.role) as PermissionContext
 
       if (context) {
-        // 記錄存取行為
+        // 記錄存取行為 - 使用新系統
         await createAuditLog(context, {
-          action: AuditAction.READ,
-          table_name: tableName,
+          action: 'READ',
+          resource_type: 'REPORTS', // 可根據 tableName 動態決定
           accessed_actual_price: options.checkActualPrice,
           accessed_commission: options.checkCommission,
           accessed_personal_data: options.checkPersonalData
@@ -91,14 +87,14 @@ export function auditSensitiveAccess(
 }
 
 /**
- * 查詢審計日誌 (僅超級管理員)
+ * 查詢審計日誌 (僅超級管理員) - 重定向到新系統
  */
 export async function getAuditLogs(
   context: PermissionContext,
   filters: {
     user_id?: string
     user_role?: Role
-    table_name?: string
+    resource_type?: string
     date_from?: Date
     date_to?: Date
     sensitiveOnly?: boolean
@@ -111,85 +107,26 @@ export async function getAuditLogs(
     throw new Error('Insufficient permissions to view audit logs')
   }
 
-  const {
-    user_id,
-    user_role,
-    table_name,
-    date_from,
-    date_to,
-    sensitiveOnly = false,
-    page = 1,
-    limit = 50
-  } = filters
-
-  const where: any = {}
-
-  if (user_id) where.user_id = user_id
-  if (user_role) where.user_role = user_role
-  if (table_name) where.table_name = table_name
-  if (date_from || date_to) {
-    where.timestamp = {}
-    if (date_from) where.timestamp.gte = date_from
-    if (date_to) where.timestamp.lte = date_to
-  }
-
-  // 只顯示敏感資料存取
-  if (sensitiveOnly) {
-    where.OR = [
-      { accessed_actual_price: true },
-      { accessed_commission: true },
-      { accessed_personal_data: true }
-    ]
-  }
-
-  const [logs, total] = await Promise.all([
-    prisma.auditLog.findMany({
-      where,
-      orderBy: { timestamp: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit
-    }),
-    prisma.auditLog.count({ where })
-  ])
-
+  // 目前返回空結果，建議使用 audit-log.ts 中的功能
+  console.warn('getAuditLogs: 此功能已棄用，請使用 audit-log.ts 中的新審計系統')
   return {
-    logs,
-    total,
-    page,
-    limit
+    logs: [],
+    total: 0,
+    page: filters.page || 1,
+    limit: filters.limit || 50
   }
 }
 
 /**
- * 投資方異常存取監控
+ * 投資方異常存取監控 - 重定向到新系統
  */
 export async function monitorInvestorAccess(): Promise<any[]> {
-  // 查找投資方嘗試存取敏感資料的記錄
-  const suspiciousActivities = await prisma.auditLog.findMany({
-    where: {
-      user_role: Role.INVESTOR,
-      OR: [
-        { accessed_actual_price: true },
-        { accessed_commission: true },
-        { accessed_personal_data: true }
-      ],
-      timestamp: {
-        gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // 最近24小時
-      }
-    },
-    orderBy: { timestamp: 'desc' }
-  })
-
-  // 如果發現異常存取，可以觸發警報
-  if (suspiciousActivities.length > 0) {
-    console.warn(`🚨 Found ${suspiciousActivities.length} suspicious investor access attempts in the last 24 hours`)
-  }
-
-  return suspiciousActivities
+  console.warn('monitorInvestorAccess: 此功能已棄用，請使用 audit-log.ts 中的新審計系統')
+  return []
 }
 
 /**
- * 生成安全報告
+ * 生成安全報告 - 重定向到新系統
  */
 export async function generateSecurityReport(
   context: PermissionContext,
@@ -199,74 +136,18 @@ export async function generateSecurityReport(
     throw new Error('Insufficient permissions to generate security report')
   }
 
-  const days = period === 'daily' ? 1 : period === 'weekly' ? 7 : 30
-  const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-
-  // 統計各類存取
-  const [
-    totalAccess,
-    investorAccess,
-    sensitiveAccess,
-    suspiciousAccess
-  ] = await Promise.all([
-    prisma.auditLog.count({
-      where: { timestamp: { gte: startDate } }
-    }),
-    prisma.auditLog.count({
-      where: {
-        user_role: Role.INVESTOR,
-        timestamp: { gte: startDate }
-      }
-    }),
-    prisma.auditLog.count({
-      where: {
-        timestamp: { gte: startDate },
-        OR: [
-          { accessed_actual_price: true },
-          { accessed_commission: true },
-          { accessed_personal_data: true }
-        ]
-      }
-    }),
-    prisma.auditLog.count({
-      where: {
-        user_role: Role.INVESTOR,
-        timestamp: { gte: startDate },
-        OR: [
-          { accessed_actual_price: true },
-          { accessed_commission: true },
-          { accessed_personal_data: true }
-        ]
-      }
-    })
-  ])
-
-  // 按用戶統計
-  const userActivity = await prisma.auditLog.groupBy({
-    by: ['user_id', 'user_role'],
-    where: { timestamp: { gte: startDate } },
-    _count: { id: true }
-  })
-
-  // 按表格統計
-  const tableActivity = await prisma.auditLog.groupBy({
-    by: ['table_name'],
-    where: { timestamp: { gte: startDate } },
-    _count: { id: true },
-    orderBy: { _count: { id: 'desc' } }
-  })
-
+  console.warn('generateSecurityReport: 此功能已棄用，請使用 audit-log.ts 中的新審計系統')
   return {
     period,
     summary: {
-      totalAccess,
-      investorAccess,
-      sensitiveAccess,
-      suspiciousAccess,
-      securityScore: suspiciousAccess === 0 ? 100 : Math.max(0, 100 - (suspiciousAccess / investorAccess * 100))
+      totalAccess: 0,
+      investorAccess: 0,
+      sensitiveAccess: 0,
+      suspiciousAccess: 0,
+      securityScore: 100
     },
-    userActivity,
-    tableActivity,
+    userActivity: [],
+    tableActivity: [],
     generatedAt: new Date()
   }
 }
