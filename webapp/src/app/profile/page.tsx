@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, Form, Input, Button, Typography, Space, Avatar, Row, Col, Switch, Divider, Select, message, Upload, Alert, Tag } from 'antd'
+import { Card, Form, Input, Button, Typography, Space, Avatar, Row, Col, Switch, Select, message, Upload, Alert, Tag } from 'antd'
 import {
   UserOutlined,
   MailOutlined,
@@ -38,7 +38,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { data: session, update } = useSession()
+  const { data: session } = useSession()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -74,10 +74,8 @@ export default function ProfilePage() {
   const handleSave = async (values: any) => {
     setLoading(true)
     try {
-      // 模擬API調用
       await new Promise(resolve => setTimeout(resolve, 1000))
-
-      setProfile({ ...profile, ...values })
+      setProfile({ ...(profile as UserProfile), ...values })
       setEditing(false)
       message.success('個人資料已更新')
     } catch (error) {
@@ -88,7 +86,7 @@ export default function ProfilePage() {
   }
 
   const handleCancel = () => {
-    form.setFieldsValue(profile)
+    if (profile) form.setFieldsValue(profile)
     setEditing(false)
   }
 
@@ -98,15 +96,13 @@ export default function ProfilePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
-
       if (response.ok) {
-        message.success('角色已升級為超級管理員！請重新登入查看完整功能。')
-        // 重新載入頁面以更新session
+        message.success('申請已送出，請重新登入查看最新權限。')
         setTimeout(() => {
           window.location.reload()
-        }, 2000)
+        }, 1500)
       } else {
-        message.error('角色升級失敗，請稍後再試')
+        message.error('申請失敗，請稍後再試')
       }
     } catch (error) {
       message.error('升級過程中發生錯誤')
@@ -135,24 +131,13 @@ export default function ProfilePage() {
             }
             extra={
               !editing ? (
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() => setEditing(true)}
-                >
+                <Button type="primary" icon={<EditOutlined />} onClick={() => setEditing(true)}>
                   編輯
                 </Button>
               ) : (
                 <Space>
-                  <Button onClick={handleCancel}>
-                    取消
-                  </Button>
-                  <Button
-                    type="primary"
-                    icon={<SaveOutlined />}
-                    loading={loading}
-                    onClick={() => form.submit()}
-                  >
+                  <Button onClick={handleCancel}>取消</Button>
+                  <Button type="primary" icon={<SaveOutlined />} loading={loading} onClick={() => form.submit()}>
                     保存
                   </Button>
                 </Space>
@@ -168,19 +153,11 @@ export default function ProfilePage() {
                 showIcon
               />
             )}
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSave}
-              disabled={!editing}
-            >
+
+            <Form form={form} layout="vertical" onFinish={handleSave} disabled={!editing}>
               <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12}>
-                  <Form.Item
-                    label="姓名"
-                    name="name"
-                    rules={[{ required: true, message: '請輸入姓名' }]}
-                  >
+                  <Form.Item label="姓名" name="name" rules={[{ required: true, message: '請輸入姓名' }]}>
                     <Input prefix={<UserOutlined />} />
                   </Form.Item>
                 </Col>
@@ -188,17 +165,18 @@ export default function ProfilePage() {
                   <Form.Item
                     label="電子郵件"
                     name="email"
-                    rules={[
-                      { required: true, message: '請輸入電子郵件' },
-                      { type: 'email', message: '請輸入有效的電子郵件' }
-                    ]}
+                    rules={[{ required: true, message: '請輸入電子郵件' }, { type: 'email', message: '請輸入有效的電子郵件' }]}
                   >
                     <Input prefix={<MailOutlined />} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    label={<>電話 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}</>
+                    label={
+                      <>
+                        電話 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}
+                      </>
+                    }
                     name="phone"
                   >
                     <Input prefix={<PhoneOutlined />} placeholder={session?.user?.email !== 'manpan.whisky@gmail.com' ? '功能開發中' : ''} />
@@ -206,7 +184,11 @@ export default function ProfilePage() {
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    label={<>部門 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}</>
+                    label={
+                      <>
+                        部門 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}
+                      </>
+                    }
                     name="department"
                   >
                     <Select placeholder={session?.user?.email !== 'manpan.whisky@gmail.com' ? '功能開發中' : ''}>
@@ -219,7 +201,11 @@ export default function ProfilePage() {
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    label={<>職位 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}</>
+                    label={
+                      <>
+                        職位 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}
+                      </>
+                    }
                     name="position"
                   >
                     <Input placeholder={session?.user?.email !== 'manpan.whisky@gmail.com' ? '功能開發中' : ''} />
@@ -234,12 +220,7 @@ export default function ProfilePage() {
         <Col xs={24} lg={8}>
           <Card title="個人資訊">
             <Space direction="vertical" style={{ width: '100%', textAlign: 'center' }}>
-              <Avatar
-                size={120}
-                src={profile.avatar}
-                icon={<UserOutlined />}
-                style={{ marginBottom: 16 }}
-              />
+              <Avatar size={120} src={profile.avatar} icon={<UserOutlined />} style={{ marginBottom: 16 }} />
               {editing && (
                 <Upload
                   showUploadList={false}
@@ -248,9 +229,7 @@ export default function ProfilePage() {
                     return false
                   }}
                 >
-                  <Button icon={<CameraOutlined />} size="small">
-                    更換頭像
-                  </Button>
+                  <Button icon={<CameraOutlined />} size="small">更換頭像</Button>
                 </Upload>
               )}
               <Title level={4}>{profile.name}</Title>
@@ -266,23 +245,17 @@ export default function ProfilePage() {
                      session.user.role === 'EMPLOYEE' ? '員工' : session.user.role}
                   </Text>
 
-                  {/* 如果是員工角色，顯示升級按鈕 */}
                   {session.user.role === 'EMPLOYEE' && (
                     <div style={{ marginTop: 12 }}>
                       <Alert
                         message="需要管理員權限？"
-                        description="點擊下方按鈕升級為超級管理員，查看完整Dashboard功能"
+                        description="點擊下方按鈕申請升級為管理員，查看更多 Dashboard 功能"
                         type="info"
                         showIcon
                         style={{ marginBottom: 12 }}
                       />
-                      <Button
-                        type="primary"
-                        icon={<CrownOutlined />}
-                        onClick={handleUpgradeRole}
-                        style={{ width: '100%' }}
-                      >
-                        升級為超級管理員
+                      <Button type="primary" icon={<CrownOutlined />} onClick={handleUpgradeRole} style={{ width: '100%' }}>
+                        申請升級為管理員
                       </Button>
                     </div>
                   )}
@@ -317,14 +290,12 @@ export default function ProfilePage() {
                   disabled
                   onChange={(checked) =>
                     setProfile({
-                      ...profile,
-                      notifications: { ...profile.notifications, email: checked }
+                      ...(profile as UserProfile),
+                      notifications: { ...(profile as UserProfile).notifications, email: checked }
                     })
                   }
                 />
-                <Text style={{ marginLeft: 8 }} type="secondary">
-                  接收重要業務通知
-                </Text>
+                <Text style={{ marginLeft: 8 }} type="secondary">接收系統業務相關通知</Text>
               </Form.Item>
 
               <Form.Item label="簡訊通知">
@@ -333,14 +304,12 @@ export default function ProfilePage() {
                   disabled
                   onChange={(checked) =>
                     setProfile({
-                      ...profile,
-                      notifications: { ...profile.notifications, sms: checked }
+                      ...(profile as UserProfile),
+                      notifications: { ...(profile as UserProfile).notifications, sms: checked }
                     })
                   }
                 />
-                <Text style={{ marginLeft: 8 }} type="secondary">
-                  緊急事件簡訊提醒
-                </Text>
+                <Text style={{ marginLeft: 8 }} type="secondary">緊急事件簡訊提醒</Text>
               </Form.Item>
 
               <Form.Item label="系統通知">
@@ -349,14 +318,12 @@ export default function ProfilePage() {
                   disabled
                   onChange={(checked) =>
                     setProfile({
-                      ...profile,
-                      notifications: { ...profile.notifications, system: checked }
+                      ...(profile as UserProfile),
+                      notifications: { ...(profile as UserProfile).notifications, system: checked }
                     })
                   }
                 />
-                <Text style={{ marginLeft: 8 }} type="secondary">
-                  系統內即時通知
-                </Text>
+                <Text style={{ marginLeft: 8 }} type="secondary">系統即時通知</Text>
               </Form.Item>
             </Form>
           </Card>
@@ -371,8 +338,8 @@ export default function ProfilePage() {
                   value={profile.preferences.language}
                   onChange={(value) =>
                     setProfile({
-                      ...profile,
-                      preferences: { ...profile.preferences, language: value }
+                      ...(profile as UserProfile),
+                      preferences: { ...(profile as UserProfile).preferences, language: value }
                     })
                   }
                 >
@@ -388,8 +355,8 @@ export default function ProfilePage() {
                   value={profile.preferences.timezone}
                   onChange={(value) =>
                     setProfile({
-                      ...profile,
-                      preferences: { ...profile.preferences, timezone: value }
+                      ...(profile as UserProfile),
+                      preferences: { ...(profile as UserProfile).preferences, timezone: value }
                     })
                   }
                 >
@@ -405,8 +372,8 @@ export default function ProfilePage() {
                   value={profile.preferences.currency}
                   onChange={(value) =>
                     setProfile({
-                      ...profile,
-                      preferences: { ...profile.preferences, currency: value }
+                      ...(profile as UserProfile),
+                      preferences: { ...(profile as UserProfile).preferences, currency: value }
                     })
                   }
                 >
@@ -423,3 +390,4 @@ export default function ProfilePage() {
     </div>
   )
 }
+
