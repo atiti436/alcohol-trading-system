@@ -30,6 +30,7 @@ import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor } from '@/components/auth/RoleGuard'
 import { CreatePurchaseRequest, ProductWithVariants, ProductVariant } from '@/types/room-2'
+import ProductSearchSelect from '@/components/common/ProductSearchSelect'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -223,6 +224,57 @@ export function PurchaseOrderModal({
     }))
   }
 
+  // 🔥 新的進階產品選擇處理 (支援搜尋和快速新增)
+  const handleAdvancedProductChange = (key: string, selection: any) => {
+    setOrderItems(prev => prev.map(item => {
+      if (item.key === key) {
+        // 建構產品物件
+        const product: ProductWithVariants = {
+          id: selection.productId,
+          name: selection.productName,
+          product_code: selection.productCode,
+          supplier: selection.supplier || '',
+          category: 'WHISKY', // 預設值
+          volume_ml: 750,
+          alc_percentage: 40,
+          weight_kg: 1.5,
+          standard_price: selection.price || 0,
+          current_price: selection.price || 0,
+          cost_price: 0,
+          min_price: 0,
+          is_active: true,
+          variants: []
+        }
+
+        // 建構變體物件
+        const variant: ProductVariant = {
+          id: selection.variantId,
+          variant_code: selection.variantCode,
+          variant_type: selection.variantType || 'A',
+          description: selection.description || '原裝完整',
+          base_price: selection.price || 0,
+          current_price: selection.price || 0,
+          cost_price: selection.price || 0,
+          stock_quantity: selection.stock || 0,
+          available_stock: selection.stock || 0,
+          reserved_stock: 0,
+          condition: 'Normal'
+        }
+
+        return {
+          ...item,
+          product_id: selection.productId,
+          variant_id: selection.variantId,
+          product,
+          variant,
+          unit_price: selection.price || 0,
+          total_price: (selection.price || 0) * item.quantity
+        }
+      }
+      return item
+    }))
+  }
+
   // 計算總金額
   const total_amount = orderItems.reduce((sum, item) => sum + item.total_price, 0)
 
@@ -249,57 +301,53 @@ export function PurchaseOrderModal({
   // 表格欄位定義
   const columns = [
     {
-      title: '商品',
+      title: '商品搜尋',
       key: 'product',
-      width: 200,
+      width: 300,
       render: (_: any, record: PurchaseOrderItem) => (
-        <Select
-          placeholder="選擇商品"
-          value={record.product_id || undefined}
-          onChange={(value) => handleProductChange(record.key, value)}
-          style={{ width: '100%' }}
-          showSearch
-          optionFilterProp="children"
-        >
-          {products.map(product => (
-            <Option key={product.id} value={product.id}>
-              {product.name} ({product.product_code})
-            </Option>
-          ))}
-        </Select>
+        <ProductSearchSelect
+          placeholder="搜尋商品... (如: 山崎, 響, NIKKA)"
+          allowQuickAdd={true}
+          value={record.product_id ? {
+            productId: record.product_id,
+            variantId: record.variant_id,
+            productName: record.product?.name,
+            productCode: record.product?.product_code
+          } : undefined}
+          onChange={(selection) => {
+            if (selection) {
+              // 🔥 整合新的搜尋選擇邏輯
+              handleAdvancedProductChange(record.key, selection)
+            }
+          }}
+        />
       )
     },
     {
-      title: '變體',
-      key: 'variant',
+      title: '選擇資訊',
+      key: 'variant_info',
       width: 150,
-      render: (_: any, record: PurchaseOrderItem) => (
-        <Select
-          placeholder="⚠️ 請選擇版本 (必選)"
-          value={record.variant_id || undefined}
-          onChange={(value) => handleVariantChange(record.key, value)}
-          style={{ width: '100%' }}
-          disabled={!record.product_id}
-          allowClear
-          notFoundContent="無可用版本"
-        >
-          {record.product?.variants?.map(variant => (
-            <Option key={variant.id} value={variant.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold' }}>
-                  {variant.description || variant.variant_type}
-                </span>
-                <span style={{ color: '#999', fontSize: '12px' }}>
-                  {variant.variant_code} | 庫存: {variant.available_stock || variant.stock_quantity || 0}瓶
-                </span>
+      render: (_: any, record: PurchaseOrderItem) => {
+        if (!record.variant_id || !record.variant) {
+          return <Text type="secondary">請先選擇商品</Text>
+        }
+
+        return (
+          <div>
+            <div style={{ fontWeight: 'bold', fontSize: '12px' }}>
+              {record.variant.variant_code}
+            </div>
+            <div style={{ fontSize: '11px', color: '#666' }}>
+              {record.variant.description || record.variant.variant_type}
+            </div>
+            {record.variant.available_stock > 0 && (
+              <div style={{ fontSize: '10px', color: '#52c41a' }}>
+                庫存: {record.variant.available_stock}
               </div>
-              <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                {variant.condition || '狀況良好'} | NT$ {variant.current_price?.toLocaleString()}
-              </div>
-            </Option>
-          ))}
-        </Select>
-      )
+            )}
+          </div>
+        )
+      }
     },
     {
       title: '數量',
