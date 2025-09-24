@@ -294,7 +294,7 @@ export default function ProductSearchSelect({
           ) : searchValue.length >= 2 ? (
             <div style={{ padding: '20px', textAlign: 'center' }}>
               <Text type="secondary">
-                📭 未找到符合 "{searchValue}" 的商品
+                📭 未找到符合 &quot;{searchValue}&quot; 的商品
               </Text>
               {allowQuickAdd && (
                 <div style={{ marginTop: 12 }}>
@@ -306,7 +306,7 @@ export default function ProductSearchSelect({
                       setQuickAddVisible(true)
                     }}
                   >
-                    快速新增 "{searchValue}"
+                    快速新增 &quot;{searchValue}&quot;
                   </Button>
                 </div>
               )}

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { Card, Row, Col, Statistic, Typography, Space, Button, List, Tag, Progress, Spin, message } from 'antd'
 import {
   DollarOutlined,
@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   // 載入Dashboard數據
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!session?.user?.id) return
 
     try {
@@ -54,11 +54,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session?.user?.id])
 
   useEffect(() => {
     loadDashboardData()
-  }, [session?.user?.id])
+  }, [loadDashboardData])
 
   // 根據角色顯示不同的Dashboard內容
   const renderDashboardByRole = () => {
