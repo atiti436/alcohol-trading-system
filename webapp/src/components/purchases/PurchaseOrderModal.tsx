@@ -392,7 +392,7 @@ export function PurchaseOrderModal({
             <div style={{ fontSize: '11px', color: '#666' }}>
               {record.variant.description || record.variant.variant_type}
             </div>
-            {record.variant.available_stock > 0 && (
+            {(record.variant.available_stock ?? 0) > 0 && (
               <div style={{ fontSize: '10px', color: '#52c41a' }}>
                 庫存: {record.variant.available_stock}
               </div>
