@@ -407,7 +407,11 @@ export default function ProductSearchSelect({
               min={0}
               style={{ width: '100%' }}
               formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+              parser={value => {
+                const cleaned = (value || '').replace(/\$\s?|,/g, '')
+                const num = parseFloat(cleaned)
+                return isNaN(num) ? 0 : num
+              }}
             />
           </Form.Item>
 
