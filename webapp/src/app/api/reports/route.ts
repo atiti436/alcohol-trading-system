@@ -35,11 +35,11 @@ export async function GET(request: NextRequest) {
 
     // 🔒 投資方數據隔離：只能看公司資金的交易
     const baseWhere: DatabaseWhereCondition = {
-      isPaid: true
+      is_paid: true
     }
 
     if (session.user.role === 'INVESTOR') {
-      baseWhere.fundingSource = 'COMPANY'
+      baseWhere.funding_source = 'COMPANY'
     }
 
     // 日期範圍篩選
