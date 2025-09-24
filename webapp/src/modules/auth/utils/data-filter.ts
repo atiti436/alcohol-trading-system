@@ -11,7 +11,7 @@ export function filterSalesData<T extends Record<string, any>>(
   context: PermissionContext
 ): Partial<T>[] {
   // 記錄敏感資料存取 (審計用)
-  logSensitiveAccess('sales', context.userId, context.role, data.length)
+  logInternalDataAccess('sales', context.userId, context.userEmail || '', context.role, data.length)
 
   if (context.role === Role.SUPER_ADMIN) {
     // 超級管理員看完整資料：包含真實價格1200和傭金200
@@ -57,7 +57,7 @@ export function filterSalesData<T extends Record<string, any>>(
       })
 
     // 記錄投資方資料存取
-    logSensitiveAccess('sales_filtered', context.userId, context.role, filteredData.length)
+    logInternalDataAccess('sales_filtered', context.userId, context.userEmail || '', context.role, filteredData.length)
     return filteredData
   }
 

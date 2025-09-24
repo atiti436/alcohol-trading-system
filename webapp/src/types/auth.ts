@@ -51,6 +51,7 @@ declare module "next-auth/jwt" {
 // 權限上下文
 export interface PermissionContext {
   userId: string
+  userEmail?: string
   role: Role
   investor_id?: string
 }

@@ -150,13 +150,14 @@ export async function GET(request: NextRequest) {
         // 過濾掉個人調貨相關的庫存
         const filteredVariants = product.variants.filter(variant => {
           // 個人調貨判斷邏輯：
-          // 1. 檢查是否有特定的個人調貨標記 (location 包含 'personal')
-          // 2. 檢查庫存量是否為小批量 (通常個人調貨量較小)
-          // 3. 檢查是否有特殊備註標記
+          // 1. 檢查庫存量是否為小批量 (通常個人調貨量較小)
+          // 2. 檢查產品描述或變種代碼是否包含個人標記
+          // 3. 使用 condition 欄位來標記個人調貨 (可用 "Personal" 等值)
           const isPersonalTransfer = (
-            variant.location?.toLowerCase().includes('personal') ||
-            variant.location?.toLowerCase().includes('private') ||
-            (variant.quantity_on_hand && variant.quantity_on_hand < 10 && variant.notes?.includes('個人'))
+            variant.condition?.toLowerCase().includes('personal') ||
+            variant.description?.toLowerCase().includes('personal') ||
+            variant.description?.toLowerCase().includes('private') ||
+            (variant.stock_quantity && variant.stock_quantity < 10 && variant.variant_code?.includes('P'))
           )
 
           // 投資方不能看到個人調貨庫存

@@ -103,12 +103,12 @@ export async function GET(request: NextRequest) {
         // 個人調貨異動過濾邏輯：
         // 1. 檢查異動類型是否為個人調貨相關
         // 2. 檢查備註是否包含個人調貨關鍵字
-        // 3. 檢查異動位置是否為個人區域
+        // 3. 檢查原因欄位是否包含個人調貨標記
         const isPersonalMovement = (
           movement.movement_type === 'PERSONAL_TRANSFER' ||
           movement.notes?.includes('個人調貨') ||
           movement.notes?.includes('personal') ||
-          movement.location?.toLowerCase().includes('personal')
+          movement.reason?.toLowerCase().includes('personal')
         )
 
         // 投資方不能看到個人調貨相關異動
