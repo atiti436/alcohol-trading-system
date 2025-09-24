@@ -182,7 +182,6 @@ describe('🔒 投資方數據隔離測試', () => {
 
         // 各種可能的敏感欄位命名
         actual_amount: 1200,
-        actual_amount: 1200,
         realPrice: 1200,
         real_price: 1200,
         trueAmount: 1200,
@@ -190,7 +189,6 @@ describe('🔒 投資方數據隔離測試', () => {
         commission: 200,
         ownerProfit: 200,
         owner_profit: 200,
-        actual_unit_price: 1200,
         actual_unit_price: 1200
       }]
 

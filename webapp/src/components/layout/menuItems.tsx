@@ -114,7 +114,7 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     path: '/users',
     label: '用戶管理',
     icon: <TeamOutlined />,
-    roles: ['SUPER_ADMIN']
+    roles: [Role.SUPER_ADMIN]
   },
   '/admin': {
     key: '/admin',
