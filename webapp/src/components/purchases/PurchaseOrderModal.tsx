@@ -76,6 +76,39 @@ export function PurchaseOrderModal({
   // 載入狀態
   const [loadingProducts, setLoadingProducts] = useState(false)
 
+  // 建立預設 ProductWithVariants 物件的輔助函數
+  const createDefaultProduct = (): ProductWithVariants => ({
+    id: '',
+    name: '',
+    product_code: '',
+    supplier: '',
+    category: AlcoholCategory.OTHER,
+    volume_ml: 0,
+    alc_percentage: 0,
+    weight_kg: 0,
+    package_weight_kg: 0,
+    total_weight_kg: 0,
+    has_box: false,
+    has_accessories: false,
+    accessory_weight_kg: 0,
+    accessories: [],
+    hs_code: '',
+    manufacturing_date: '',
+    expiry_date: '',
+    standard_price: 0,
+    current_price: 0,
+    cost_price: 0,
+    min_price: 0,
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date(),
+    variants: [],
+    _count: {
+      variants: 0,
+      sale_items: 0
+    }
+  })
+
   // 載入商品列表
   const loadProducts = async () => {
     setLoadingProducts(true)
@@ -121,7 +154,7 @@ export function PurchaseOrderModal({
           quantity: item.quantity,
           unit_price: item.unit_price,
           total_price: item.total_price,
-          product: (item.product || {} as ProductWithVariants) as ProductWithVariants,
+          product: item.product || createDefaultProduct(),
           variant: item.variant
         }))
         setOrderItems(items)
@@ -146,7 +179,7 @@ export function PurchaseOrderModal({
       quantity: 1,
       unit_price: 0,
       total_price: 0,
-      product: {} as ProductWithVariants
+      product: createDefaultProduct()
     }
     setOrderItems([...orderItems, newItem])
   }
@@ -238,12 +271,27 @@ export function PurchaseOrderModal({
           volume_ml: 750,
           alc_percentage: 40,
           weight_kg: 1.5,
+          package_weight_kg: 0.3, // 外盒重量預設值
+          total_weight_kg: 1.8, // 總重量預設值
+          has_box: true, // 預設有外盒
+          has_accessories: false, // 預設無附件
+          accessory_weight_kg: 0, // 附件重量
+          accessories: [], // 附件清單
+          hs_code: '', // 稅則號列
+          manufacturing_date: '', // 生產日期
+          expiry_date: '', // 到期日期
           standard_price: selection.price || 0,
           current_price: selection.price || 0,
           cost_price: 0,
           min_price: 0,
           is_active: true,
-          variants: []
+          created_at: new Date(), // 建立時間
+          updated_at: new Date(), // 更新時間
+          variants: [],
+          _count: {
+            variants: 0, // 變體數量
+            sale_items: 0 // 銷售項目數量
+          }
         }
 
         // 建構變體物件
