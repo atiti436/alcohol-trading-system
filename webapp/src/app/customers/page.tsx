@@ -92,7 +92,7 @@ export default function CustomersPage() {
     } finally {
       setLoading(false)
     }
-  }, [filters, loadCustomers])
+  }, [filters])
 
   useEffect(() => {
     loadCustomers()
