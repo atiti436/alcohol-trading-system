@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: '未登入' }, { status: 401 })
     }
+    // 阻擋待審核用戶
+    if ((session as any).user?.role === 'PENDING') {
+      return NextResponse.json({ error: '帳戶待審核中，暫無權限存取應收帳款' }, { status: 403 })
+    }
 
     // 🚨 投資方只能看到基本統計，不能看到詳細帳款
     const { searchParams } = new URL(request.url)
@@ -147,6 +151,9 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user || session.user.role === 'INVESTOR') {
       return NextResponse.json({ error: '權限不足' }, { status: 403 })
+    }
+    if (session.user.role === 'PENDING') {
+      return NextResponse.json({ error: '帳戶待審核中，暫無權限建立應收帳款' }, { status: 403 })
     }
 
     const body = await request.json()

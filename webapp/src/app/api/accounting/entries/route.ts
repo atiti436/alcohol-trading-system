@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { Role } from '@/types/auth'
 
 /**
  * 🧮 Room-4: 會計分錄自動產生 API
@@ -18,9 +19,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '未登入' }, { status: 401 })
     }
 
-    // 🚨 投資方角色完全禁止存取會計資料
-    if (session.user.role === 'INVESTOR') {
-      return NextResponse.json({ error: '權限不足' }, { status: 403 })
+    // 🚨 阻擋待審核用戶和投資方
+    if (session.user.role === Role.PENDING) {
+      return NextResponse.json({
+        error: '帳戶待審核中，暫無權限存取會計資料'
+      }, { status: 403 })
+    }
+
+    if (session.user.role === Role.INVESTOR) {
+      return NextResponse.json({ error: '投資方無權存取會計資料' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -93,8 +100,19 @@ export async function POST(request: NextRequest) {
   try {
     // 🔒 權限檢查 - 只有SUPER_ADMIN和EMPLOYEE可以產生會計分錄
     const session = await getServerSession(authOptions)
-    if (!session?.user || session.user.role === 'INVESTOR') {
-      return NextResponse.json({ error: '權限不足' }, { status: 403 })
+    if (!session?.user) {
+      return NextResponse.json({ error: '未登入' }, { status: 401 })
+    }
+
+    // 阻擋待審核用戶和投資方
+    if (session.user.role === Role.PENDING) {
+      return NextResponse.json({
+        error: '帳戶待審核中，暫無權限產生會計分錄'
+      }, { status: 403 })
+    }
+
+    if (session.user.role === Role.INVESTOR) {
+      return NextResponse.json({ error: '投資方無權產生會計分錄' }, { status: 403 })
     }
 
     const body = await request.json()

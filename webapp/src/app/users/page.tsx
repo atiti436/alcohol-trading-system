@@ -104,12 +104,12 @@ export default function UsersPage() {
   }
 
   // 修改用戶角色
-  const handleUpdateRole = async (userId: string, newRole: Role, investorId?: string) => {
+  const handleUpdateRole = async (userId: string, newRole: Role, investor_id?: string) => {
     try {
       const response = await fetch(`/api/users/${userId}/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole, investor_id: investorId })
+        body: JSON.stringify({ role: newRole, investor_id })
       })
 
       const result = await response.json()

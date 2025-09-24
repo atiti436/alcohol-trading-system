@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { DatabaseWhereCondition, GroupingQuery } from '@/types/business'
 import { ProductAnalysisAccumulator } from '@/types/api'
+import { Role } from '@/types/auth'
 
 /**
  * 📊 Room-5: 報表圖表 API
@@ -17,6 +18,13 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: '未登入' }, { status: 401 })
+    }
+
+    // 阻擋待審核用戶
+    if (session.user.role === Role.PENDING) {
+      return NextResponse.json({
+        error: '帳戶待審核中，暫無權限存取報表資料'
+      }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)

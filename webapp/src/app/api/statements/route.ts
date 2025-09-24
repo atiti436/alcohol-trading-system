@@ -16,6 +16,10 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: '未登入' }, { status: 401 })
     }
+    // 阻擋待審核用戶
+    if ((session as any).user?.role === 'PENDING') {
+      return NextResponse.json({ error: '帳戶待審核中，暫無權限存取對帳單' }, { status: 403 })
+    }
 
     const { searchParams } = new URL(request.url)
     const customer_id = searchParams.get('customer_id')
@@ -214,6 +218,9 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: '未登入' }, { status: 401 })
+    }
+    if (session.user.role === 'PENDING') {
+      return NextResponse.json({ error: '帳戶待審核中，暫無權限建立對帳單' }, { status: 403 })
     }
 
     // 投資方不能創建對帳單

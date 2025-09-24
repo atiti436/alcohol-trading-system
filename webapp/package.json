@@ -10,9 +10,12 @@
     "test": "jest",
     "test:security": "jest src/tests/security/",
     "check:fields": "node scripts/check-field-naming.js",
-    "prebuild": "npm run check:fields",
+    "check:permissions": "node scripts/check-permissions.js",
+    "check:all": "npm run check:fields && npm run check:permissions",
+    "prebuild": "npm run check:all",
     "seed:test": "npx tsx prisma/seeds/test-data.ts",
-    "verify:isolation": "npx tsx -e \"import {verifyDataIsolation} from './prisma/seeds/test-data'; verifyDataIsolation().then(console.log).catch(console.error)\""
+    "verify:isolation": "npx tsx -e \"import {verifyDataIsolation} from './prisma/seeds/test-data'; verifyDataIsolation().then(console.log).catch(console.error)\"",
+    "deploy:check": "npm run check:all && npm run build && echo '✅ 部署前檢查完成'"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.4",

@@ -5,6 +5,7 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { validateProductData } from '@/lib/validation'
 import { DatabaseWhereCondition } from '@/types/business'
 import { AlcoholCategory } from '@prisma/client'
+import { Role } from '@/types/auth'
 
 /**
  * 🏠 Room-2: Product 模組 API
@@ -18,6 +19,13 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: '未登入' }, { status: 401 })
+    }
+
+    // 阻擋待審核用戶
+    if (session.user.role === Role.PENDING) {
+      return NextResponse.json({
+        error: '帳戶待審核中，暫無權限存取商品資料'
+      }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -109,8 +117,19 @@ export async function POST(request: NextRequest) {
   try {
     // 權限檢查 - 只有SUPER_ADMIN和EMPLOYEE可以新增商品
     const session = await getServerSession(authOptions)
-    if (!session?.user || session.user.role === 'INVESTOR') {
-      return NextResponse.json({ error: '權限不足' }, { status: 403 })
+    if (!session?.user) {
+      return NextResponse.json({ error: '未登入' }, { status: 401 })
+    }
+
+    // 阻擋待審核用戶和投資方
+    if (session.user.role === Role.PENDING) {
+      return NextResponse.json({
+        error: '帳戶待審核中，暫無權限新增商品'
+      }, { status: 403 })
+    }
+
+    if (session.user.role === Role.INVESTOR) {
+      return NextResponse.json({ error: '投資方無權新增商品' }, { status: 403 })
     }
 
     const body = await request.json()
