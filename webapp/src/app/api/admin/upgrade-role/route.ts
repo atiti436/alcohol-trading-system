@@ -15,19 +15,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 更新用戶角色為 SUPER_ADMIN
-    const updatedUser = await prisma.user.update({
+    // 僅允許已是超級管理員的使用者呼叫此 API
+    if (session.user.role !== Role.SUPER_ADMIN) {
+      return NextResponse.json(
+        { error: '權限不足' },
+        { status: 403 }
+      )
+    }
+
+    // 安全起見，僅回傳目前使用者資訊；實際升級其他使用者應改為專用管理 API
+    const updatedUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      data: { role: Role.SUPER_ADMIN },
+      select: { id: true, email: true, name: true, role: true }
     })
 
     return NextResponse.json({
-      message: '角色已升級為超級管理員',
+      message: 'OK',
       user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: updatedUser.role
+        id: updatedUser?.id,
+        email: updatedUser?.email,
+        name: updatedUser?.name,
+        role: updatedUser?.role
       }
     })
 

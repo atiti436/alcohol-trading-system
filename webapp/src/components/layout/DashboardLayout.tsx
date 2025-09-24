@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Layout, Menu, Button, Avatar, Dropdown, Typography, Space, Badge, MenuProps } from 'antd'
+import { Layout, Menu, Button, Avatar, Dropdown, Typography, Space, Badge, MenuProps, Tooltip } from 'antd'
 import { UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined, ShopOutlined } from '@ant-design/icons'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -140,14 +140,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           />
 
           <Space>
-            {/* 通知鈴鐺 */}
-            <Badge count={3} size="small">
-              <Button
-                type="text"
-                icon={<BellOutlined />}
-                style={{ fontSize: '16px' }}
-              />
-            </Badge>
+            {/* 通知功能開發中 */}
+            <Tooltip title="通知功能開發中，敬請期待" placement="bottomRight">
+              <Badge count={0} size="small">
+                <Button
+                  type="text"
+                  icon={<BellOutlined />}
+                  style={{ fontSize: '16px', opacity: 0.5 }}
+                  disabled
+                />
+              </Badge>
+            </Tooltip>
 
             {/* 使用者資訊 */}
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
