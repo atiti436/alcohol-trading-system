@@ -2,6 +2,19 @@ import { prisma } from '@/lib/prisma'
 import { Role } from '@/types/auth'
 import { AuditAction, AuditResourceType } from '@prisma/client'
 
+// 統一的資源類型映射，確保與 Prisma schema 一致
+const RESOURCE_TYPE_MAP: Record<string, AuditResourceType> = {
+  'USERS': AuditResourceType.USERS,
+  'CUSTOMERS': AuditResourceType.CUSTOMERS,
+  'PRODUCTS': AuditResourceType.PRODUCTS,
+  'SALES': AuditResourceType.SALES,
+  'PURCHASES': AuditResourceType.PURCHASES,
+  'INVENTORY': AuditResourceType.INVENTORY,
+  'SETTINGS': AuditResourceType.SETTINGS,
+  'REPORTS': AuditResourceType.REPORTS,
+  'LINEBOT': AuditResourceType.LINEBOT
+}
+
 export interface AuditLogEntry {
   id?: string
   user_id: string
@@ -69,20 +82,12 @@ export class AuditLogger {
                       params.action === 'WRITE' ? AuditAction.WRITE :
                       AuditAction.DELETE
 
-    const resourceTypeMap: Record<string, AuditResourceType> = {
-      'SALES': AuditResourceType.SALES,
-      'CUSTOMERS': AuditResourceType.CUSTOMERS,
-      'INVENTORY': AuditResourceType.INVENTORY,
-      'USERS': AuditResourceType.USERS,
-      'SETTINGS': AuditResourceType.SETTINGS
-    }
-
     return this.log({
       user_id: params.userId,
       user_email: params.userEmail,
       user_role: params.userRole,
       action: auditAction,
-      resource_type: resourceTypeMap[params.resourceType],
+      resource_type: RESOURCE_TYPE_MAP[params.resourceType],
       resource_id: params.resourceId,
       details: {
         sensitive_fields: params.sensitiveFields,
@@ -140,20 +145,12 @@ export class AuditLogger {
     ipAddress?: string
     userAgent?: string
   }) {
-    const resourceTypeMap: Record<string, AuditResourceType> = {
-      'SALES': AuditResourceType.SALES,
-      'CUSTOMERS': AuditResourceType.CUSTOMERS,
-      'INVENTORY': AuditResourceType.INVENTORY,
-      'PRODUCTS': AuditResourceType.PRODUCTS,
-      'PURCHASES': AuditResourceType.PURCHASES
-    }
-
     return this.log({
       user_id: params.userId,
       user_email: params.userEmail,
       user_role: params.userRole,
       action: AuditAction.DATA_FILTERING,
-      resource_type: resourceTypeMap[params.resourceType] || AuditResourceType.REPORTS,
+      resource_type: RESOURCE_TYPE_MAP[params.resourceType] || AuditResourceType.REPORTS,
       details: {
         original_count: params.originalCount,
         filtered_count: params.filteredCount,
