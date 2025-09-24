@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { Role, PermissionContext } from '@/types/auth'
+import { AuditAction } from '@prisma/client'
 
 /**
  * 審計日誌服務 - 記錄所有敏感資料存取
@@ -7,7 +8,7 @@ import { Role, PermissionContext } from '@/types/auth'
  */
 
 export interface AuditLogData {
-  action: 'READ' | 'CREATE' | 'UPDATE' | 'DELETE'
+  action: AuditAction
   table_name: string
   record_id?: string
   sensitive_fields?: Record<string, any>
@@ -76,7 +77,7 @@ export function auditSensitiveAccess(
       if (context) {
         // 記錄存取行為
         await createAuditLog(context, {
-          action: 'READ',
+          action: AuditAction.READ,
           table_name: tableName,
           accessed_actual_price: options.checkActualPrice,
           accessed_commission: options.checkCommission,
