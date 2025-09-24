@@ -96,7 +96,8 @@ export async function GET(request: NextRequest) {
               available_stock: true,
               cost_price: true,
               base_price: true,
-              current_price: true
+              current_price: true,
+              condition: true
             }
           },
           _count: {
