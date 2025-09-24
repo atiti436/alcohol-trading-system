@@ -104,7 +104,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchText, categoryFilter, statusFilter, fetchInventory])
+  }, [searchText, categoryFilter, statusFilter])
 
   useEffect(() => {
     fetchInventory()
