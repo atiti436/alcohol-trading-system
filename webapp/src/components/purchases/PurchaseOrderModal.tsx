@@ -297,6 +297,7 @@ export function PurchaseOrderModal({
         // 建構變體物件
         const variant: ProductVariant = {
           id: selection.variantId,
+          product_id: selection.productId, // 補齊缺少的 product_id
           variant_code: selection.variantCode,
           variant_type: selection.variantType || 'A',
           description: selection.description || '原裝完整',
@@ -306,7 +307,10 @@ export function PurchaseOrderModal({
           stock_quantity: selection.stock || 0,
           available_stock: selection.stock || 0,
           reserved_stock: 0,
-          condition: 'Normal'
+          condition: 'Normal',
+          limited_edition: false, // 補齊缺少的 limited_edition
+          created_at: new Date(), // 補齊缺少的 created_at
+          updated_at: new Date()  // 補齊缺少的 updated_at
         }
 
         return {
