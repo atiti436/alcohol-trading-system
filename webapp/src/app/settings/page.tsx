@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import ApiKeySettings from '@/components/settings/ApiKeySettings'
+import LineBotSettings from '@/components/settings/LineBotSettings'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -273,6 +274,9 @@ export default function SettingsPage() {
             <Row gutter={[24, 24]}>
               <Col span={24}>
                 <ApiKeySettings />
+              </Col>
+              <Col span={24}>
+                <LineBotSettings />
               </Col>
             </Row>
           </TabPane>

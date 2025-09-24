@@ -9,13 +9,20 @@
     "lint": "eslint src",
     "test": "jest",
     "test:security": "jest src/tests/security/",
+    "test:api": "jest src/tests/api/",
+    "test:business": "jest src/tests/business/",
+    "test:integration": "jest src/tests/integration/",
+    "test:all": "jest src/tests/",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "check:fields": "node scripts/check-field-naming.js",
     "check:permissions": "node scripts/check-permissions.js",
     "check:all": "npm run check:fields && npm run check:permissions",
     "seed:test": "npx tsx prisma/seeds/test-data.ts",
     "verify:isolation": "npx tsx -e \"import {verifyDataIsolation} from './prisma/seeds/test-data'; verifyDataIsolation().then(console.log).catch(console.error)\"",
     "deploy:check": "npm run check:all && npm run build && echo '✅ 部署前檢查完成'",
-    "ci": "npm run lint && npm run check:all && npm run test:security && npm run build"
+    "ci": "npm run lint && npm run check:all && npm run test:all && npm run build",
+    "ci:fast": "npm run lint && npm run test:security && npm run build"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.4",
