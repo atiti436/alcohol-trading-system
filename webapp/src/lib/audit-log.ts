@@ -72,7 +72,7 @@ export class AuditLogger {
     userEmail: string
     userRole: Role
     action: 'READ' | 'WRITE' | 'DELETE'
-    resourceType: 'SALES' | 'CUSTOMERS' | 'INVENTORY' | 'USERS' | 'SETTINGS'
+    resourceType: 'USERS' | 'CUSTOMERS' | 'PRODUCTS' | 'SALES' | 'PURCHASES' | 'INVENTORY' | 'SETTINGS' | 'REPORTS' | 'LINEBOT'
     resourceId?: string
     sensitiveFields?: string[]
     ipAddress?: string
