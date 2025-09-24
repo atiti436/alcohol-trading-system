@@ -331,7 +331,11 @@ export default function CustomsDeclarationReview({
             value={record.dutiableValue}
             min={0}
             formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+            parser={value => {
+              const cleaned = (value || '').replace(/\$\s?|,/g, '')
+              const num = parseFloat(cleaned)
+              return isNaN(num) ? 0 : num
+            }}
             onChange={(value) => updateItem(index, 'dutiableValue', value || 0)}
           />
         ) : `NT$ ${text.toLocaleString()}`

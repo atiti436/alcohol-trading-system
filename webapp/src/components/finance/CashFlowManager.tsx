@@ -486,10 +486,14 @@ export default function CashFlowManager() {
               { type: 'number', min: 0.01, message: '金額必須大於0' }
             ]}
           >
-            <InputNumber
+            <InputNumber<number>
               style={{ width: '100%' }}
               formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+              parser={value => {
+                const cleaned = (value || '').replace(/\$\s?|,/g, '')
+                const num = parseFloat(cleaned)
+                return isNaN(num) ? 0 : num
+              }}
               min={0}
               step={1}
               precision={0}
@@ -605,10 +609,14 @@ export default function CashFlowManager() {
               { type: 'number', min: 0.01, message: '金額必須大於0' }
             ]}
           >
-            <InputNumber
+            <InputNumber<number>
               style={{ width: '100%' }}
               formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+              parser={value => {
+                const cleaned = (value || '').replace(/\$\s?|,/g, '')
+                const num = parseFloat(cleaned)
+                return isNaN(num) ? 0 : num
+              }}
               min={0}
               step={1}
               precision={0}

@@ -529,7 +529,11 @@ export function PurchaseOrderModal({
                 min={0.001}
                 max={1000}
                 precision={3}
-                parser={(value) => value ? parseFloat(value.replace(/[^\d.]/g, '')) : 0}
+                parser={(value) => {
+                  const cleaned = (value || '').replace(/[^\d.]/g, '')
+                  const num = parseFloat(cleaned)
+                  return isNaN(num) ? 0 : num
+                }}
                 formatter={(value) => value ? `${value}` : ''}
               />
             </Form.Item>
