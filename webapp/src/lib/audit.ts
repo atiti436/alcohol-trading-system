@@ -10,7 +10,7 @@ import { AuditLogger, logSensitiveAccess } from './audit-log'
 
 export interface AuditLogData {
   action: 'READ' | 'WRITE' | 'DELETE'
-  resource_type: 'SALES' | 'CUSTOMERS' | 'INVENTORY' | 'USERS' | 'SETTINGS'
+  resource_type: 'USERS' | 'CUSTOMERS' | 'PRODUCTS' | 'SALES' | 'PURCHASES' | 'INVENTORY' | 'SETTINGS' | 'REPORTS' | 'LINEBOT'
   resource_id?: string
   sensitive_fields?: string[]
   ip_address?: string
