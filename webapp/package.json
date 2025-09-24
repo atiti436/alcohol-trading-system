@@ -15,7 +15,9 @@
     "prebuild": "npm run check:all",
     "seed:test": "npx tsx prisma/seeds/test-data.ts",
     "verify:isolation": "npx tsx -e \"import {verifyDataIsolation} from './prisma/seeds/test-data'; verifyDataIsolation().then(console.log).catch(console.error)\"",
-    "deploy:check": "npm run check:all && npm run build && echo '✅ 部署前檢查完成'"
+    "deploy:check": "npm run check:all && npm run build && echo '✅ 部署前檢查完成'",
+    "prepare": "husky install",
+    "ci": "npm run lint && npm run check:all && npm run test:security && npm run build"
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.4",
@@ -58,6 +60,7 @@
     "prisma": "^6.16.2",
     "tailwindcss": "^4",
     "tsx": "^4.0.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "husky": "^8.0.3"
   }
 }

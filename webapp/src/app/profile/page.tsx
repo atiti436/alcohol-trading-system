@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Card, Form, Input, Button, Typography, Space, Avatar, Row, Col, Switch, Divider, Select, message, Upload, Alert } from 'antd'
+import { Card, Form, Input, Button, Typography, Space, Avatar, Row, Col, Switch, Divider, Select, message, Upload, Alert, Tag } from 'antd'
 import {
   UserOutlined,
   MailOutlined,
@@ -51,9 +51,9 @@ export default function ProfilePage() {
         id: session.user.id || '',
         name: session.user.name || '',
         email: session.user.email || '',
-        phone: '+886-912-345-678',
-        department: '業務部',
-        position: '業務經理',
+        phone: session.user.email === 'manpan.whisky@gmail.com' ? '+886-912-345-678' : '',
+        department: session.user.email === 'manpan.whisky@gmail.com' ? '業務部' : '',
+        position: session.user.email === 'manpan.whisky@gmail.com' ? '業務經理' : '',
         avatar: session.user.image || '',
         notifications: {
           email: true,
@@ -159,6 +159,15 @@ export default function ProfilePage() {
               )
             }
           >
+            {session?.user?.email !== 'manpan.whisky@gmail.com' && (
+              <Alert
+                message="個人資料功能開發中"
+                description="個人資料編輯功能正在開發中，目前僅顯示基本 Google 帳戶資訊。"
+                type="info"
+                style={{ marginBottom: 16 }}
+                showIcon
+              />
+            )}
             <Form
               form={form}
               layout="vertical"
@@ -189,18 +198,18 @@ export default function ProfilePage() {
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    label="電話"
+                    label={<>電話 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}</>
                     name="phone"
                   >
-                    <Input prefix={<PhoneOutlined />} />
+                    <Input prefix={<PhoneOutlined />} placeholder={session?.user?.email !== 'manpan.whisky@gmail.com' ? '功能開發中' : ''} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    label="部門"
+                    label={<>部門 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}</>
                     name="department"
                   >
-                    <Select>
+                    <Select placeholder={session?.user?.email !== 'manpan.whisky@gmail.com' ? '功能開發中' : ''}>
                       <Option value="業務部">業務部</Option>
                       <Option value="採購部">採購部</Option>
                       <Option value="財務部">財務部</Option>
@@ -210,10 +219,10 @@ export default function ProfilePage() {
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    label="職位"
+                    label={<>職位 {session?.user?.email !== 'manpan.whisky@gmail.com' && <Tag color="orange" size="small">範例資料</Tag>}</>
                     name="position"
                   >
-                    <Input />
+                    <Input placeholder={session?.user?.email !== 'manpan.whisky@gmail.com' ? '功能開發中' : ''} />
                   </Form.Item>
                 </Col>
               </Row>
@@ -290,13 +299,22 @@ export default function ProfilePage() {
               <Space>
                 <SettingOutlined />
                 <span>通知設定</span>
+                <Tag color="orange" size="small">開發中</Tag>
               </Space>
             }
           >
+            <Alert
+              message="通知功能開發中"
+              description="個人通知設定功能正在開發中，目前設定不會生效。"
+              type="info"
+              style={{ marginBottom: 16 }}
+              showIcon
+            />
             <Form layout="vertical" disabled={!editing}>
               <Form.Item label="電子郵件通知">
                 <Switch
                   checked={profile.notifications.email}
+                  disabled
                   onChange={(checked) =>
                     setProfile({
                       ...profile,
@@ -312,6 +330,7 @@ export default function ProfilePage() {
               <Form.Item label="簡訊通知">
                 <Switch
                   checked={profile.notifications.sms}
+                  disabled
                   onChange={(checked) =>
                     setProfile({
                       ...profile,
@@ -327,6 +346,7 @@ export default function ProfilePage() {
               <Form.Item label="系統通知">
                 <Switch
                   checked={profile.notifications.system}
+                  disabled
                   onChange={(checked) =>
                     setProfile({
                       ...profile,

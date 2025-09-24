@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Card, Row, Col, Typography, Space, Switch, Form, Input, Button, Select, Divider, message, Tabs } from 'antd'
+import { Card, Row, Col, Typography, Space, Switch, Form, Input, Button, Select, Divider, message, Tabs, Alert, Tag } from 'antd'
 import {
   SettingOutlined,
   SecurityScanOutlined,
@@ -94,25 +94,32 @@ export default function SettingsPage() {
               <Card title={
                 <React.Fragment>
                   <BellOutlined style={{ marginRight: 8 }} />
-                  通知設定
+                  通知設定 <Tag color="orange" style={{ marginLeft: 8 }}>開發中</Tag>
                 </React.Fragment>
               }>
+                <Alert
+                  message="功能開發中"
+                  description="通知設定功能正在開發中，目前設定不會生效。敬請期待後續版本更新。"
+                  type="info"
+                  style={{ marginBottom: 16 }}
+                  showIcon
+                />
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text>低庫存警報</Text>
-                    <Switch defaultChecked disabled={!isAdmin} />
+                    <Text style={{ opacity: 0.6 }}>低庫存警報</Text>
+                    <Switch defaultChecked disabled />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text>新訂單通知</Text>
-                    <Switch defaultChecked disabled={!isAdmin} />
+                    <Text style={{ opacity: 0.6 }}>新訂單通知</Text>
+                    <Switch defaultChecked disabled />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text>帳款到期提醒</Text>
-                    <Switch defaultChecked disabled={!isAdmin} />
+                    <Text style={{ opacity: 0.6 }}>帳款到期提醒</Text>
+                    <Switch defaultChecked disabled />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text>系統維護通知</Text>
-                    <Switch defaultChecked disabled={!isAdmin} />
+                    <Text style={{ opacity: 0.6 }}>系統維護通知</Text>
+                    <Switch defaultChecked disabled />
                   </div>
                 </Space>
               </Card>
@@ -128,25 +135,32 @@ export default function SettingsPage() {
                 <Card title={
                   <React.Fragment>
                     <SecurityScanOutlined style={{ marginRight: 8 }} />
-                    安全政策
+                    安全政策 <Tag color="orange" style={{ marginLeft: 8 }}>開發中</Tag>
                   </React.Fragment>
                 }>
+                  <Alert
+                    message="安全功能開發中"
+                    description="進階安全設定功能正在開發中，目前使用 Google OAuth 基礎安全機制。"
+                    type="info"
+                    style={{ marginBottom: 16 }}
+                    showIcon
+                  />
                   <Space direction="vertical" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text>強制密碼政策</Text>
-                      <Switch defaultChecked />
+                      <Text style={{ opacity: 0.6 }}>強制密碼政策</Text>
+                      <Switch defaultChecked disabled />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text>雙因子認證</Text>
-                      <Switch />
+                      <Text style={{ opacity: 0.6 }}>雙因子認證</Text>
+                      <Switch disabled />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text>自動登出（30分鐘）</Text>
-                      <Switch defaultChecked />
+                      <Text style={{ opacity: 0.6 }}>自動登出（30分鐘）</Text>
+                      <Switch defaultChecked disabled />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text>IP限制</Text>
-                      <Switch />
+                      <Text style={{ opacity: 0.6 }}>IP限制</Text>
+                      <Switch disabled />
                     </div>
                   </Space>
                 </Card>

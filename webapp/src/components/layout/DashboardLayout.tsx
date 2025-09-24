@@ -147,6 +147,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   type="text"
                   icon={<BellOutlined />}
                   style={{ fontSize: '16px', opacity: 0.5 }}
+                  data-testid="notification-bell"
                   disabled
                 />
               </Badge>
