@@ -1,1 +1,5 @@
-﻿import { redirect } from 'next/navigation'\n\nexport default function UsersRedirectPage() {\n  redirect('/settings?tab=users')\n}\n
+import { redirect } from 'next/navigation'
+
+export default function UsersRedirectPage() {
+  redirect('/settings?tab=users')
+}

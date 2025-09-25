@@ -3,7 +3,8 @@
  * 建立用於驗證數據隔離的測試帳號和資料
  */
 
-import { PrismaClient, Role } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
+import { Role } from '@/types/auth'
 
 const prisma = new PrismaClient()
 
