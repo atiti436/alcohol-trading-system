@@ -359,7 +359,7 @@ export default function SalesPage() {
                 </Button>
               </HideFromInvestor>
             )
-          } else if (record.status === 'CONFIRMED') {
+          } else if (record.status === 'CONFIRMED' || record.status === 'SHIPPED') {
             // 已確認狀態：付款 + 出貨操作
 
             // 付款按鈕 - 非週結且未付款才顯示
