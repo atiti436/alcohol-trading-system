@@ -137,7 +137,7 @@ export default function FinanceOverviewPage() {
       key: 'amount',
       render: (amount: number) => (
         <SecurePriceDisplay
-          price={Math.abs(amount)}
+          amount={Math.abs(amount)}
           style={{
             color: amount > 0 ? '#52c41a' : '#ff4d4f',
             fontWeight: 'bold'
@@ -182,7 +182,7 @@ export default function FinanceOverviewPage() {
               precision={0}
               prefix={<DollarOutlined style={{ color: '#52c41a' }} />}
               valueStyle={{ color: '#52c41a' }}
-              formatter={(value) => <SecurePriceDisplay price={Number(value)} />}
+              formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
             />
           </Card>
         </Col>
@@ -194,7 +194,7 @@ export default function FinanceOverviewPage() {
               precision={0}
               prefix={<ShoppingCartOutlined style={{ color: '#ff4d4f' }} />}
               valueStyle={{ color: '#ff4d4f' }}
-              formatter={(value) => <SecurePriceDisplay price={Number(value)} />}
+              formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
             />
           </Card>
         </Col>
@@ -206,7 +206,7 @@ export default function FinanceOverviewPage() {
               precision={0}
               prefix={data.netProfit >= 0 ? <RiseOutlined style={{ color: '#52c41a' }} /> : <FallOutlined style={{ color: '#ff4d4f' }} />}
               valueStyle={{ color: data.netProfit >= 0 ? '#52c41a' : '#ff4d4f' }}
-              formatter={(value) => <SecurePriceDisplay price={Math.abs(Number(value))} />}
+              formatter={(value) => <SecurePriceDisplay amount={Math.abs(Number(value))} />}
             />
           </Card>
         </Col>
@@ -218,7 +218,7 @@ export default function FinanceOverviewPage() {
               precision={0}
               prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
               valueStyle={{ color: '#faad14' }}
-              formatter={(value) => <SecurePriceDisplay price={Number(value)} />}
+              formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
             />
           </Card>
         </Col>
@@ -289,7 +289,7 @@ export default function FinanceOverviewPage() {
                     }
                     description={`${item.customer} • 到期日: ${item.dueDate.format('MM-DD')}`}
                   />
-                  <SecurePriceDisplay price={item.amount} style={{ fontWeight: 'bold' }} />
+                  <SecurePriceDisplay amount={item.amount} style={{ fontWeight: 'bold' }} />
                 </List.Item>
               )}
             />
