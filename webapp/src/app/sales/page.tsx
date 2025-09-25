@@ -19,7 +19,10 @@ import {
   Empty,
   Skeleton,
   Result,
-  Dropdown
+  Dropdown,
+  Typography,
+  Row,
+  Col
 } from 'antd'
 import {
   PlusOutlined,
@@ -43,6 +46,7 @@ import { SaleOrderModal } from '@/components/sales/SaleOrderModal'
 import { Sale, SaleItem } from '@/types/room-2'
 
 const { Search } = Input
+const { Title, Text } = Typography
 
 
 interface SaleFilters {
