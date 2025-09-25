@@ -165,7 +165,8 @@ export class AuditLogger {
 }
 
 // 便利的導出函數
-export const auditLog = AuditLogger.log
-export const logSensitiveAccess = AuditLogger.logSensitiveAccess
-export const logPermissionChange = AuditLogger.logPermissionChange
-export const logDataFiltering = AuditLogger.logDataFiltering
+// 使用包裝函式避免方法引用時的 this 綁定問題
+export const auditLog = (entry: Omit<AuditLogEntry, 'id' | 'created_at'>) => AuditLogger.log(entry)
+export const logSensitiveAccess = (params: Parameters<typeof AuditLogger.logSensitiveAccess>[0]) => AuditLogger.logSensitiveAccess(params)
+export const logPermissionChange = (params: Parameters<typeof AuditLogger.logPermissionChange>[0]) => AuditLogger.logPermissionChange(params)
+export const logDataFiltering = (params: Parameters<typeof AuditLogger.logDataFiltering>[0]) => AuditLogger.logDataFiltering(params)

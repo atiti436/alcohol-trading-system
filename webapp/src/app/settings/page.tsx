@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Card, Row, Col, Typography, Space, Switch, Form, Input, Button, Select, Divider, message, Tabs, Alert, Tag } from 'antd'
 import {
   SettingOutlined,
@@ -11,6 +11,7 @@ import {
   LockOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import ApiKeySettings from '@/components/settings/ApiKeySettings'
 import LineBotSettings from '@/components/settings/LineBotSettings'
 import UserManagementTab from '@/components/settings/UserManagementTab'
@@ -23,6 +24,8 @@ export default function SettingsPage() {
   const { data: session } = useSession()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
+  const params = useSearchParams()
+  const activeTab = useMemo(() => params.get('tab') || 'general', [params])
 
   const handleSave = async (values: any) => {
     setLoading(true)
@@ -47,7 +50,7 @@ export default function SettingsPage() {
         系統設定
       </Title>
 
-      <Tabs defaultActiveKey="general" type="card">
+      <Tabs defaultActiveKey={activeTab} activeKey={activeTab} type="card">
         {/* 一般設定 */}
         <TabPane tab="一般設定" key="general">
           <Row gutter={[24, 24]}>
@@ -276,9 +279,11 @@ export default function SettingsPage() {
               <Col span={24}>
                 <ApiKeySettings />
               </Col>
-              <Col span={24}>
-                <LineBotSettings />
-              </Col>
+              {process.env.NEXT_PUBLIC_ENABLE_LINEBOT_SETTINGS === 'true' && (
+                <Col span={24}>
+                  <LineBotSettings />
+                </Col>
+              )}
             </Row>
           </TabPane>
         )}
