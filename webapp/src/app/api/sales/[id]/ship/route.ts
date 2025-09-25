@@ -29,7 +29,8 @@ export async function POST(
       shipping_method = 'DELIVERY', // 出貨方式：DELIVERY, PICKUP, EXPRESS
       tracking_number, // 追蹤號碼
       notes = '', // 出貨備註
-      items = [] // 出貨明細：[{sale_item_id, ship_quantity, variant_id}]
+      items = [], // 出貨明細：[{sale_item_id, ship_quantity, variant_id}]
+      print = false // 是否需要列印出貨單
     } = body
 
     // 檢查銷售訂單是否存在
@@ -220,17 +221,40 @@ export async function POST(
       }
     })
 
+    // 準備返回數據
+    const responseData = {
+      shipping_order_id: result.shippingOrder.id,
+      shipping_number: result.shippingOrder.shipping_number,
+      shipped_items: result.shippingItems,
+      total_shipped_quantity: result.totalShippedQuantity,
+      tracking_number: result.shippingOrder.tracking_number,
+      shipped_at: result.shippingOrder.shipped_at
+    }
+
+    // 如果需要列印，返回出貨單數據
+    if (print) {
+      return NextResponse.json({
+        success: true,
+        message: '出貨完成，庫存已扣減',
+        data: responseData,
+        shippingData: {
+          shippingOrder: result.shippingOrder,
+          sale: {
+            ...sale,
+            items: sale.items.map(item => ({
+              ...item,
+              shipped_quantity: result.shippingItems.find(si => si.shipping_item_id)?.shipped_quantity || 0
+            }))
+          },
+          shippingItems: result.shippingItems
+        }
+      })
+    }
+
     return NextResponse.json({
       success: true,
       message: '出貨完成，庫存已扣減',
-      data: {
-        shipping_order_id: result.shippingOrder.id,
-        shipping_number: result.shippingOrder.shipping_number,
-        shipped_items: result.shippingItems,
-        total_shipped_quantity: result.totalShippedQuantity,
-        tracking_number: result.shippingOrder.tracking_number,
-        shipped_at: result.shippingOrder.shipped_at
-      }
+      data: responseData
     })
 
   } catch (error) {
