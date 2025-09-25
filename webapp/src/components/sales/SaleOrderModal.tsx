@@ -31,6 +31,7 @@ import dayjs from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { DualPriceManager } from './DualPriceManager'
 import { Sale, CreateSaleRequest, CreateSaleItemRequest, ProductWithVariants, ProductVariant } from '@/types/room-2'
+import ProductSearchSelect from '@/components/common/ProductSearchSelect'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -333,31 +334,21 @@ export function SaleOrderModal({
       width: 200,
       render: (_: any, record: SaleOrderItem) => (
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
-          <Select
+          <ProductSearchSelect
+            placeholder="搜尋商品... 如：山崎、響、NIKKA"
+            allowQuickAdd={true}
+            value={record.product_id ? {
+              productId: record.product_id,
+              productName: record.product?.name,
+              variantId: record.variantId
+            } : undefined}
+            onChange={(value) => {
+              if (value) {
+                handleProductChange(record.key, value.productId, value.variantId)
+              }
+            }}
             style={{ width: '100%' }}
-            placeholder="選擇商品"
-            value={record.product_id || undefined}
-            onChange={(value) => handleProductChange(record.key, value)}
-            loading={loadingProducts}
-            showSearch
-            optionFilterProp="children"
-          >
-            {products.map(product => (
-              <Option key={product.id} value={product.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{product.name}</span>
-                  <span style={{ color: '#999', fontSize: '12px' }}>
-                    {product.product_code}
-                    {product.variants && product.variants.length > 0 && (
-                      <span style={{ color: '#1890ff', marginLeft: '8px' }}>
-                        📦 {product.variants.length}個版本
-                      </span>
-                    )}
-                  </span>
-                </div>
-              </Option>
-            ))}
-          </Select>
+          />
 
           {record.product?.variants && record.product.variants.length > 0 && (
             <Select

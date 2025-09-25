@@ -17,6 +17,7 @@ import {
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
+import ProductSearchSelect from '@/components/common/ProductSearchSelect'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -644,34 +645,25 @@ export default function QuotationsPage() {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={24}>
               <Form.Item
-                name="product_id"
-                label="商品選擇（可選）"
+                name="product_search"
+                label="商品選擇（智慧搜尋+快速新增）"
+                extra="輸入商品名稱進行搜尋，如「山崎」、「響」等，找不到商品時可快速新增"
               >
-                <Select
-                  placeholder="選擇現有商品"
-                  allowClear
-                  showSearch
-                  optionFilterProp="children"
+                <ProductSearchSelect
+                  placeholder="搜尋商品... 如：山崎12年、響21年、NIKKA"
+                  allowQuickAdd={true}
                   onChange={(value) => {
                     if (value) {
-                      const selectedProduct = products.find(p => p.id === value)
-                      if (selectedProduct) {
-                        form.setFieldsValue({
-                          product_name: selectedProduct.name,
-                          unit_price: selectedProduct.current_price
-                        })
-                      }
+                      form.setFieldsValue({
+                        product_id: value.productId,
+                        product_name: value.productName,
+                        unit_price: value.price
+                      })
                     }
                   }}
-                >
-                  {products.map(product => (
-                    <Option key={product.id} value={product.id}>
-                      {product.name} ({product.product_code}) - NT${product.current_price}
-                    </Option>
-                  ))}
-                </Select>
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -681,7 +673,12 @@ export default function QuotationsPage() {
             label="商品名稱"
             rules={[{ required: true, message: '請輸入商品名稱' }]}
           >
-            <Input placeholder="選擇上方商品自動填入，或手動輸入客製化商品名稱" />
+            <Input placeholder="從上方搜尋選擇後自動填入，或直接輸入客製化商品名稱" />
+          </Form.Item>
+
+          {/* 隱藏欄位保存產品ID */}
+          <Form.Item name="product_id" style={{ display: 'none' }}>
+            <Input />
           </Form.Item>
 
           <Row gutter={16}>

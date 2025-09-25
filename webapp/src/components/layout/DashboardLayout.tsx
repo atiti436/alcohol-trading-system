@@ -106,7 +106,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           left: 0,
           top: 0,
           bottom: 0,
-          zIndex: 1000
+          zIndex: 1000,
+          overflow: 'auto'
         }}
         theme="dark"
       >
