@@ -501,149 +501,6 @@ export default function SalesPage() {
         return <Space size="small">{renderActions()}</Space>
       }
     }
-
-          {/* 編輯按鈕 - 只有草稿狀態可編輯，投資方隱藏 */}
-          {record.status === 'DRAFT' && (
-            <HideFromInvestor>
-              <Tooltip title="編輯">
-                <Button
-                  icon={<EditOutlined />}
-                  size="small"
-                  onClick={() => handleEdit(record)}
-                />
-              </Tooltip>
-            </HideFromInvestor>
-          )}
-
-          {/* 確認按鈕 - 草稿狀態可確認，投資方隱藏 */}
-          {record.status === 'DRAFT' && (
-            <HideFromInvestor>
-              <Tooltip title="確認銷售訂單">
-                <Button
-                  icon={<DollarOutlined />}
-                  size="small"
-                  type="primary"
-                  loading={actionLoading[`confirm-${record.id}`]}
-                  onClick={() => handleConfirm(record)}
-                >
-                  確認
-                </Button>
-              </Tooltip>
-            </HideFromInvestor>
-          )}
-
-          {/* 付款按鈕 - 已確認且未付款時顯示 */}
-          {record.status === 'CONFIRMED' && !record.is_paid && (
-            <HideFromInvestor>
-              <Tooltip title="標記為已付款">
-                <Button
-                  icon={<DollarOutlined />}
-                  size="small"
-                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
-                  loading={actionLoading[`pay-${record.id}`]}
-                  onClick={() => handleMarkPaid(record)}
-                >
-                  付款
-                </Button>
-              </Tooltip>
-            </HideFromInvestor>
-          )}
-
-          {/* 出貨按鈕 - 已付款且尚未出貨時顯示 */}
-          {record.is_paid && record.status === 'CONFIRMED' && (
-            <HideFromInvestor>
-              <Tooltip title="進行出貨作業">
-                <Button
-                  icon={<ShoppingCartOutlined />}
-                  size="small"
-                  type="default"
-                  style={{ backgroundColor: '#ff7875', borderColor: '#ff7875', color: 'white' }}
-                  loading={actionLoading[`ship-${record.id}`]}
-                  onClick={() => handleShip(record)}
-                >
-                  出貨
-                </Button>
-              </Tooltip>
-            </HideFromInvestor>
-          )}
-
-          {/* 刪除按鈕 - 只有超級管理員可刪除草稿訂單 */}
-          {record.status === 'DRAFT' && (
-            <SuperAdminOnly>
-              <Popconfirm
-                title="確定要刪除此銷售訂單嗎？"
-                description="刪除後將無法復原"
-                onConfirm={() => handleDelete(record.id)}
-                okText="確定"
-                cancelText="取消"
-                okButtonProps={{ loading: actionLoading[`delete-${record.id}`] }}
-              >
-                <Tooltip title="刪除">
-                  <Button
-                    icon={<DeleteOutlined />}
-                    size="small"
-                    danger
-                    loading={actionLoading[`delete-${record.id}`]}
-                  />
-                </Tooltip>
-              </Popconfirm>
-            </SuperAdminOnly>
-          )}
-
-          {/* 管理員取消/刪除 - Demo 快速處理誤觸 */}
-          <SuperAdminOnly>
-            <Tooltip title="管理員取消 (還原預留庫存)">
-              <Button
-                size="small"
-                onClick={async () => {
-                  const actionKey = `admin-cancel-${record.id}`
-                  setActionLoading(prev => ({ ...prev, [actionKey]: true }))
-                  try {
-                    const res = await fetch(`/api/sales/${record.id}/admin-cancel`, { method: 'POST' })
-                    const result = await res.json()
-                    if (res.ok && result.success) {
-                      message.success('已取消訂單並還原預留庫存')
-                      await loadSales(false)
-                    } else {
-                      message.error(result.error || '取消失敗')
-                    }
-                  } catch (e) {
-                    message.error('取消失敗，請稍後再試')
-                  } finally {
-                    setActionLoading(prev => ({ ...prev, [actionKey]: false }))
-                  }
-                }}
-              >取消</Button>
-            </Tooltip>
-            <Tooltip title="管理員取消並刪除">
-              <Button
-                size="small"
-                danger
-                onClick={async () => {
-                  const actionKey = `admin-delete-${record.id}`
-                  setActionLoading(prev => ({ ...prev, [actionKey]: true }))
-                  try {
-                    const res = await fetch(`/api/sales/${record.id}/admin-cancel?delete=true`, { method: 'POST' })
-                    const result = await res.json()
-                    if (res.ok && result.success) {
-                      message.success('已取消並刪除訂單')
-                      await loadSales(false)
-                    } else {
-                      message.error(result.error || '刪除失敗')
-                    }
-                  } catch (e) {
-                    message.error('刪除失敗，請稍後再試')
-                  } finally {
-                    setActionLoading(prev => ({ ...prev, [actionKey]: false }))
-                  }
-                }}
-                style={{ marginLeft: 4 }}
-              >刪</Button>
-            </Tooltip>
-          </SuperAdminOnly>
-        </Space>
-      )
-    }
   ]
 
   // 處理查看詳情
@@ -804,6 +661,92 @@ export default function SalesPage() {
     } catch (error) {
       console.error('出貨操作失敗:', error)
       message.error('出貨失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+    }
+  }
+
+  // 處理僅出貨
+  const handleShipOnly = async (sale: Sale) => {
+    const actionKey = `ship-only-${sale.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
+    try {
+      const response = await fetch(`/api/sales/${sale.id}/ship`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ print: false })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        message.success('出貨完成')
+        await loadSales(false)
+      } else {
+        message.error(result.error || '出貨失敗')
+      }
+    } catch (error) {
+      console.error('出貨操作失敗:', error)
+      message.error('出貨失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+    }
+  }
+
+  // 處理出貨並列印
+  const handleShipAndPrint = async (sale: Sale) => {
+    const actionKey = `ship-print-${sale.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
+    try {
+      const response = await fetch(`/api/sales/${sale.id}/ship`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ print: true })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        message.success('出貨完成，出貨單已生成')
+        setCurrentShippingData(result.shippingData)
+        setShippingPrintVisible(true)
+        await loadSales(false)
+      } else {
+        message.error(result.error || '出貨失敗')
+      }
+    } catch (error) {
+      console.error('出貨操作失敗:', error)
+      message.error('出貨失敗，請檢查網路連線')
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+    }
+  }
+
+  // 處理重新列印出貨單
+  const handleReprintShipping = async (sale: Sale) => {
+    const actionKey = `reprint-${sale.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+
+    try {
+      const response = await fetch(`/api/sales/${sale.id}/shipping-slip`)
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setCurrentShippingData(result.shippingData)
+        setShippingPrintVisible(true)
+        message.success('出貨單已重新生成')
+      } else {
+        message.error(result.error || '獲取出貨單失敗')
+      }
+    } catch (error) {
+      console.error('重新列印出貨單失敗:', error)
+      message.error('獲取出貨單失敗，請檢查網路連線')
     } finally {
       setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }

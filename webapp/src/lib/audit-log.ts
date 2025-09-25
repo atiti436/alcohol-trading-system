@@ -82,7 +82,7 @@ export class AuditLogger {
                       params.action === 'WRITE' ? AuditAction.WRITE :
                       AuditAction.DELETE
 
-    return this.log({
+    return AuditLogger.log({
       user_id: params.userId,
       user_email: params.userEmail,
       user_role: params.userRole,
@@ -113,7 +113,7 @@ export class AuditLogger {
     ipAddress?: string
     userAgent?: string
   }) {
-    return this.log({
+    return AuditLogger.log({
       user_id: params.operatorId,
       user_email: params.operatorEmail,
       user_role: params.operatorRole,
@@ -145,7 +145,7 @@ export class AuditLogger {
     ipAddress?: string
     userAgent?: string
   }) {
-    return this.log({
+    return AuditLogger.log({
       user_id: params.userId,
       user_email: params.userEmail,
       user_role: params.userRole,
