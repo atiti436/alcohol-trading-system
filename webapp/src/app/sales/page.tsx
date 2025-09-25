@@ -363,7 +363,7 @@ export default function SalesPage() {
             // 已確認狀態：付款 + 出貨操作
 
             // 付款按鈕 - 非週結且未付款才顯示
-            if (!record.is_paid && record.customer?.paymentTerms !== 'WEEKLY') {
+            if (!record.is_paid && record.customer?.payment_terms !== 'WEEKLY') {
               actions.push(
                 <HideFromInvestor key="pay">
                   <Tooltip title="標記為已付款">
