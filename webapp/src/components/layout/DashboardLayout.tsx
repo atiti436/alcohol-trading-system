@@ -35,6 +35,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return ['/dashboard','/customers','/products','/quotations','/purchases','/imports','/inventory']
   }
 
+  // 新版選單鍵，統一含「銷售/財務/對帳/運輸/LINE BOT/管理」
+  const getMenuKeysByRoleV2 = (userRole: Role): string[] => {
+    if (userRole === Role.SUPER_ADMIN) {
+      return [
+        '/dashboard','/customers','/products','/quotations',
+        '/purchases','/imports','/inventory','/sales','/shipping','/statements',
+        '/finance','/finance/cashflow','/reports','/linebot',
+        '/users','/admin','/settings'
+      ]
+    }
+    if (userRole === Role.INVESTOR) {
+      return ['/dashboard','/customers','/products','/quotations','/sales','/finance','/finance/cashflow','/reports']
+    }
+    if (userRole === Role.PENDING) {
+      return ['/dashboard']
+    }
+    return [
+      '/dashboard','/customers','/products','/quotations',
+      '/purchases','/imports','/inventory','/sales','/shipping','/statements',
+      '/finance/cashflow','/reports','/linebot'
+    ]
+  }
+
   // 使用者選單
   const userMenuItems: MenuProps['items'] = [
     {
@@ -106,7 +129,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
-          items={session?.user?.role ? buildMenuItems(getMenuKeysByRole(session.user.role), session.user.role, { onClickPath: (p) => router.push(p) }) : []}
+          items={session?.user?.role ? buildMenuItems(getMenuKeysByRoleV2(session.user.role), session.user.role, { onClickPath: (p) => router.push(p) }) : []}
         />
       </Sider>
 
