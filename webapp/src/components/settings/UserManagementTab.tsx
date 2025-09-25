@@ -45,13 +45,18 @@ interface User {
 }
 
 interface UserListResponse {
-  users: User[]
-  pagination: {
-    total: number
-    page: number
-    limit: number
-    pages: number
+  success?: boolean
+  data?: {
+    users: User[]
+    pagination: {
+      total: number
+      page: number
+      limit: number
+      totalPages: number
+    }
   }
+  users?: User[]
+  pagination?: any
 }
 
 export default function UserManagementTab() {
@@ -71,11 +76,14 @@ export default function UserManagementTab() {
       const response = await fetch(`/api/users?page=${page}&limit=${pageSize}`)
       const data: UserListResponse = await response.json()
 
-      setUsers(data.users || [])
+      const users = data.data?.users ?? data.users ?? []
+      const pg = data.data?.pagination ?? data.pagination ?? {}
+
+      setUsers(users)
       setPagination({
-        current: data.pagination?.page || 1,
-        pageSize: data.pagination?.limit || 10,
-        total: data.pagination?.total || 0
+        current: pg.page || 1,
+        pageSize: pg.limit || 10,
+        total: pg.total || 0
       })
     } catch (error) {
       console.error('載入用戶列表失敗:', error)
@@ -92,15 +100,12 @@ export default function UserManagementTab() {
   // 更新用戶角色
   const updateUserRole = async (userId: string, newRole: Role) => {
     try {
-      const response = await fetch('/api/users/role', {
+      const response = await fetch(`/api/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId,
-          role: newRole
-        })
+        body: JSON.stringify({ role: newRole })
       })
 
       const data = await response.json()
