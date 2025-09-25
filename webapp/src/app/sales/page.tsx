@@ -858,7 +858,7 @@ export default function SalesPage() {
               ]}
             />
           ) : (
-            <Table<ShippingItemRow>
+            <Table<Sale>
               columns={columns}
               dataSource={sales}
               rowKey="id"
