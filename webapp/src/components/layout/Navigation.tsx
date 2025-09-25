@@ -46,8 +46,8 @@ export default function Navigation({ collapsed = false, onCollapse }: Navigation
   // 根據用戶角色顯示不同菜單
   const getMenuItems = (): MenuProps['items'] => {
     const role = (session?.user?.role || 'EMPLOYEE') as any
-    const keys = ['/dashboard','/products','/customers','/imports','/sales','/shipping','/statements','/finance/cashflow','/reports','/linebot']
-    if (role === 'SUPER_ADMIN') keys.push('/admin')
+    const keys = ['/dashboard','/products','/customers','/purchases','/inventory','/imports','/sales','/shipping','/statements','/finance/cashflow','/reports','/linebot']
+    if (role === 'SUPER_ADMIN') keys.push('/users', '/admin')
     return buildMenuItems(keys, role, { useLinkLabel: true })
   }
 
