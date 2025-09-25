@@ -398,7 +398,7 @@ export default function SalesPage() {
             ]
 
             // 如果已經出貨過，增加重新列印選項
-            if (record.shipping_status === 'SHIPPED') {
+            if (record.status === 'SHIPPED') {
               shippingMenuItems.push({
                 key: 'reprint',
                 label: '重新列印出貨單',
@@ -413,10 +413,10 @@ export default function SalesPage() {
                   <Button
                     icon={<TruckOutlined />}
                     size="small"
-                    type={record.shipping_status === 'SHIPPED' ? 'default' : 'primary'}
+                    type={record.status === 'SHIPPED' ? 'default' : 'primary'}
                     loading={actionLoading[`ship-${record.id}`]}
                   >
-                    {record.shipping_status === 'SHIPPED' ? '已出貨' : '出貨'} <DownOutlined />
+                    {record.status === 'SHIPPED' ? '已出貨' : '出貨'} <DownOutlined />
                   </Button>
                 </Dropdown>
               </HideFromInvestor>
