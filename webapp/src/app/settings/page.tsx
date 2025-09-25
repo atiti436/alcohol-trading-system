@@ -11,7 +11,7 @@ import {
   LockOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import ApiKeySettings from '@/components/settings/ApiKeySettings'
 import LineBotSettings from '@/components/settings/LineBotSettings'
 import UserManagementTab from '@/components/settings/UserManagementTab'
@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const { data: session } = useSession()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
   const params = useSearchParams()
   const activeTab = useMemo(() => params.get('tab') || 'general', [params])
 
@@ -50,7 +51,12 @@ export default function SettingsPage() {
         系統設定
       </Title>
 
-      <Tabs defaultActiveKey={activeTab} activeKey={activeTab} type="card">
+      <Tabs
+        defaultActiveKey={activeTab}
+        activeKey={activeTab}
+        type="card"
+        onChange={(key) => router.push(`/settings?tab=${key}`)}
+      >
         {/* 一般設定 */}
         <TabPane tab="一般設定" key="general">
           <Row gutter={[24, 24]}>

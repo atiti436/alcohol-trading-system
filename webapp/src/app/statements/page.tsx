@@ -92,8 +92,8 @@ export default function StatementsPage() {
     try {
       const params = new URLSearchParams({
         customer_id: selectedCustomerId,
-        dateFrom: dateRange[0].toISOString(),
-        dateTo: dateRange[1].toISOString(),
+        date_from: dateRange[0].toISOString(),
+        date_to: dateRange[1].toISOString(),
         type: 'custom'
       })
 
@@ -101,7 +101,30 @@ export default function StatementsPage() {
       const result = await response.json()
 
       if (result.success) {
-        setStatementData(result.data)
+        const apiData = result.data
+        const mapped = {
+          customer: {
+            ...apiData.customer,
+            paymentTerms: apiData.customer?.payment_terms
+          },
+          periodInfo: apiData.periodInfo,
+          sales: (apiData.sales || []).map((s: any) => ({
+            ...s,
+            saleNumber: s.sale_number,
+            isPaid: s.is_paid
+          })),
+          receivables: apiData.receivables,
+          summary: {
+            totalSales: apiData.summary?.totalSales,
+            totalSalesAmount: apiData.summary?.total_sales_amount,
+            totalActualAmount: apiData.summary?.total_actual_amount,
+            totalCommission: apiData.summary?.total_commission,
+            totalReceivableAmount: apiData.summary?.total_receivable_amount,
+            totalPaidAmount: apiData.summary?.total_paid_amount,
+            totalOutstandingAmount: apiData.summary?.total_outstanding_amount,
+          }
+        } as any
+        setStatementData(mapped)
         setPreviewVisible(true)
       } else {
         message.error(result.error || '生成對帳單失敗')
