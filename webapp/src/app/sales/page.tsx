@@ -18,7 +18,8 @@ import {
   Spin,
   Empty,
   Skeleton,
-  Result
+  Result,
+  Dropdown
 } from 'antd'
 import {
   PlusOutlined,
@@ -28,7 +29,11 @@ import {
   EyeOutlined,
   DollarOutlined,
   FileTextOutlined,
-  ShoppingCartOutlined
+  ShoppingCartOutlined,
+  TruckOutlined,
+  DownOutlined,
+  PrinterOutlined,
+  MoreOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
@@ -76,6 +81,10 @@ export default function SalesPage() {
   const [editingSale, setEditingSale] = useState<Sale | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // 出貨列印相關狀態
+  const [shippingPrintVisible, setShippingPrintVisible] = useState(false)
+  const [currentShippingData, setCurrentShippingData] = useState<any>(null)
 
   // 載入銷售訂單列表
   const loadSales = useCallback(async (showLoading = true) => {
@@ -306,16 +315,192 @@ export default function SalesPage() {
     {
       title: '操作',
       key: 'actions',
-      width: 200,
-      render: (record: Sale) => (
-        <Space>
-          <Tooltip title="查看詳情">
-            <Button
-              icon={<EyeOutlined />}
-              size="small"
-              onClick={() => handleView(record)}
-            />
-          </Tooltip>
+      width: 280,
+      render: (record: Sale) => {
+        // 智能化操作按鈕邏輯
+        const renderActions = () => {
+          const actions = []
+
+          // 查看按鈕 - 永遠顯示
+          actions.push(
+            <Tooltip title="查看詳情" key="view">
+              <Button
+                icon={<EyeOutlined />}
+                size="small"
+                onClick={() => handleView(record)}
+              />
+            </Tooltip>
+          )
+
+          // 根據狀態顯示主要操作
+          if (record.status === 'DRAFT') {
+            // 草稿狀態：編輯 + 確認
+            actions.push(
+              <HideFromInvestor key="edit">
+                <Tooltip title="編輯">
+                  <Button
+                    icon={<EditOutlined />}
+                    size="small"
+                    onClick={() => handleEdit(record)}
+                  />
+                </Tooltip>
+              </HideFromInvestor>
+            )
+            actions.push(
+              <HideFromInvestor key="confirm">
+                <Button
+                  icon={<DollarOutlined />}
+                  size="small"
+                  type="primary"
+                  loading={actionLoading[`confirm-${record.id}`]}
+                  onClick={() => handleConfirm(record)}
+                >
+                  確認
+                </Button>
+              </HideFromInvestor>
+            )
+          } else if (record.status === 'CONFIRMED') {
+            // 已確認狀態：付款 + 出貨操作
+
+            // 付款按鈕 - 非週結且未付款才顯示
+            if (!record.is_paid && record.customer?.paymentTerms !== 'WEEKLY') {
+              actions.push(
+                <HideFromInvestor key="pay">
+                  <Tooltip title="標記為已付款">
+                    <Button
+                      icon={<DollarOutlined />}
+                      size="small"
+                      style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+                      loading={actionLoading[`pay-${record.id}`]}
+                      onClick={() => handleMarkPaid(record)}
+                    >
+                      付款
+                    </Button>
+                  </Tooltip>
+                </HideFromInvestor>
+              )
+            }
+
+            // 出貨下拉選單 - 已確認就可以出貨(不限制付款狀態)
+            const shippingMenuItems = [
+              {
+                key: 'ship-only',
+                label: '僅出貨',
+                icon: <TruckOutlined />,
+                onClick: () => handleShipOnly(record)
+              },
+              {
+                key: 'ship-print',
+                label: '出貨並列印',
+                icon: <PrinterOutlined />,
+                onClick: () => handleShipAndPrint(record)
+              }
+            ]
+
+            // 如果已經出貨過，增加重新列印選項
+            if (record.shipping_status === 'SHIPPED') {
+              shippingMenuItems.push({
+                key: 'reprint',
+                label: '重新列印出貨單',
+                icon: <PrinterOutlined />,
+                onClick: () => handleReprintShipping(record)
+              })
+            }
+
+            actions.push(
+              <HideFromInvestor key="shipping">
+                <Dropdown menu={{ items: shippingMenuItems }} trigger={['click']}>
+                  <Button
+                    icon={<TruckOutlined />}
+                    size="small"
+                    type={record.shipping_status === 'SHIPPED' ? 'default' : 'primary'}
+                    loading={actionLoading[`ship-${record.id}`]}
+                  >
+                    {record.shipping_status === 'SHIPPED' ? '已出貨' : '出貨'} <DownOutlined />
+                  </Button>
+                </Dropdown>
+              </HideFromInvestor>
+            )
+          }
+
+          // 管理員額外操作 - 放在更多選單中
+          const adminMenuItems = []
+
+          if (record.status === 'DRAFT') {
+            adminMenuItems.push({
+              key: 'delete',
+              label: '刪除',
+              icon: <DeleteOutlined />,
+              danger: true,
+              onClick: () => handleDelete(record.id)
+            })
+          }
+
+          adminMenuItems.push(
+            {
+              key: 'admin-cancel',
+              label: '管理員取消',
+              onClick: async () => {
+                const actionKey = `admin-cancel-${record.id}`
+                setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+                try {
+                  const res = await fetch(`/api/sales/${record.id}/admin-cancel`, { method: 'POST' })
+                  const result = await res.json()
+                  if (res.ok && result.success) {
+                    message.success('已取消訂單並還原預留庫存')
+                    await loadSales(false)
+                  } else {
+                    message.error(result.error || '取消失敗')
+                  }
+                } catch (e) {
+                  message.error('取消失敗，請稍後再試')
+                } finally {
+                  setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+                }
+              }
+            },
+            {
+              key: 'admin-delete',
+              label: '管理員刪除',
+              danger: true,
+              onClick: async () => {
+                const actionKey = `admin-delete-${record.id}`
+                setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+                try {
+                  const res = await fetch(`/api/sales/${record.id}`, { method: 'DELETE' })
+                  const result = await res.json()
+                  if (res.ok && result.success) {
+                    message.success('訂單已刪除')
+                    await loadSales(false)
+                  } else {
+                    message.error(result.error || '刪除失敗')
+                  }
+                } catch (e) {
+                  message.error('刪除失敗，請稍後再試')
+                } finally {
+                  setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+                }
+              }
+            }
+          )
+
+          // 管理員更多操作
+          if (adminMenuItems.length > 0) {
+            actions.push(
+              <SuperAdminOnly key="admin-more">
+                <Dropdown menu={{ items: adminMenuItems }} trigger={['click']}>
+                  <Button icon={<MoreOutlined />} size="small" />
+                </Dropdown>
+              </SuperAdminOnly>
+            )
+          }
+
+          return actions
+        }
+
+        return <Space size="small">{renderActions()}</Space>
+      }
+    }
 
           {/* 編輯按鈕 - 只有草稿狀態可編輯，投資方隱藏 */}
           {record.status === 'DRAFT' && (

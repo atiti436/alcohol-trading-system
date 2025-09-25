@@ -19,7 +19,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      // 首次登入時，從資料庫載入使用者資訊
+      // 首次登入時從資料庫載入使用者資料
       if (account && user) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email! },
@@ -30,20 +30,20 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role as Role
           token.investor_id = dbUser.investor_id || undefined
         } else {
-          // 檢查是否為管理員MAIL
+          // 檢查是否為管理員白名單
           const adminEmails = [
-            'manpan.whisky@gmail.com',  // 老闆MAIL
+            'manpan.whisky@gmail.com',
           ]
 
           const isAdmin = adminEmails.includes(user.email!.toLowerCase())
 
-          // 首次登入的新使用者
+          // 首次登入建立使用者
           const newUser = await prisma.user.create({
             data: {
               email: user.email!,
               name: user.name!,
               image: user.image,
-              role: isAdmin ? Role.SUPER_ADMIN : Role.PENDING,  // 管理員直接通過，其他人待審核
+              role: isAdmin ? Role.SUPER_ADMIN : Role.PENDING,
             },
           })
           token.id = newUser.id
@@ -63,30 +63,54 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async signIn({ user, account, profile }) {
-      // 可以在這裡加入額外的登入檢查
-      // 例如：檢查使用者是否被停用
-      if (user.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: user.email },
-        })
-
-        if (dbUser && !dbUser.is_active) {
-          return false // 拒絕登入
+    async signIn({ user }) {
+      // 嚴格：PENDING 與停用不可進系統
+      if (!user?.email) return false
+      const dbUser = await prisma.user.findUnique({ where: { email: user.email } })
+      if (dbUser) {
+        if (!dbUser.is_active) return '/auth/error?reason=deactivated'
+        if ((dbUser as any).role === (Role as any).PENDING) {
+          await notifyAdminPending(user.email, user.name || '')
+          return '/auth/pending'
         }
+        return true
       }
-
-      return true
+      // 尚未建立（首次登入），視為申請中
+      await notifyAdminPending(user.email, user.name || '')
+      return '/auth/pending'
     },
   },
   events: {
-    async signIn({ user, account, profile, isNewUser }) {
+    async signIn({ user }) {
       // 記錄登入事件
       console.log(`User signed in: ${user.email}`)
     },
-    async signOut({ session, token }) {
+    async signOut() {
       // 記錄登出事件
       console.log(`User signed out`)
     },
   },
 }
+
+async function notifyAdminPending(email: string, name: string) {
+  try {
+    const hook = process.env.ADMIN_WEBHOOK_URL
+    if (!hook) {
+      console.log(`[PENDING-APPLY] ${email} (${name}) 申請存取，請至系統核准角色`)
+      return
+    }
+    await fetch(hook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: `新用戶申請：${email} (${name})，請至系統核准角色`,
+        email,
+        name,
+        type: 'pending_user'
+      })
+    })
+  } catch (e) {
+    console.warn('通知管理員失敗', e)
+  }
+}
+

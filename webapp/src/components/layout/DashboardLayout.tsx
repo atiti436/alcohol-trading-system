@@ -21,6 +21,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
 
+  // 阻擋待審帳號（PENDING）進入主系統頁面
+  if (session?.user?.role === (Role as any).PENDING || session?.user?.role === 'PENDING') {
+    if (pathname !== '/auth/pending') {
+      router.push('/auth/pending')
+    }
+    return null
+  }
+
   // 依角色取用統一的選單鍵集合（避免索引位移）
   const getMenuKeysByRole = (userRole: Role): string[] => {
     if (userRole === Role.SUPER_ADMIN) {
