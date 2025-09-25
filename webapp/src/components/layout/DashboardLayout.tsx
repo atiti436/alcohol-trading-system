@@ -35,14 +35,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return ['/dashboard','/customers','/products','/quotations','/purchases','/imports','/inventory']
   }
 
-  // 新版選單鍵，統一含「銷售/財務/對帳/運輸/LINE BOT/管理」
+  // 新版選單鍵，整合後的清理版本
   const getMenuKeysByRoleV2 = (userRole: Role): string[] => {
     if (userRole === Role.SUPER_ADMIN) {
       return [
         '/dashboard','/customers','/products','/quotations',
         '/purchases','/imports','/inventory','/sales','/shipping','/statements',
-        '/finance','/finance/cashflow','/reports','/linebot',
-        '/users','/admin','/settings'
+        '/finance','/finance/cashflow','/reports','/settings'
       ]
     }
     if (userRole === Role.INVESTOR) {
@@ -54,7 +53,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return [
       '/dashboard','/customers','/products','/quotations',
       '/purchases','/imports','/inventory','/sales','/shipping','/statements',
-      '/finance/cashflow','/reports','/linebot'
+      '/finance/cashflow','/reports'
     ]
   }
 

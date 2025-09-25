@@ -13,6 +13,7 @@ import {
 import { useSession } from 'next-auth/react'
 import ApiKeySettings from '@/components/settings/ApiKeySettings'
 import LineBotSettings from '@/components/settings/LineBotSettings'
+import UserManagementTab from '@/components/settings/UserManagementTab'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -279,6 +280,13 @@ export default function SettingsPage() {
                 <LineBotSettings />
               </Col>
             </Row>
+          </TabPane>
+        )}
+
+        {/* 用戶管理 - 只有管理員可見 */}
+        {isAdmin && (
+          <TabPane tab="用戶管理" key="users">
+            <UserManagementTab />
           </TabPane>
         )}
       </Tabs>

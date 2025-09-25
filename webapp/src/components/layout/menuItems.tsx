@@ -103,12 +103,6 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     label: '對帳管理',
     icon: <FileSearchOutlined />,
   },
-  '/linebot': {
-    key: '/linebot',
-    path: '/linebot',
-    label: 'LINE BOT助手',
-    icon: <RobotOutlined />,
-  },
   '/finance': {
     key: '/finance',
     path: '/finance',
@@ -121,20 +115,6 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     label: '收支記錄',
     icon: <FileTextOutlined />,
   },
-  '/users': {
-    key: '/users',
-    path: '/users',
-    label: '用戶管理',
-    icon: <TeamOutlined />,
-    roles: [Role.SUPER_ADMIN]
-  },
-  '/admin': {
-    key: '/admin',
-    path: '/admin',
-    label: '系統管理',
-    icon: <SettingOutlined />,
-    roles: [Role.SUPER_ADMIN]
-  }
 }
 
 export function buildMenuItems(keys: string[], role: Role, opts?: {
