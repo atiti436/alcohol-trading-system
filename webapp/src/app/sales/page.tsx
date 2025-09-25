@@ -45,6 +45,9 @@ import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/Sec
 import { SaleOrderModal } from '@/components/sales/SaleOrderModal'
 import { Sale, SaleItem } from '@/types/room-2'
 
+// 顯示於出貨明細表格的列型別（在 SaleItem 基礎上加入 shipped_quantity）
+type ShippingItemRow = SaleItem & { shipped_quantity?: number }
+
 const { Search } = Input
 const { Title, Text } = Typography
 
@@ -855,7 +858,7 @@ export default function SalesPage() {
               ]}
             />
           ) : (
-            <Table
+            <Table<ShippingItemRow>
               columns={columns}
               dataSource={sales}
               rowKey="id"
@@ -1146,7 +1149,7 @@ export default function SalesPage() {
             {/* 出貨明細表格 */}
             <Table
               title={() => <Text strong>出貨明細</Text>}
-              dataSource={currentShippingData.sale?.items || []}
+              dataSource={(currentShippingData.sale?.items || []) as ShippingItemRow[]}
               rowKey="id"
               pagination={false}
               size="small"
@@ -1154,7 +1157,7 @@ export default function SalesPage() {
                 {
                   title: '商品名稱',
                   key: 'product',
-                  render: (record: any) => (
+                  render: (record: ShippingItemRow) => (
                     <div>
                       <div>{record.product?.name}</div>
                       <div style={{ fontSize: '12px', color: '#666' }}>
@@ -1180,7 +1183,7 @@ export default function SalesPage() {
                   key: 'shipped_quantity',
                   align: 'center' as const,
                   width: 100,
-                  render: (record: any) => record.shipped_quantity || record.quantity
+                  render: (record: ShippingItemRow) => record.shipped_quantity ?? record.quantity
                 },
                 {
                   title: '單價',
@@ -1195,16 +1198,16 @@ export default function SalesPage() {
                   key: 'subtotal',
                   align: 'right' as const,
                   width: 120,
-                  render: (record: any) => {
-                    const qty = record.shipped_quantity || record.quantity
+                  render: (record: ShippingItemRow) => {
+                    const qty = record.shipped_quantity ?? record.quantity
                     return `$${(qty * record.unit_price).toLocaleString()}`
                   }
                 }
               ]}
-              summary={(data) => {
-                const totalQuantity = data.reduce((sum, item) => sum + (item.shipped_quantity || item.quantity), 0)
+              summary={(data: readonly ShippingItemRow[]) => {
+                const totalQuantity = data.reduce((sum, item) => sum + (item.shipped_quantity ?? item.quantity), 0)
                 const totalAmount = data.reduce((sum, item) => {
-                  const qty = item.shipped_quantity || item.quantity
+                  const qty = item.shipped_quantity ?? item.quantity
                   return sum + (qty * item.unit_price)
                 }, 0)
 
