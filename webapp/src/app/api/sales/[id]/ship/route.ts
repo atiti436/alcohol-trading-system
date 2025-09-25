@@ -69,9 +69,17 @@ export async function POST(
       return NextResponse.json({ error: '銷售訂單不存在' }, { status: 404 })
     }
 
-    // 驗證出貨明細
-    if (!items || items.length === 0) {
-      return NextResponse.json({ error: '出貨明細不能為空' }, { status: 400 })
+    // 智能出貨邏輯：如果沒有提供明細，自動出貨全部商品
+    let shippingItems = items
+    if (!shippingItems || shippingItems.length === 0) {
+      // 自動生成出貨明細 - 出貨銷售單中的全部商品
+      shippingItems = sale.items.map(item => ({
+        sale_item_id: item.id,
+        variant_id: item.variant_id,
+        ship_quantity: item.quantity
+      }))
+
+      console.log(`[自動出貨] 銷售單 ${sale.sale_number} 自動生成出貨明細，共 ${shippingItems.length} 項商品`)
     }
 
     // 檢查庫存是否充足
@@ -80,7 +88,7 @@ export async function POST(
       variant: any;
       shipQuantity: number;
     }> = []
-    for (const shipItem of items) {
+    for (const shipItem of shippingItems) {
       const saleItem = sale.items.find(item => item.id === shipItem.sale_item_id)
       if (!saleItem) {
         return NextResponse.json({
@@ -193,7 +201,7 @@ export async function POST(
 
       // 3. 檢查是否完全出貨，更新銷售訂單狀態
       const totalOrderedQuantity = sale.items.reduce((sum, item) => sum + item.quantity, 0)
-      const totalShippedQuantity = items.reduce((sum: number, item: any) => sum + item.ship_quantity, 0)
+      const totalShippedQuantity = shippingItems.reduce((sum: number, item: any) => sum + item.ship_quantity, 0)
 
       if (totalShippedQuantity >= totalOrderedQuantity) {
         await tx.sale.update({
