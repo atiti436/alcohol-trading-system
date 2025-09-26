@@ -17,6 +17,8 @@ import {
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
+import { DocumentHeader } from '@/components/common/DocumentHeader'
+import { DOCUMENT_TYPES } from '@/config/company'
 import ProductSearchSelect from '@/components/common/ProductSearchSelect'
 
 const { Title, Text } = Typography
@@ -761,7 +763,20 @@ export default function QuotationsPage() {
         style={{ maxWidth: '700px' }}
       >
         {viewingQuotation && (
-          <div>
+          <div id="quotation-print">
+            <DocumentHeader
+              documentType={DOCUMENT_TYPES.QUOTATION}
+              documentNumber={viewingQuotation.quote_number}
+              date={dayjs().format('YYYY/MM/DD')}
+              additionalInfo={
+                <div>
+                  客戶：{viewingQuotation.customer.name}（{viewingQuotation.customer.customer_code}）
+                </div>
+              }
+            />
+            <div className="no-print" style={{ textAlign: 'right', marginBottom: 12 }}>
+              <Button onClick={() => window.print()} icon={<FileTextOutlined />}>列印/匯出PDF</Button>
+            </div>
             <div style={{ marginBottom: '24px' }}>
               <h3>基本資訊</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
