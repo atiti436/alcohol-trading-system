@@ -8,10 +8,12 @@ export interface CompanyInfo {
   englishName?: string
   address: string
   phone: string
-  fax?: string
   email?: string
   website?: string
   taxId?: string // 統一編號
+  lineId?: string // LINE ID
+  customField1?: string // 自訂欄位1
+  customField2?: string // 自訂欄位2
   logo?: string
 }
 
@@ -22,10 +24,12 @@ export const DEFAULT_COMPANY_INFO: CompanyInfo = {
   englishName: 'Full Sail Trading Co., Ltd.',
   address: '台北市中山區南京東路二段123號8樓',
   phone: '(02) 2545-1234',
-  fax: '(02) 2545-5678',
   email: 'info@fullsail-trading.com.tw',
   website: 'www.fullsail-trading.com.tw',
-  taxId: '12345678'
+  taxId: '12345678',
+  lineId: '@fullsail',
+  customField1: '',
+  customField2: ''
 }
 
 // 🚨 棄用警告：請使用 useCompanySettings Hook 替代

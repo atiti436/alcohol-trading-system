@@ -12,13 +12,16 @@ export interface CompanySettings {
   englishName?: string
   address: string
   phone: string
-  fax?: string
   email?: string
   website?: string
   taxId: string
   bankName?: string
   bankAccount?: string
   bankCode?: string
+  // 現代聯絡方式
+  lineId?: string
+  customField1?: string  // 自訂欄位1
+  customField2?: string  // 自訂欄位2
   created_at: string
   updated_at: string
 }
@@ -80,13 +83,15 @@ const loadCompanySettings = async (forceRefresh = false): Promise<CompanySetting
         englishName: 'Full Sail Trading Co., Ltd.',
         address: '台北市中山區南京東路二段123號8樓',
         phone: '(02) 2545-1234',
-        fax: '(02) 2545-5678',
         email: 'info@fullsail-trading.com.tw',
         website: 'www.fullsail-trading.com.tw',
         taxId: '12345678',
         bankName: '台灣銀行',
         bankAccount: '123-456-789012',
         bankCode: '004',
+        lineId: '@fullsail',
+        customField1: '',
+        customField2: '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }

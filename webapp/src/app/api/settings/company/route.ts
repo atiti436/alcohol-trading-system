@@ -29,13 +29,15 @@ export async function GET() {
           englishName: 'Full Sail Trading Co., Ltd.',
           address: '台北市中山區南京東路二段123號8樓',
           phone: '(02) 2545-1234',
-          fax: '(02) 2545-5678',
           email: 'info@fullsail-trading.com.tw',
           website: 'www.fullsail-trading.com.tw',
           taxId: '12345678',
           bankName: '台灣銀行',
           bankAccount: '123-456-789012',
-          bankCode: '004'
+          bankCode: '004',
+          lineId: '@fullsail',
+          customField1: '',
+          customField2: ''
         }
       })
     }
@@ -69,13 +71,15 @@ export async function POST(request: NextRequest) {
       englishName,
       address,
       phone,
-      fax,
       email,
       website,
       taxId,
       bankName,
       bankAccount,
-      bankCode
+      bankCode,
+      lineId,
+      customField1,
+      customField2
     } = body
 
     // 驗證必要欄位
@@ -99,13 +103,15 @@ export async function POST(request: NextRequest) {
           englishName: englishName || '',
           address,
           phone,
-          fax: fax || '',
           email: email || '',
           website: website || '',
           taxId,
           bankName: bankName || '',
           bankAccount: bankAccount || '',
           bankCode: bankCode || '',
+          lineId: lineId || '',
+          customField1: customField1 || '',
+          customField2: customField2 || '',
           updated_at: new Date()
         }
       })
@@ -117,13 +123,15 @@ export async function POST(request: NextRequest) {
           englishName: englishName || '',
           address,
           phone,
-          fax: fax || '',
           email: email || '',
           website: website || '',
           taxId,
           bankName: bankName || '',
           bankAccount: bankAccount || '',
-          bankCode: bankCode || ''
+          bankCode: bankCode || '',
+          lineId: lineId || '',
+          customField1: customField1 || '',
+          customField2: customField2 || ''
         }
       })
     }

@@ -629,13 +629,16 @@ model CompanySettings {
   englishName  String?  // 英文名稱
   address      String   // 公司地址
   phone        String   // 聯絡電話
-  fax          String?  // 傳真號碼
   email        String?  // 電子信箱
   website      String?  // 官方網站
   taxId        String   // 統一編號
   bankName     String?  // 銀行名稱
   bankAccount  String?  // 帳戶號碼
   bankCode     String?  // 銀行代碼
+  // 現代聯絡方式
+  lineId       String?  // LINE ID
+  customField1 String?  // 自訂欄位1 (如 WeChat ID)
+  customField2 String?  // 自訂欄位2 (如 Telegram)
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 

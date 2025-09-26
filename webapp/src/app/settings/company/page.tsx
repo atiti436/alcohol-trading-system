@@ -28,13 +28,15 @@ interface CompanySettings {
   englishName: string
   address: string
   phone: string
-  fax: string
   email: string
   website: string
   taxId: string
   bankName: string
   bankAccount: string
   bankCode: string
+  lineId: string
+  customField1: string
+  customField2: string
 }
 
 export default function CompanySettingsPage() {
@@ -114,13 +116,15 @@ export default function CompanySettingsPage() {
               englishName: 'Full Sail Trading Co., Ltd.',
               address: '台北市中山區南京東路二段123號8樓',
               phone: '(02) 2545-1234',
-              fax: '(02) 2545-5678',
               email: 'info@fullsail-trading.com.tw',
               website: 'www.fullsail-trading.com.tw',
               taxId: '12345678',
               bankName: '台灣銀行',
               bankAccount: '123-456-789012',
-              bankCode: '004'
+              bankCode: '004',
+              lineId: '@fullsail',
+              customField1: '',
+              customField2: ''
             }}
           >
             <Row gutter={[24, 0]}>
@@ -169,10 +173,10 @@ export default function CompanySettingsPage() {
 
               <Col xs={24} lg={8}>
                 <Form.Item
-                  label="傳真號碼"
-                  name="fax"
+                  label="LINE 官方帳號"
+                  name="lineId"
                 >
-                  <Input placeholder="(02) 1234-5679" />
+                  <Input placeholder="@yourcompany" />
                 </Form.Item>
               </Col>
 
@@ -207,6 +211,34 @@ export default function CompanySettingsPage() {
                   name="website"
                 >
                   <Input placeholder="www.company.com.tw" />
+                </Form.Item>
+              </Col>
+
+              <Col span={24}>
+                <Divider />
+                <Title level={4}>其他聯絡方式</Title>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                  可自訂填入 WeChat、Telegram 等現代聯絡方式
+                </Text>
+              </Col>
+
+              <Col xs={24} lg={12}>
+                <Form.Item
+                  label="自訂欄位 1"
+                  name="customField1"
+                  extra="例如：WeChat ID、Instagram、Facebook 等"
+                >
+                  <Input placeholder="輸入聯絡方式" />
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} lg={12}>
+                <Form.Item
+                  label="自訂欄位 2"
+                  name="customField2"
+                  extra="例如：Telegram、Discord、其他聯絡方式"
+                >
+                  <Input placeholder="輸入聯絡方式" />
                 </Form.Item>
               </Col>
 

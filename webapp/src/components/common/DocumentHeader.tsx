@@ -53,8 +53,10 @@ export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
             <div style={{ marginTop: '8px', fontSize: '12px', lineHeight: '1.4' }}>
               <div>地址：{companyInfo.address}</div>
               <div>電話：{companyInfo.phone}</div>
-              {companyInfo.fax && <div>傳真：{companyInfo.fax}</div>}
               {companyInfo.email && <div>Email：{companyInfo.email}</div>}
+              {companyInfo.lineId && <div>LINE：{companyInfo.lineId}</div>}
+              {companyInfo.customField1 && <div>{companyInfo.customField1}</div>}
+              {companyInfo.customField2 && <div>{companyInfo.customField2}</div>}
               {companyInfo.taxId && <div>統編：{companyInfo.taxId}</div>}
             </div>
           </div>
