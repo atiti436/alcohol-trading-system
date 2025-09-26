@@ -657,6 +657,21 @@ export default function PurchasesPage() {
         }
         extra={
           <Space>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={() => {
+                const params = new URLSearchParams()
+                Object.entries(filters).forEach(([key, value]) => {
+                  if (value !== undefined && value !== '') {
+                    if (key === 'page' || key === 'limit') return
+                    params.append(key, String(value))
+                  }
+                })
+                window.open(`/api/purchases/export?${params.toString()}`, '_blank')
+              }}
+            >
+              導出 CSV
+            </Button>
             <Search
               placeholder="搜尋採購單號、供應商..."
               allowClear

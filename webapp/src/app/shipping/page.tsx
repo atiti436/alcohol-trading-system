@@ -498,6 +498,10 @@ export default function ShippingPage() {
         }
         extra={
           <Space>
+            <Button icon={<DownloadOutlined />} onClick={() => {
+              const params = new URLSearchParams()
+              window.open(`/api/shipping/export?${params.toString()}`, '_blank')
+            }}>導出 CSV</Button>
             <Search
               placeholder="搜尋出貨單號、客戶..."
               allowClear
