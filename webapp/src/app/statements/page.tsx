@@ -29,6 +29,8 @@ import {
 import { useSession } from 'next-auth/react'
 import dayjs, { Dayjs } from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
+import { DocumentHeader } from '@/components/common/DocumentHeader'
+import { DOCUMENT_TYPES } from '@/config/company'
 import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
 import { Sale, SaleItem, AccountReceivable, StatementData, Customer, Product, ProductVariant } from '@/types/business'
 import './statements-print.css'
@@ -384,7 +386,7 @@ export default function StatementsPage() {
           <Button key="close" onClick={() => setPreviewVisible(false)}>
             關閉
           </Button>,
-          <Button key="pdf" onClick={exportToPDF}>
+          <Button key="pdf" onClick={handlePrint}>
             匯出PDF
           </Button>,
           <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>
@@ -394,8 +396,20 @@ export default function StatementsPage() {
       >
         {statementData && (
           <div className="statement-document" id="statement-content">
+            <DocumentHeader
+              documentType={DOCUMENT_TYPES.STATEMENT}
+              documentNumber={`STAT-${statementData.customer.customer_code}-${dayjs(statementData.periodInfo.dateFrom).format('YYYYMMDD')}-${dayjs(statementData.periodInfo.dateTo).format('YYYYMMDD')}`}
+              date={dayjs().format('YYYY/MM/DD')}
+              additionalInfo={
+                <div>
+                  對帳區間：
+                  {dayjs(statementData.periodInfo.dateFrom).format('YYYY/MM/DD')} -
+                  {dayjs(statementData.periodInfo.dateTo).format('YYYY/MM/DD')}
+                </div>
+              }
+            />
             {/* 對帳單標題 */}
-            <div className="statement-header">
+            <div className="statement-header" style={{ display: 'none' }}>
               <Row justify="space-between" align="top">
                 <Col>
                   <Title level={3}>客戶對帳單 CUSTOMER STATEMENT</Title>
