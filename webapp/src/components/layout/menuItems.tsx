@@ -146,30 +146,24 @@ export function buildMenuItems(keys: string[], role: Role, opts?: {
       processedItems.push({
         key: item.key,
         icon: item.icon,
-        label: useLinkLabel
-          ? (<Link href={item.path}>{item.label}</Link>)
-          : item.label,
-        onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
+        label: item.label, // 不用Link，純文字
+        children: [] // 先建立空的子選單，稍後填入
       })
     } else if (item.key.startsWith('/finance/') || item.key === '/statements') {
       // 財務子功能：收支記錄、應付帳款、對帳管理
       financeSubItems.push({
         key: item.key,
         icon: item.icon,
-        label: useLinkLabel
-          ? (<Link href={item.path}>{item.label}</Link>)
-          : item.label,
-        onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
+        label: item.label, // 不用Link，純文字
+        onClick: onClickPath ? () => onClickPath(item.path) : undefined
       })
     } else {
       // 其他選單項目
       processedItems.push({
         key: item.key,
         icon: item.icon,
-        label: useLinkLabel
-          ? (<Link href={item.path}>{item.label}</Link>)
-          : item.label,
-        onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
+        label: item.label, // 不用Link，純文字
+        onClick: onClickPath ? () => onClickPath(item.path) : undefined
       })
     }
   })
@@ -180,7 +174,8 @@ export function buildMenuItems(keys: string[], role: Role, opts?: {
     if (financeMainIndex !== -1) {
       processedItems[financeMainIndex] = {
         ...processedItems[financeMainIndex],
-        children: financeSubItems
+        children: financeSubItems,
+        onClick: onClickPath ? () => onClickPath('/finance') : undefined // 主選單也能點擊
       }
     }
   }
