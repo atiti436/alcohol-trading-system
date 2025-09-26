@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { assertSameOrigin, rateLimit } from '@/lib/security'
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,6 +57,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const csrf = assertSameOrigin(request)
+    if (csrf) return csrf
+    const limited = rateLimit(request, 'finance-payables-create', 20, 60_000)
+    if (limited) return limited
     const session = await getServerSession(authOptions)
     if (!session?.user) return NextResponse.json({ error: '未登入' }, { status: 401 })
     if (session.user.role !== 'SUPER_ADMIN') return NextResponse.json({ error: '權限不足' }, { status: 403 })
@@ -103,7 +108,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: payable })
   } catch (error) {
     console.error('建立應付帳款失敗:', error)
-    return NextResponse.json({ error: '建立失敗', details: (error as Error)?.message }, { status: 500 })
+    return NextResponse.json({ error: '建立失敗' }, { status: 500 })
   }
 }
 
@@ -136,4 +141,3 @@ async function generateAPNumber(): Promise<string> {
   }
   return `${prefix}${String(sequence).padStart(3, '0')}`
 }
-

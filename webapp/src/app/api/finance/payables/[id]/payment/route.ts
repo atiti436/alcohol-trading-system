@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { assertSameOrigin, rateLimit } from '@/lib/security'
 
 /**
  * 供應商付款記錄 API
@@ -13,6 +14,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const csrf = assertSameOrigin(request)
+    if (csrf) return csrf
+    const limited = rateLimit(request, 'finance-payables-payment', 30, 60_000)
+    if (limited) return limited
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: '未登入' }, { status: 401 })
@@ -141,10 +146,7 @@ export async function POST(
 
   } catch (error) {
     console.error('記錄付款失敗:', error)
-    return NextResponse.json(
-      { error: '記錄付款失敗', details: error instanceof Error ? error.message : '未知錯誤' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: '記錄付款失敗' }, { status: 500 })
   }
 }
 

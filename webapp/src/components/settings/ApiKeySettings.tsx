@@ -50,9 +50,9 @@ export default function ApiKeySettings({ onApiKeyChange }: ApiKeySettingsProps) 
       const response = await fetch('/api/settings/api-keys')
       if (response.ok) {
         const data = await response.json()
-        if (data.success && data.data.geminiApiKey) {
-          setGeminiApiKey(data.data.geminiApiKey)
-          setHasKey(true)
+        if (data.success) {
+          // 不回傳明文金鑰，只回 configured 狀態
+          setHasKey(!!data.data?.configured)
         }
       }
     } catch (error) {
