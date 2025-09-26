@@ -231,8 +231,8 @@ async function calculatePayableStats() {
     total_pending: pendingStats._sum.remaining_amount || 0,
     total_overdue: overdueStats._sum.remaining_amount || 0,
     total_partial: partialStats._sum.remaining_amount || 0,
-    count_pending: pendingStats._count || 0,
-    count_overdue: overdueStats._count || 0,
+    count_pending: (pendingStats._count as any)?.id || 0,
+    count_overdue: (overdueStats._count as any)?.id || 0,
     average_days_overdue: Math.round(averageDaysOverdue * 10) / 10
   }
 }
