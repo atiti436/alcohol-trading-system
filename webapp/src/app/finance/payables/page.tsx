@@ -90,6 +90,9 @@ export default function PayablesPage() {
   const [paymentModalVisible, setPaymentModalVisible] = useState(false)
   const [selectedPayable, setSelectedPayable] = useState<AccountsPayable | null>(null)
   const [form] = Form.useForm()
+  const [createForm] = Form.useForm()
+  const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [createMode, setCreateMode] = useState<'PURCHASE' | 'GENERAL'>('GENERAL')
 
   // 篩選狀態
   const [filters, setFilters] = useState({
@@ -472,6 +475,12 @@ export default function PayablesPage() {
 
         {/* 應付帳款表格 */}
         <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div />
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => { setCreateModalVisible(true); createForm.resetFields(); setCreateMode('GENERAL') }}>
+              新增應付
+            </Button>
+          </div>
           <Table<AccountsPayable>
             columns={columns}
             dataSource={payables}
@@ -485,6 +494,91 @@ export default function PayablesPage() {
             }}
           />
         </Card>
+
+        {/* 新增應付 Modal */}
+        <Modal
+          title="新增應付帳款"
+          open={createModalVisible}
+          onCancel={() => setCreateModalVisible(false)}
+          onOk={() => createForm.submit()}
+          destroyOnClose
+        >
+          <Form form={createForm} layout="vertical" onFinish={async (values: any) => {
+            try {
+              const payload: any = {
+                notes: values.notes,
+                due_date: values.due_date.format('YYYY-MM-DD'),
+              }
+              if (values.mode === 'PURCHASE') {
+                payload.purchase_id = values.purchase_id
+              } else {
+                payload.ap_category = values.ap_category
+                payload.supplier_name = values.supplier_name
+                payload.original_amount = Number(values.original_amount)
+                if (values.reference) payload.reference = values.reference
+              }
+              const res = await fetch('/api/finance/payables', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              })
+              const result = await res.json()
+              if (res.ok && result.success) {
+                message.success('建立成功')
+                setCreateModalVisible(false)
+                await loadPayables()
+              } else {
+                message.error(result.error || '建立失敗')
+              }
+            } catch (e) {
+              message.error('建立失敗，請稍後再試')
+            }
+          }}>
+            <Form.Item label="來源類型" name="mode" initialValue={createMode}>
+              <Select onChange={(v) => setCreateMode(v)}>
+                <Option value="GENERAL">一般支出</Option>
+                <Option value="PURCHASE">關聯採購</Option>
+              </Select>
+            </Form.Item>
+
+            {createMode === 'PURCHASE' ? (
+              <>
+                <Form.Item label="採購單ID" name="purchase_id" rules={[{ required: true, message: '請輸入採購單ID' }]}>
+                  <Input placeholder="請輸入現有的採購單 ID" />
+                </Form.Item>
+              </>
+            ) : (
+              <>
+                <Form.Item label="分類" name="ap_category" rules={[{ required: true, message: '請選擇分類' }]}>
+                  <Select placeholder="選擇分類">
+                    <Option value="FREIGHT">運費</Option>
+                    <Option value="TAX">稅金</Option>
+                    <Option value="WAREHOUSE">倉租</Option>
+                    <Option value="ADMIN">行政</Option>
+                    <Option value="OTHER">其他</Option>
+                  </Select>
+                </Form.Item>
+                <Form.Item label="供應商" name="supplier_name" rules={[{ required: true, message: '請輸入供應商名稱' }]}>
+                  <Input />
+                </Form.Item>
+                <Form.Item label="原始金額" name="original_amount" rules={[{ required: true, message: '請輸入金額' }]}>
+                  <InputNumber style={{ width: '100%' }} min={0.01} step={1} />
+                </Form.Item>
+                <Form.Item label="參考編號" name="reference">
+                  <Input placeholder="承運商帳單/外部參考" />
+                </Form.Item>
+              </>
+            )}
+
+            <Form.Item label="到期日" name="due_date" rules={[{ required: true, message: '請選擇到期日' }]}>
+              <DatePicker style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Form.Item label="備註" name="notes">
+              <Input.TextArea rows={3} />
+            </Form.Item>
+          </Form>
+        </Modal>
 
         {/* 付款記錄 Modal */}
         <Modal
