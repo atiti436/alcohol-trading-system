@@ -93,6 +93,28 @@ export default function PayablesPage() {
   const [createForm] = Form.useForm()
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [createMode, setCreateMode] = useState<'PURCHASE' | 'GENERAL'>('GENERAL')
+  const [purchaseOptions, setPurchaseOptions] = useState<Array<{ value: string; label: string }>>([])
+  const [purchaseLoading, setPurchaseLoading] = useState(false)
+
+  const fetchPurchaseOptions = async (keyword: string) => {
+    try {
+      setPurchaseLoading(true)
+      const params = new URLSearchParams({ search: keyword, limit: '20', page: '1' })
+      const res = await fetch(`/api/purchases?${params.toString()}`)
+      const json = await res.json()
+      if (res.ok && json.success) {
+        const opts = (json.data?.purchases || []).map((p: any) => ({
+          value: p.id,
+          label: `${p.purchase_number}｜${p.supplier}｜$${Number(p.total_amount).toLocaleString()}`
+        }))
+        setPurchaseOptions(opts)
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setPurchaseLoading(false)
+    }
+  }
 
   // 篩選狀態
   const [filters, setFilters] = useState({
@@ -477,7 +499,7 @@ export default function PayablesPage() {
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
             <div />
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => { setCreateModalVisible(true); createForm.resetFields(); setCreateMode('GENERAL') }}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => { setCreateModalVisible(true); createForm.resetFields(); setCreateMode('GENERAL'); fetchPurchaseOptions('') }}>
               新增應付
             </Button>
           </div>
@@ -543,8 +565,16 @@ export default function PayablesPage() {
 
             {createMode === 'PURCHASE' ? (
               <>
-                <Form.Item label="採購單ID" name="purchase_id" rules={[{ required: true, message: '請輸入採購單ID' }]}>
-                  <Input placeholder="請輸入現有的採購單 ID" />
+                <Form.Item label="採購單" name="purchase_id" rules={[{ required: true, message: '請選擇採購單' }]}>
+                  <Select
+                    showSearch
+                    allowClear
+                    placeholder="輸入單號或供應商關鍵字搜尋"
+                    filterOption={false}
+                    onSearch={(v) => fetchPurchaseOptions(v)}
+                    options={purchaseOptions}
+                    loading={purchaseLoading}
+                  />
                 </Form.Item>
               </>
             ) : (
