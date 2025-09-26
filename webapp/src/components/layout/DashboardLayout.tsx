@@ -138,7 +138,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           mode="inline"
           selectedKeys={[pathname]}
           defaultOpenKeys={(pathname.startsWith('/finance') || pathname === '/statements') ? ['/finance'] : []}
-          items={session?.user?.role ? buildMenuItems(getMenuKeysByRoleV2(session.user.role), session.user.role, { onClickPath: (p) => router.push(p) }) : []}
+          onSelect={({ key }) => {
+            console.log('Menu selected:', key) // 調試用
+            router.push(key as string)
+          }}
+          items={session?.user?.role ? buildMenuItems(getMenuKeysByRoleV2(session.user.role), session.user.role) : []}
         />
       </Sider>
 

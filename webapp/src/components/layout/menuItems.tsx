@@ -125,12 +125,7 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
   },
 }
 
-export function buildMenuItems(keys: string[], role: Role, opts?: {
-  useLinkLabel?: boolean
-  onClickPath?: (path: string) => void
-}): MenuProps['items'] {
-  const { useLinkLabel = false, onClickPath } = opts || {}
-
+export function buildMenuItems(keys: string[], role: Role): MenuProps['items'] {
   const items = keys
     .map(key => MENU_ITEMS[key])
     .filter(Boolean)
@@ -146,7 +141,7 @@ export function buildMenuItems(keys: string[], role: Role, opts?: {
       processedItems.push({
         key: item.key,
         icon: item.icon,
-        label: item.label, // 不用Link，純文字
+        label: item.label,
         children: [] // 先建立空的子選單，稍後填入
       })
     } else if (item.key.startsWith('/finance/') || item.key === '/statements') {
@@ -154,16 +149,14 @@ export function buildMenuItems(keys: string[], role: Role, opts?: {
       financeSubItems.push({
         key: item.key,
         icon: item.icon,
-        label: item.label, // 不用Link，純文字
-        onClick: onClickPath ? () => onClickPath(item.path) : undefined
+        label: item.label
       })
     } else {
       // 其他選單項目
       processedItems.push({
         key: item.key,
         icon: item.icon,
-        label: item.label, // 不用Link，純文字
-        onClick: onClickPath ? () => onClickPath(item.path) : undefined
+        label: item.label
       })
     }
   })
@@ -174,8 +167,7 @@ export function buildMenuItems(keys: string[], role: Role, opts?: {
     if (financeMainIndex !== -1) {
       processedItems[financeMainIndex] = {
         ...processedItems[financeMainIndex],
-        children: financeSubItems,
-        onClick: onClickPath ? () => onClickPath('/finance') : undefined // 主選單也能點擊
+        children: financeSubItems
       }
     }
   }
