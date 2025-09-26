@@ -151,10 +151,11 @@ export function buildMenuItems(keys: string[], role: Role, opts?: {
           : item.label,
         onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
       })
-    } else if (item.key.startsWith('/finance/')) {
-      // 財務子功能
+    } else if (item.key.startsWith('/finance/') || item.key === '/statements') {
+      // 財務子功能：收支記錄、應付帳款、對帳管理
       financeSubItems.push({
         key: item.key,
+        icon: item.icon,
         label: useLinkLabel
           ? (<Link href={item.path}>{item.label}</Link>)
           : item.label,

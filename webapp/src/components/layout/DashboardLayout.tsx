@@ -48,8 +48,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (userRole === Role.SUPER_ADMIN) {
       return [
         '/dashboard','/customers','/products','/quotations',
-        '/purchases','/imports','/inventory','/sales','/shipping','/statements',
-        '/finance','/finance/cashflow','/finance/payables','/reports','/settings'
+        '/purchases','/imports','/inventory','/sales','/shipping',
+        '/finance','/finance/cashflow','/finance/payables','/statements','/reports','/settings'
       ]
     }
     if (userRole === Role.INVESTOR) {
@@ -60,8 +60,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
     return [
       '/dashboard','/customers','/products','/quotations',
-      '/purchases','/imports','/inventory','/sales','/shipping','/statements',
-      '/finance/cashflow','/reports'
+      '/purchases','/imports','/inventory','/sales','/shipping',
+      '/finance','/finance/cashflow','/statements','/reports'
     ]
   }
 
@@ -137,7 +137,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
-          defaultOpenKeys={pathname.startsWith('/finance') ? ['/finance'] : []}
+          defaultOpenKeys={(pathname.startsWith('/finance') || pathname === '/statements') ? ['/finance'] : []}
           items={session?.user?.role ? buildMenuItems(getMenuKeysByRoleV2(session.user.role), session.user.role, { onClickPath: (p) => router.push(p) }) : []}
         />
       </Sider>
