@@ -222,27 +222,29 @@ export default function PayablesPage() {
       title: '關聯採購單',
       key: 'purchase_number',
       width: 140,
-      render: (record: AccountsPayable) => (
+      render: (_: any, record: AccountsPayable) => (
         record.purchase?.purchase_number || '-'
       )
     },
     {
       title: '原始金額',
+      dataIndex: 'original_amount',
       key: 'original_amount',
       width: 120,
       align: 'right',
-      render: (record: AccountsPayable) => (
-        <SecurePriceDisplay amount={record.original_amount} />
+      render: (value: number) => (
+        <SecurePriceDisplay amount={value} />
       )
     },
     {
       title: '未付金額',
+      dataIndex: 'remaining_amount',
       key: 'remaining_amount',
       width: 120,
       align: 'right',
-      render: (record: AccountsPayable) => (
+      render: (value: number, record: AccountsPayable) => (
         <SecurePriceDisplay
-          amount={record.remaining_amount}
+          amount={value}
           style={{
             color: record.remaining_amount > 0 ? '#ff4d4f' : '#52c41a',
             fontWeight: 'bold'
@@ -269,14 +271,14 @@ export default function PayablesPage() {
       title: '狀態',
       key: 'status',
       width: 120,
-      render: (record: AccountsPayable) => renderStatusTag(record.status, record.days_past_due)
+      render: (_: any, record: AccountsPayable) => renderStatusTag(record.status, record.days_past_due)
     },
     {
       title: '操作',
       key: 'action',
       width: 120,
       fixed: 'right',
-      render: (record: AccountsPayable) => (
+      render: (_: any, record: AccountsPayable) => (
         <Space size="small">
           {record.remaining_amount > 0 && (
             <Button
