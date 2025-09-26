@@ -114,7 +114,7 @@ export default function PayablesPage() {
       if (response.ok && result.success) {
         // 確保資料結構正確
         const payablesData = Array.isArray(result.data?.payables) ? result.data.payables : []
-        const filteredPayables = payablesData.filter(item => item && typeof item === 'object' && item.id)
+        const filteredPayables = payablesData.filter((item: any) => item && typeof item === 'object' && item.id)
 
         setPayables(filteredPayables)
         setStats(result.data.stats || {
