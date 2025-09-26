@@ -42,8 +42,10 @@ import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
+import { PrintableDocument } from '@/components/common/PrintableDocument'
 import { SaleOrderModal } from '@/components/sales/SaleOrderModal'
 import { Sale, SaleItem } from '@/types/room-2'
+import { DOCUMENT_TYPES } from '@/config/company'
 
 // 顯示於出貨明細表格的列型別（在 SaleItem 基礎上加入 shipped_quantity）
 type ShippingItemRow = SaleItem & { shipped_quantity?: number }
@@ -1092,159 +1094,168 @@ export default function SalesPage() {
       </Modal>
 
       {/* 出貨單列印對話框 */}
-      <Modal
-        title="出貨單"
-        open={shippingPrintVisible}
-        onCancel={() => setShippingPrintVisible(false)}
-        width={800}
-        footer={[
-          <Button key="cancel" onClick={() => setShippingPrintVisible(false)}>
-            關閉
-          </Button>,
-          <Button
-            key="print"
-            type="primary"
-            icon={<PrinterOutlined />}
-            onClick={() => {
-              window.print()
-            }}
-          >
-            列印
-          </Button>
-        ]}
-      >
-        {currentShippingData && (
-          <div style={{ padding: '20px 0' }}>
-            {/* 出貨單標題 */}
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <Title level={2}>出貨單</Title>
-              <Text type="secondary">出貨單號：{currentShippingData.shippingOrder?.shipping_number}</Text>
+      {currentShippingData && (
+        <PrintableDocument
+          visible={shippingPrintVisible}
+          onClose={() => setShippingPrintVisible(false)}
+          documentType={DOCUMENT_TYPES.SHIPPING}
+          documentNumber={currentShippingData.shippingOrder?.shipping_number || ''}
+          title="出貨單預覽"
+          width={900}
+          additionalHeaderInfo={
+            <div>
+              <div>出貨日期：{currentShippingData.shippingOrder?.shipped_at ? new Date(currentShippingData.shippingOrder.shipped_at).toLocaleDateString('zh-TW') : new Date().toLocaleDateString('zh-TW')}</div>
+              {currentShippingData.shippingOrder?.tracking_number && (
+                <div>追蹤號碼：{currentShippingData.shippingOrder.tracking_number}</div>
+              )}
             </div>
-
-            {/* 基本信息 */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
+          }
+        >
+          {/* 客戶資訊區塊 */}
+          <div className="customer-section" style={{
+            margin: '20px 0',
+            padding: '15px',
+            border: '1px solid #d9d9d9',
+            backgroundColor: '#fafafa',
+            borderRadius: '4px'
+          }}>
+            <Row gutter={[24, 16]}>
               <Col span={12}>
                 <div>
-                  <Text strong>客戶資訊</Text>
-                  <div style={{ marginTop: '8px' }}>
-                    <div>客戶名稱：{currentShippingData.sale?.customer?.name}</div>
-                    <div>出貨地址：{currentShippingData.shippingOrder?.shipping_address || currentShippingData.sale?.customer?.shipping_address}</div>
+                  <Text strong style={{ fontSize: '14px' }}>收貨客戶</Text>
+                  <div style={{ marginTop: '8px', lineHeight: '1.6' }}>
+                    <div><strong>客戶名稱：</strong>{currentShippingData.sale?.customer?.name}</div>
+                    <div><strong>聯絡電話：</strong>{currentShippingData.sale?.customer?.phone || '-'}</div>
+                    <div><strong>電子信箱：</strong>{currentShippingData.sale?.customer?.email || '-'}</div>
                   </div>
                 </div>
               </Col>
               <Col span={12}>
                 <div>
-                  <Text strong>出貨資訊</Text>
-                  <div style={{ marginTop: '8px' }}>
-                    <div>出貨日期：{currentShippingData.shippingOrder?.shipped_at ? new Date(currentShippingData.shippingOrder.shipped_at).toLocaleDateString() : '-'}</div>
-                    <div>出貨方式：{currentShippingData.shippingOrder?.shipping_method}</div>
-                    {currentShippingData.shippingOrder?.tracking_number && (
-                      <div>追蹤號碼：{currentShippingData.shippingOrder.tracking_number}</div>
-                    )}
+                  <Text strong style={{ fontSize: '14px' }}>出貨資訊</Text>
+                  <div style={{ marginTop: '8px', lineHeight: '1.6' }}>
+                    <div><strong>出貨地址：</strong>{currentShippingData.shippingOrder?.shipping_address || currentShippingData.sale?.customer?.shipping_address || '-'}</div>
+                    <div><strong>出貨方式：</strong>{currentShippingData.shippingOrder?.shipping_method === 'DELIVERY' ? '宅配送達' : currentShippingData.shippingOrder?.shipping_method === 'PICKUP' ? '自取' : '快遞'}</div>
+                    <div><strong>銷售單號：</strong>{currentShippingData.sale?.sale_number}</div>
                   </div>
                 </div>
               </Col>
             </Row>
-
-            {/* 出貨明細表格 */}
-            <Table
-              title={() => <Text strong>出貨明細</Text>}
-              dataSource={(currentShippingData.sale?.items || []) as ShippingItemRow[]}
-              rowKey="id"
-              pagination={false}
-              size="small"
-              columns={[
-                {
-                  title: '商品名稱',
-                  key: 'product',
-                  render: (record: ShippingItemRow) => (
-                    <div>
-                      <div>{record.product?.name}</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
-                        {record.product?.product_code}
-                      </div>
-                      {record.variant?.variant_code && (
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          變體: {record.variant.variant_code}
-                        </div>
-                      )}
-                    </div>
-                  )
-                },
-                {
-                  title: '訂購數量',
-                  dataIndex: 'quantity',
-                  key: 'quantity',
-                  align: 'center' as const,
-                  width: 100
-                },
-                {
-                  title: '出貨數量',
-                  key: 'shipped_quantity',
-                  align: 'center' as const,
-                  width: 100,
-                  render: (record: ShippingItemRow) => record.shipped_quantity ?? record.quantity
-                },
-                {
-                  title: '單價',
-                  dataIndex: 'unit_price',
-                  key: 'unit_price',
-                  align: 'right' as const,
-                  width: 120,
-                  render: (value: number) => `$${value.toLocaleString()}`
-                },
-                {
-                  title: '小計',
-                  key: 'subtotal',
-                  align: 'right' as const,
-                  width: 120,
-                  render: (record: ShippingItemRow) => {
-                    const qty = record.shipped_quantity ?? record.quantity
-                    return `$${(qty * record.unit_price).toLocaleString()}`
-                  }
-                }
-              ]}
-              summary={(data: readonly ShippingItemRow[]) => {
-                const totalQuantity = data.reduce((sum, item) => sum + (item.shipped_quantity ?? item.quantity), 0)
-                const totalAmount = data.reduce((sum, item) => {
-                  const qty = item.shipped_quantity ?? item.quantity
-                  return sum + (qty * item.unit_price)
-                }, 0)
-
-                return (
-                  <Table.Summary>
-                    <Table.Summary.Row>
-                      <Table.Summary.Cell index={0}>
-                        <Text strong>合計</Text>
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={1}>
-                        <Text strong>{totalQuantity}</Text>
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={2}>
-                        <Text strong>{totalQuantity}</Text>
-                      </Table.Summary.Cell>
-                      <Table.Summary.Cell index={3}></Table.Summary.Cell>
-                      <Table.Summary.Cell index={4}>
-                        <Text strong>${totalAmount.toLocaleString()}</Text>
-                      </Table.Summary.Cell>
-                    </Table.Summary.Row>
-                  </Table.Summary>
-                )
-              }}
-            />
-
-            {/* 備註 */}
-            {currentShippingData.shippingOrder?.notes && (
-              <div style={{ marginTop: '20px' }}>
-                <Text strong>備註：</Text>
-                <div style={{ marginTop: '8px', padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                  {currentShippingData.shippingOrder.notes}
-                </div>
-              </div>
-            )}
           </div>
-        )}
-      </Modal>
+
+          {/* 出貨明細表格 */}
+          <Table
+            title={() => <Text strong style={{ fontSize: '16px' }}>出貨明細</Text>}
+            dataSource={(currentShippingData.sale?.items || []) as ShippingItemRow[]}
+            rowKey="id"
+            pagination={false}
+            size="small"
+            columns={[
+              {
+                title: '品名規格',
+                key: 'product',
+                width: '35%',
+                render: (record: ShippingItemRow) => (
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{record.product?.name}</div>
+                    <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                      品號：{record.product?.product_code}
+                    </div>
+                    {record.variant?.variant_code && (
+                      <div style={{ fontSize: '11px', color: '#666' }}>
+                        規格：{record.variant.variant_code}
+                      </div>
+                    )}
+                  </div>
+                )
+              },
+              {
+                title: '訂購數量',
+                dataIndex: 'quantity',
+                key: 'quantity',
+                align: 'center' as const,
+                width: '12%',
+                render: (value: number) => <strong>{value}</strong>
+              },
+              {
+                title: '出貨數量',
+                key: 'shipped_quantity',
+                align: 'center' as const,
+                width: '12%',
+                render: (record: ShippingItemRow) => (
+                  <strong style={{ color: '#1890ff' }}>
+                    {record.shipped_quantity ?? record.quantity}
+                  </strong>
+                )
+              },
+              {
+                title: '單價 (NT$)',
+                dataIndex: 'unit_price',
+                key: 'unit_price',
+                align: 'right' as const,
+                width: '15%',
+                render: (value: number) => `$${value.toLocaleString()}`
+              },
+              {
+                title: '金額 (NT$)',
+                key: 'subtotal',
+                align: 'right' as const,
+                width: '15%',
+                render: (record: ShippingItemRow) => {
+                  const qty = record.shipped_quantity ?? record.quantity
+                  return <strong>${(qty * record.unit_price).toLocaleString()}</strong>
+                }
+              }
+            ]}
+            summary={(data: readonly ShippingItemRow[]) => {
+              const totalQuantity = data.reduce((sum, item) => sum + (item.shipped_quantity ?? item.quantity), 0)
+              const totalAmount = data.reduce((sum, item) => {
+                const qty = item.shipped_quantity ?? item.quantity
+                return sum + (qty * item.unit_price)
+              }, 0)
+
+              return (
+                <Table.Summary>
+                  <Table.Summary.Row style={{ backgroundColor: '#f0f0f0' }}>
+                    <Table.Summary.Cell index={0}>
+                      <Text strong style={{ fontSize: '14px' }}>合計</Text>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1}>
+                      <Text strong style={{ fontSize: '14px' }}>{totalQuantity}</Text>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={2}>
+                      <Text strong style={{ fontSize: '14px', color: '#1890ff' }}>{totalQuantity}</Text>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={3}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={4}>
+                      <Text strong style={{ fontSize: '14px', color: '#f50' }}>
+                        ${totalAmount.toLocaleString()}
+                      </Text>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </Table.Summary>
+              )
+            }}
+          />
+
+          {/* 備註區域 */}
+          {currentShippingData.shippingOrder?.notes && (
+            <div style={{ marginTop: '20px' }}>
+              <Text strong style={{ fontSize: '14px' }}>備註事項：</Text>
+              <div style={{
+                marginTop: '8px',
+                padding: '12px',
+                backgroundColor: '#fff7e6',
+                border: '1px solid #ffd591',
+                borderRadius: '4px',
+                lineHeight: '1.5'
+              }}>
+                {currentShippingData.shippingOrder.notes}
+              </div>
+            </div>
+          )}
+        </PrintableDocument>
+      )}
     </div>
   )
 }
