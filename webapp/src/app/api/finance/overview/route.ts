@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // 🔒 權限控制 - 投資方只能看到投資相關數據
     const userRoleFilter = session.user.role === 'INVESTOR'
-      ? { funding_source: 'INVESTOR' }
+      ? { funding_source: 'INVESTOR' as const }
       : {}
 
     // 1. 計算總收入 (銷售金額)
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       where: {
         ...dateFilter,
         ...userRoleFilter,
-        type: 'EXPENSE'
+        type: 'EXPENSE' as const
       },
       _sum: {
         amount: true

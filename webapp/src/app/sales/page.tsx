@@ -24,6 +24,7 @@ import {
   Row,
   Col
 } from 'antd'
+import type { ColumnType } from 'antd/es/table'
 import {
   PlusOutlined,
   SearchOutlined,
@@ -48,7 +49,11 @@ import { Sale, SaleItem } from '@/types/room-2'
 import { DOCUMENT_TYPES } from '@/config/company'
 
 // 顯示於出貨明細表格的列型別（在 SaleItem 基礎上加入 shipped_quantity）
-type ShippingItemRow = SaleItem & { shipped_quantity?: number }
+type ShippingItemRow = SaleItem & {
+  shipped_quantity?: number
+  unit_price: number
+  quantity: number
+}
 
 const { Search } = Input
 const { Title, Text } = Typography
@@ -187,7 +192,7 @@ export default function SalesPage() {
   }
 
   // 表格欄位定義
-  const columns = [
+  const columns: ColumnType<Sale>[] = [
     {
       title: '銷售單號',
       dataIndex: 'sale_number',
@@ -1175,7 +1180,7 @@ export default function SalesPage() {
                 key: 'quantity',
                 align: 'center' as const,
                 width: '12%',
-                render: (value: number) => <strong>{value}</strong>
+                render: (value: number) => <strong>{value ?? 0}</strong>
               },
               {
                 title: '出貨數量',
@@ -1184,7 +1189,7 @@ export default function SalesPage() {
                 width: '12%',
                 render: (record: ShippingItemRow) => (
                   <strong style={{ color: '#1890ff' }}>
-                    {record.shipped_quantity ?? record.quantity}
+                    {record.shipped_quantity ?? record.quantity ?? 0}
                   </strong>
                 )
               },
@@ -1194,7 +1199,7 @@ export default function SalesPage() {
                 key: 'unit_price',
                 align: 'right' as const,
                 width: '15%',
-                render: (value: number) => `$${value.toLocaleString()}`
+                render: (value: number) => `$${(value ?? 0).toLocaleString()}`
               },
               {
                 title: '金額 (NT$)',
@@ -1202,16 +1207,28 @@ export default function SalesPage() {
                 align: 'right' as const,
                 width: '15%',
                 render: (record: ShippingItemRow) => {
-                  const qty = record.shipped_quantity ?? record.quantity
-                  return <strong>${(qty * record.unit_price).toLocaleString()}</strong>
+                  const qty = record.shipped_quantity ?? record.quantity ?? 0
+                  const price = record.unit_price ?? 0
+                  return <strong>${(qty * price).toLocaleString()}</strong>
                 }
               }
             ]}
             summary={(data: readonly ShippingItemRow[]) => {
-              const totalQuantity = data.reduce((sum, item) => sum + (item.shipped_quantity ?? item.quantity), 0)
+              const totalQuantity = data.reduce((sum, item) => {
+                if (typeof item === 'object' && item !== null) {
+                  const qty = item.shipped_quantity ?? item.quantity ?? 0
+                  return sum + qty
+                }
+                return sum
+              }, 0)
+
               const totalAmount = data.reduce((sum, item) => {
-                const qty = item.shipped_quantity ?? item.quantity
-                return sum + (qty * item.unit_price)
+                if (typeof item === 'object' && item !== null) {
+                  const qty = item.shipped_quantity ?? item.quantity ?? 0
+                  const price = item.unit_price ?? 0
+                  return sum + (qty * price)
+                }
+                return sum
               }, 0)
 
               return (
