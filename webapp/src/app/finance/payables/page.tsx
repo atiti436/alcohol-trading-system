@@ -216,9 +216,11 @@ export default function PayablesPage() {
     },
     {
       title: '關聯採購單',
-      dataIndex: ['purchase', 'purchase_number'],
       key: 'purchase_number',
-      width: 140
+      width: 140,
+      render: (record: AccountsPayable) => (
+        record.purchase?.purchase_number || '-'
+      )
     },
     {
       title: '原始金額',
@@ -322,7 +324,7 @@ export default function PayablesPage() {
                   value={stats.total_pending}
                   precision={0}
                   prefix={<CreditCardOutlined />}
-                  formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
+                  formatter={(value) => `$${Number(value).toLocaleString()}`}
                   valueStyle={{ color: '#faad14' }}
                 />
                 <Text type="secondary">{stats.count_pending} 筆</Text>
@@ -335,7 +337,7 @@ export default function PayablesPage() {
                   value={stats.total_overdue}
                   precision={0}
                   prefix={<ExclamationCircleOutlined />}
-                  formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
+                  formatter={(value) => `$${Number(value).toLocaleString()}`}
                   valueStyle={{ color: '#ff4d4f' }}
                 />
                 <Text type="secondary">{stats.count_overdue} 筆</Text>
@@ -348,7 +350,7 @@ export default function PayablesPage() {
                   value={stats.total_partial}
                   precision={0}
                   prefix={<PayCircleOutlined />}
-                  formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
+                  formatter={(value) => `$${Number(value).toLocaleString()}`}
                   valueStyle={{ color: '#fa8c16' }}
                 />
               </Card>
