@@ -112,7 +112,11 @@ export default function PayablesPage() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        setPayables(result.data.payables || [])
+        // 確保資料結構正確
+        const payablesData = Array.isArray(result.data?.payables) ? result.data.payables : []
+        const filteredPayables = payablesData.filter(item => item && typeof item === 'object' && item.id)
+
+        setPayables(filteredPayables)
         setStats(result.data.stats || {
           total_pending: 0,
           total_overdue: 0,
@@ -211,7 +215,7 @@ export default function PayablesPage() {
       key: 'supplier_name',
       width: 180,
       render: (text: string) => (
-        <div style={{ fontWeight: 'bold' }}>{text}</div>
+        <div style={{ fontWeight: 'bold' }}>{text || '-'}</div>
       )
     },
     {
@@ -432,13 +436,13 @@ export default function PayablesPage() {
           <Table<AccountsPayable>
             columns={columns}
             dataSource={payables}
-            rowKey="id"
+            rowKey={(record) => record.id}
             loading={loading}
             scroll={{ x: 1200 }}
             pagination={{
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => `第 ${range[0]}-${range[1]} 項，共 ${total} 項`
+              showTotal: (total, range) => `第 ${range?.[0] || 0}-${range?.[1] || 0} 項，共 ${total || 0} 項`
             }}
           />
         </Card>
@@ -474,7 +478,7 @@ export default function PayablesPage() {
                     style={{ width: '100%' }}
                     placeholder="請輸入付款金額"
                     formatter={(value) => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
+                    parser={(value) => (value as string).replace(/\$\s?|(,*)/g, '')}
                   />
                 </Form.Item>
               </Col>
@@ -531,7 +535,7 @@ export default function PayablesPage() {
                   </Col>
                   <Col span={12}>
                     <Text type="secondary">採購單號：</Text>
-                    <Text strong>{selectedPayable.purchase.purchase_number}</Text>
+                    <Text strong>{selectedPayable.purchase?.purchase_number || '-'}</Text>
                   </Col>
                 </Row>
                 <Row gutter={16} style={{ marginTop: 8 }}>
