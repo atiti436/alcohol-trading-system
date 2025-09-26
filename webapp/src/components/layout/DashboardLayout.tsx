@@ -139,7 +139,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           selectedKeys={[pathname]}
           defaultOpenKeys={(pathname.startsWith('/finance') || pathname === '/statements') ? ['/finance'] : []}
           onSelect={({ key }) => {
-            console.log('Menu selected:', key) // 調試用
             router.push(key as string)
           }}
           items={session?.user?.role ? buildMenuItems(getMenuKeysByRoleV2(session.user.role), session.user.role) : []}

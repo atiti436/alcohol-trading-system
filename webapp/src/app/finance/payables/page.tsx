@@ -112,9 +112,17 @@ export default function PayablesPage() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        setPayables(result.data.payables)
-        setStats(result.data.stats)
+        setPayables(result.data.payables || [])
+        setStats(result.data.stats || {
+          total_pending: 0,
+          total_overdue: 0,
+          total_partial: 0,
+          count_pending: 0,
+          count_overdue: 0,
+          average_days_overdue: 0
+        })
       } else {
+        console.error('API錯誤:', result)
         message.error(result.error || '載入失敗')
         // 暫時顯示空資料
         setPayables([])

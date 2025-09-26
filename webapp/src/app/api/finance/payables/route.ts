@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       if (dateTo) where.due_date.lte = new Date(dateTo + 'T23:59:59.999Z')
     }
 
-    // 獲取應付帳款列表
+    // 獲取應付帳款列表 - 先嘗試簡單查詢
     const payables = await prisma.accountsPayable.findMany({
       where,
       include: {
@@ -74,8 +74,22 @@ export async function GET(request: NextRequest) {
       orderBy: { due_date: 'asc' }
     })
 
-    // 計算統計數據
-    const stats = await calculatePayableStats()
+    // 計算統計數據 - 添加錯誤處理
+    let stats
+    try {
+      stats = await calculatePayableStats()
+    } catch (statsError) {
+      console.error('統計數據計算失敗:', statsError)
+      // 提供預設值
+      stats = {
+        total_pending: 0,
+        total_overdue: 0,
+        total_partial: 0,
+        count_pending: 0,
+        count_overdue: 0,
+        average_days_overdue: 0
+      }
+    }
 
     return NextResponse.json({
       success: true,
