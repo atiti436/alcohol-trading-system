@@ -1,6 +1,7 @@
 import React from 'react'
-import { Typography, Row, Col, Divider } from 'antd'
-import { COMPANY_INFO, DOCUMENT_TITLES, DocumentType } from '@/config/company'
+import { Typography, Row, Col, Divider, Skeleton } from 'antd'
+import { DOCUMENT_TITLES, DocumentType, DEFAULT_COMPANY_INFO } from '@/config/company'
+import { useCompanySettings } from '@/hooks/useCompanySettings'
 
 const { Title, Text } = Typography
 
@@ -21,26 +22,40 @@ export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
   date,
   additionalInfo
 }) => {
+  // 🔗 HOOK 連動：使用動態公司設定
+  const { settings: companySettings, loading } = useCompanySettings()
+
+  // 使用實際設定或預設值
+  const companyInfo = companySettings || DEFAULT_COMPANY_INFO
+
+  if (loading) {
+    return (
+      <div className="document-header">
+        <Skeleton active paragraph={{ rows: 3 }} />
+      </div>
+    )
+  }
+
   return (
     <div className="document-header">
       <Row style={{ width: '100%' }}>
         <Col span={12}>
-          {/* 公司資訊 */}
+          {/* 公司資訊 - 動態載入 */}
           <div className="company-info">
             <Title level={2} style={{ margin: 0, color: '#000', fontSize: '24px' }}>
-              {COMPANY_INFO.name}
+              {companyInfo.name}
             </Title>
-            {COMPANY_INFO.englishName && (
+            {companyInfo.englishName && (
               <Text style={{ fontSize: '14px', color: '#666' }}>
-                {COMPANY_INFO.englishName}
+                {companyInfo.englishName}
               </Text>
             )}
             <div style={{ marginTop: '8px', fontSize: '12px', lineHeight: '1.4' }}>
-              <div>地址：{COMPANY_INFO.address}</div>
-              <div>電話：{COMPANY_INFO.phone}</div>
-              {COMPANY_INFO.fax && <div>傳真：{COMPANY_INFO.fax}</div>}
-              {COMPANY_INFO.email && <div>Email：{COMPANY_INFO.email}</div>}
-              {COMPANY_INFO.taxId && <div>統編：{COMPANY_INFO.taxId}</div>}
+              <div>地址：{companyInfo.address}</div>
+              <div>電話：{companyInfo.phone}</div>
+              {companyInfo.fax && <div>傳真：{companyInfo.fax}</div>}
+              {companyInfo.email && <div>Email：{companyInfo.email}</div>}
+              {companyInfo.taxId && <div>統編：{companyInfo.taxId}</div>}
             </div>
           </div>
         </Col>

@@ -69,34 +69,50 @@ export default function FinanceOverviewPage() {
       const [startDate, endDate] = dateRange
       const response = await fetch(`/api/finance/overview?start=${startDate.format('YYYY-MM-DD')}&end=${endDate.format('YYYY-MM-DD')}`)
 
-      if (response.ok) {
-        const result = await response.json()
-        setData(result.data || data)
-      } else {
-        // 如果 API 不存在，使用假數據作為預覽
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        // 🔗 使用真實數據，不再有假數據
         setData({
-          totalRevenue: 1250000,
-          totalExpenses: 850000,
-          netProfit: 400000,
-          pendingPayments: 125000,
-          monthlyRevenue: [
-            { month: '09月', revenue: 450000, expenses: 280000 },
-            { month: '08月', revenue: 380000, expenses: 290000 },
-            { month: '07月', revenue: 420000, expenses: 280000 },
-          ],
-          recentTransactions: [
-            { id: 1, type: 'income', description: '銷售收入 - 客戶A', amount: 85000, date: dayjs().subtract(2, 'day') },
-            { id: 2, type: 'expense', description: '採購成本 - 威士忌進貨', amount: -45000, date: dayjs().subtract(3, 'day') },
-            { id: 3, type: 'income', description: '銷售收入 - 客戶B', amount: 67000, date: dayjs().subtract(5, 'day') },
-          ],
-          outstandingInvoices: [
-            { id: 'INV-001', customer: '客戶C', amount: 45000, dueDate: dayjs().add(5, 'day'), status: 'pending' },
-            { id: 'INV-002', customer: '客戶D', amount: 80000, dueDate: dayjs().add(10, 'day'), status: 'overdue' },
-          ]
+          totalRevenue: result.data.totalRevenue || 0,
+          totalExpenses: result.data.totalExpenses || 0,
+          netProfit: result.data.netProfit || 0,
+          pendingPayments: result.data.pendingPayments || 0,
+          monthlyRevenue: result.data.monthlyRevenue || [],
+          recentTransactions: (result.data.recentTransactions || []).map((tx: any) => ({
+            ...tx,
+            date: dayjs(tx.date)
+          })),
+          outstandingInvoices: (result.data.outstandingInvoices || []).map((invoice: any) => ({
+            ...invoice,
+            dueDate: dayjs(invoice.dueDate)
+          }))
+        })
+      } else {
+        console.error('財務數據載入失敗:', result.error)
+        // 顯示空數據而非假數據
+        setData({
+          totalRevenue: 0,
+          totalExpenses: 0,
+          netProfit: 0,
+          pendingPayments: 0,
+          monthlyRevenue: [],
+          recentTransactions: [],
+          outstandingInvoices: []
         })
       }
     } catch (error) {
       console.error('載入財務數據失敗:', error)
+      // 網路錯誤時也顯示空數據
+      setData({
+        totalRevenue: 0,
+        totalExpenses: 0,
+        netProfit: 0,
+        pendingPayments: 0,
+        monthlyRevenue: [],
+        recentTransactions: [],
+        outstandingInvoices: []
+      })
     } finally {
       setLoading(false)
     }

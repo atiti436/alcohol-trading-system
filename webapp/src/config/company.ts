@@ -15,7 +15,9 @@ export interface CompanyInfo {
   logo?: string
 }
 
-export const COMPANY_INFO: CompanyInfo = {
+// 預設公司資訊 - 僅作為 fallback 使用
+// 實際使用請透過 useCompanySettings Hook 獲取動態數據
+export const DEFAULT_COMPANY_INFO: CompanyInfo = {
   name: '滿帆洋行有限公司',
   englishName: 'Full Sail Trading Co., Ltd.',
   address: '台北市中山區南京東路二段123號8樓',
@@ -25,6 +27,10 @@ export const COMPANY_INFO: CompanyInfo = {
   website: 'www.fullsail-trading.com.tw',
   taxId: '12345678'
 }
+
+// 🚨 棄用警告：請使用 useCompanySettings Hook 替代
+// @deprecated 使用 useCompanySettings Hook 獲取實時公司資訊
+export const COMPANY_INFO = DEFAULT_COMPANY_INFO
 
 /**
  * 單據類型定義

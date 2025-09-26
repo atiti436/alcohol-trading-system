@@ -622,6 +622,26 @@ model CashFlowRecord {
   @@index([created_by])
 }
 
+// 公司設定表
+model CompanySettings {
+  id           String   @id @default(cuid())
+  name         String   // 公司名稱
+  englishName  String?  // 英文名稱
+  address      String   // 公司地址
+  phone        String   // 聯絡電話
+  fax          String?  // 傳真號碼
+  email        String?  // 電子信箱
+  website      String?  // 官方網站
+  taxId        String   // 統一編號
+  bankName     String?  // 銀行名稱
+  bankAccount  String?  // 帳戶號碼
+  bankCode     String?  // 銀行代碼
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("company_settings")
+}
+
 // 收支類型
 enum CashFlowType {
   INCOME   // 收入
