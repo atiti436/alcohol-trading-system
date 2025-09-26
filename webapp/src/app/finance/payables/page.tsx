@@ -44,13 +44,15 @@ const { RangePicker } = DatePicker
 interface AccountsPayable {
   id: string
   ap_number: string
-  purchase_id: string
+  purchase_id?: string
   supplier_name: string
   original_amount: number
   remaining_amount: number
   due_date: string
   status: 'PENDING' | 'OVERDUE' | 'PAID' | 'PARTIAL'
   days_past_due: number
+  ap_category?: 'PURCHASE' | 'FREIGHT' | 'TAX' | 'WAREHOUSE' | 'ADMIN' | 'OTHER'
+  reference?: string
   notes?: string
   created_at: string
   purchase: {
@@ -93,7 +95,8 @@ export default function PayablesPage() {
   const [filters, setFilters] = useState({
     status: '',
     supplier: '',
-    dateRange: null as [dayjs.Dayjs, dayjs.Dayjs] | null
+    dateRange: null as [dayjs.Dayjs, dayjs.Dayjs] | null,
+    ap_category: '' as AccountsPayable['ap_category'] | ''
   })
 
   // 載入應付帳款列表
@@ -107,6 +110,7 @@ export default function PayablesPage() {
         params.append('date_from', filters.dateRange[0].format('YYYY-MM-DD'))
         params.append('date_to', filters.dateRange[1].format('YYYY-MM-DD'))
       }
+      if (filters.ap_category) params.append('ap_category', String(filters.ap_category))
 
       const response = await fetch(`/api/finance/payables?${params}`)
       const result = await response.json()
@@ -200,8 +204,27 @@ export default function PayablesPage() {
     return <Tag color={config.color}>{config.text}</Tag>
   }
 
+  const renderCategoryTag = (cat?: AccountsPayable['ap_category']) => {
+    const map: Record<string, { color: string; text: string }> = {
+      PURCHASE: { color: 'blue', text: '採購' },
+      FREIGHT: { color: 'geekblue', text: '運費' },
+      TAX: { color: 'purple', text: '稅金' },
+      WAREHOUSE: { color: 'cyan', text: '倉租' },
+      ADMIN: { color: 'gold', text: '行政' },
+      OTHER: { color: 'default', text: '其他' }
+    }
+    const cfg = (cat && map[cat]) || map.PURCHASE
+    return <Tag color={cfg.color}>{cfg.text}</Tag>
+  }
+
   // 表格欄位定義
   const columns: ColumnType<AccountsPayable>[] = [
+    {
+      title: '分類',
+      key: 'ap_category',
+      width: 90,
+      render: (_: any, record) => renderCategoryTag(record.ap_category)
+    },
     {
       title: '應付帳款編號',
       dataIndex: 'ap_number',
@@ -383,6 +406,20 @@ export default function PayablesPage() {
           <Row gutter={[16, 16]} align="middle">
             <Col flex="auto">
               <Space>
+                <Select
+                  placeholder="分類"
+                  style={{ width: 120 }}
+                  allowClear
+                  value={filters.ap_category || undefined}
+                  onChange={(value) => setFilters({ ...filters, ap_category: (value || '') as any })}
+                >
+                  <Option value="PURCHASE">採購</Option>
+                  <Option value="FREIGHT">運費</Option>
+                  <Option value="TAX">稅金</Option>
+                  <Option value="WAREHOUSE">倉租</Option>
+                  <Option value="ADMIN">行政</Option>
+                  <Option value="OTHER">其他</Option>
+                </Select>
                 <Select
                   placeholder="狀態篩選"
                   style={{ width: 120 }}

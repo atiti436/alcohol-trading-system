@@ -119,6 +119,7 @@ export async function POST(
           type: 'EXPENSE',
           amount: payment_amount,
           description: `供應商付款 - ${payable.supplier_name} (${paymentNumber})`,
+          category: (payable as any).ap_category || 'PURCHASE',
           reference: payment.id,
           funding_source: 'COMPANY',
           transaction_date: new Date(payment_date),

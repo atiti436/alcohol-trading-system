@@ -59,6 +59,16 @@ model Customer {
   @@map("customers")
 }
 
+// 應付帳款分類
+enum ApCategory {
+  PURCHASE
+  FREIGHT
+  TAX
+  WAREHOUSE
+  ADMIN
+  OTHER
+}
+
 model Product {
   id                  String                 @id @default(cuid())
   product_code        String                 @unique
@@ -372,19 +382,21 @@ model PaymentRecord {
 model AccountsPayable {
   id               String             @id @default(cuid())
   ap_number        String             @unique
-  purchase_id      String
+  purchase_id      String?
   supplier_name    String
   original_amount  Float
   remaining_amount Float
   due_date         DateTime
   status           String             @default("PENDING") // PENDING, OVERDUE, PAID, PARTIAL
   days_past_due    Int                @default(0)
+  ap_category      ApCategory         @default(PURCHASE)
+  reference        String?
   notes            String?
   created_by       String
   created_at       DateTime           @default(now())
   updated_at       DateTime           @updatedAt
   creator          User               @relation(fields: [created_by], references: [id])
-  purchase         Purchase           @relation(fields: [purchase_id], references: [id])
+  purchase         Purchase?          @relation(fields: [purchase_id], references: [id])
   payments         SupplierPayment[]
 
   @@map("accounts_payable")
