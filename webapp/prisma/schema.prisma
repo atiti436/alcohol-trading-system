@@ -21,6 +21,8 @@ model User {
   created_accounting_entries  AccountingEntry[]
   created_accounts_receivable AccountsReceivable[]
   created_payment_records     PaymentRecord[]
+  created_accounts_payable    AccountsPayable[]
+  created_supplier_payments   SupplierPayment[]
   created_purchases           Purchase[]
   created_quotations          Quotation[]
   created_sales               Sale[]
@@ -184,6 +186,7 @@ model Purchase {
   updated_at         DateTime       @updatedAt
   receipts           GoodsReceipt[]
   items              PurchaseItem[]
+  accounts_payable   AccountsPayable[]
   creator            User           @relation(fields: [created_by], references: [id])
 
   @@map("purchases")
@@ -363,6 +366,46 @@ model PaymentRecord {
   creator                User               @relation(fields: [created_by], references: [id])
 
   @@map("payment_records")
+}
+
+// 應付帳款表 - 我們欠供應商的錢
+model AccountsPayable {
+  id               String             @id @default(cuid())
+  ap_number        String             @unique
+  purchase_id      String
+  supplier_name    String
+  original_amount  Float
+  remaining_amount Float
+  due_date         DateTime
+  status           String             @default("PENDING") // PENDING, OVERDUE, PAID, PARTIAL
+  days_past_due    Int                @default(0)
+  notes            String?
+  created_by       String
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @updatedAt
+  creator          User               @relation(fields: [created_by], references: [id])
+  purchase         Purchase           @relation(fields: [purchase_id], references: [id])
+  payments         SupplierPayment[]
+
+  @@map("accounts_payable")
+}
+
+// 供應商付款記錄
+model SupplierPayment {
+  id                    String          @id @default(cuid())
+  payment_number        String          @unique
+  accounts_payable_id   String
+  payment_amount        Float
+  payment_date          DateTime
+  payment_method        String // CASH, BANK_TRANSFER, CHECK, CREDIT_CARD, OTHER
+  reference_number      String?
+  notes                 String?
+  created_by            String
+  created_at            DateTime        @default(now())
+  accounts_payable      AccountsPayable @relation(fields: [accounts_payable_id], references: [id])
+  creator               User            @relation(fields: [created_by], references: [id])
+
+  @@map("supplier_payments")
 }
 
 model Quotation {
@@ -655,4 +698,5 @@ enum CashFlowType {
 enum FundingSource {
   INVESTOR  // 投資方資金
   PERSONAL  // 個人墊付
+  COMPANY   // 公司資金
 }

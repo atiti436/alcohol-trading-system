@@ -14,7 +14,8 @@ import {
   TruckOutlined,
   FileSearchOutlined,
   RobotOutlined,
-  TeamOutlined
+  TeamOutlined,
+  CreditCardOutlined
 } from '@ant-design/icons'
 import { Role } from '@/types/auth'
 
@@ -115,6 +116,13 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     label: '收支記錄',
     icon: <FileTextOutlined />,
   },
+  '/finance/payables': {
+    key: '/finance/payables',
+    path: '/finance/payables',
+    label: '應付帳款',
+    icon: <CreditCardOutlined />,
+    roles: [Role.SUPER_ADMIN]
+  },
 }
 
 export function buildMenuItems(keys: string[], role: Role, opts?: {
@@ -123,16 +131,58 @@ export function buildMenuItems(keys: string[], role: Role, opts?: {
 }): MenuProps['items'] {
   const { useLinkLabel = false, onClickPath } = opts || {}
 
-  return keys
+  const items = keys
     .map(key => MENU_ITEMS[key])
     .filter(Boolean)
     .filter(item => !item.roles || item.roles.includes(role))
-    .map(item => ({
-      key: item.key,
-      icon: item.icon,
-      label: useLinkLabel
-        ? (<Link href={item.path}>{item.label}</Link>)
-        : item.label,
-      onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
-    }))
+
+  // 處理財務模組的子選單結構
+  const processedItems: any[] = []
+  const financeSubItems: any[] = []
+
+  items.forEach(item => {
+    if (item.key === '/finance') {
+      // 財務總覽作為主選項
+      processedItems.push({
+        key: item.key,
+        icon: item.icon,
+        label: useLinkLabel
+          ? (<Link href={item.path}>{item.label}</Link>)
+          : item.label,
+        onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
+      })
+    } else if (item.key.startsWith('/finance/')) {
+      // 財務子功能
+      financeSubItems.push({
+        key: item.key,
+        label: useLinkLabel
+          ? (<Link href={item.path}>{item.label}</Link>)
+          : item.label,
+        onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
+      })
+    } else {
+      // 其他選單項目
+      processedItems.push({
+        key: item.key,
+        icon: item.icon,
+        label: useLinkLabel
+          ? (<Link href={item.path}>{item.label}</Link>)
+          : item.label,
+        onClick: useLinkLabel || !onClickPath ? undefined : () => onClickPath(item.path)
+      })
+    }
+  })
+
+  // 如果有財務子選單，將它們加入到財務主選單下
+  if (financeSubItems.length > 0) {
+    const financeMainIndex = processedItems.findIndex(item => item.key === '/finance')
+    if (financeMainIndex !== -1) {
+      processedItems[financeMainIndex] = {
+        ...processedItems[financeMainIndex],
+        children: financeSubItems
+      }
+    }
+  }
+
+  return processedItems
 }

@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       return [
         '/dashboard','/customers','/products','/quotations',
         '/purchases','/imports','/inventory','/sales','/shipping','/statements',
-        '/finance','/finance/cashflow','/reports','/settings'
+        '/finance','/finance/cashflow','/finance/payables','/reports','/settings'
       ]
     }
     if (userRole === Role.INVESTOR) {
@@ -137,6 +137,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           theme="dark"
           mode="inline"
           selectedKeys={[pathname]}
+          defaultOpenKeys={pathname.startsWith('/finance') ? ['/finance'] : []}
           items={session?.user?.role ? buildMenuItems(getMenuKeysByRoleV2(session.user.role), session.user.role, { onClickPath: (p) => router.push(p) }) : []}
         />
       </Sider>

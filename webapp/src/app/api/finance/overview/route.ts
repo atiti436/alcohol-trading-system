@@ -76,7 +76,17 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // 4. 月度營收趨勢 (最近3個月)
+    // 4. 計算待付款項 (應付帳款) - 只有SUPER_ADMIN可見
+    const pendingPayables = session.user.role === 'SUPER_ADMIN' ? await prisma.accountsPayable.aggregate({
+      where: {
+        status: { in: ['PENDING', 'OVERDUE', 'PARTIAL'] }
+      },
+      _sum: {
+        remaining_amount: true
+      }
+    }) : null
+
+    // 5. 月度營收趨勢 (最近3個月)
     const monthlyData = await prisma.sale.groupBy({
       by: ['created_at'],
       where: {
@@ -134,6 +144,7 @@ export async function GET(request: NextRequest) {
     const totalExpenses = expensesData._sum.amount || 0
     const netProfit = totalRevenue - totalExpenses
     const pendingAmount = pendingPayments._sum.remaining_amount || 0
+    const pendingPayableAmount = pendingPayables?._sum.remaining_amount || 0
 
     // 根據角色返回不同的數據
     const responseData = {
@@ -142,6 +153,7 @@ export async function GET(request: NextRequest) {
       totalExpenses,
       netProfit,
       pendingPayments: pendingAmount,
+      pendingPayables: session.user.role === 'SUPER_ADMIN' ? pendingPayableAmount : undefined,
       monthlyRevenue,
       recentTransactions: recentTransactions.map(tx => ({
         id: tx.id,
