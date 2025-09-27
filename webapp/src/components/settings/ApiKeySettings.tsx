@@ -33,12 +33,17 @@ interface ApiKeySettingsProps {
 
 export default function ApiKeySettings({ onApiKeyChange }: ApiKeySettingsProps) {
   const [geminiApiKey, setGeminiApiKey] = useState('')
+  const [secondaryGeminiApiKey, setSecondaryGeminiApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
+  const [showSecondaryKey, setShowSecondaryKey] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [testingSecondary, setTestingSecondary] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [testSecondaryResult, setTestSecondaryResult] = useState<{ success: boolean; message: string } | null>(null)
   const [hasKey, setHasKey] = useState(false)
+  const [hasSecondaryKey, setHasSecondaryKey] = useState(false)
 
   useEffect(() => {
     loadApiKey()
@@ -53,6 +58,7 @@ export default function ApiKeySettings({ onApiKeyChange }: ApiKeySettingsProps) 
         if (data.success) {
           // 不回傳明文金鑰，只回 configured 狀態
           setHasKey(!!data.data?.configured)
+          setHasSecondaryKey(!!data.data?.secondaryConfigured)
         }
       }
     } catch (error) {
@@ -97,6 +103,32 @@ export default function ApiKeySettings({ onApiKeyChange }: ApiKeySettingsProps) 
     }
   }
 
+  // 測試次要 API Key（與主金鑰相同流程）
+  const testSecondaryApiKey = async () => {
+    if (!secondaryGeminiApiKey.trim()) {
+      setTestSecondaryResult({ success: false, message: '請輸入次要 API Key' })
+      return
+    }
+    setTestingSecondary(true)
+    setTestSecondaryResult(null)
+    try {
+      const response = await fetch('/api/settings/test-api-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: secondaryGeminiApiKey })
+      })
+      const result = await response.json()
+      setTestSecondaryResult({
+        success: result.success,
+        message: result.message || (result.success ? '次要 API Key 測試成功' : '測試失敗')
+      })
+    } catch (error) {
+      setTestSecondaryResult({ success: false, message: '測試請求失敗，請檢查網路連線' })
+    } finally {
+      setTestingSecondary(false)
+    }
+  }
+
   // 儲存API Key
   const saveApiKey = async () => {
     if (!geminiApiKey.trim()) {
@@ -113,13 +145,17 @@ export default function ApiKeySettings({ onApiKeyChange }: ApiKeySettingsProps) 
       const response = await fetch('/api/settings/api-keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ geminiApiKey })
+        body: JSON.stringify({
+          geminiApiKey: geminiApiKey.trim() || undefined,
+          secondaryGeminiApiKey: secondaryGeminiApiKey.trim() || undefined
+        })
       })
 
       const result = await response.json()
 
       if (result.success) {
-        setHasKey(true)
+        if (geminiApiKey.trim()) setHasKey(true)
+        if (secondaryGeminiApiKey.trim()) setHasSecondaryKey(true)
         setTestResult({
           success: true,
           message: 'API Key 已成功儲存'
@@ -192,6 +228,17 @@ export default function ApiKeySettings({ onApiKeyChange }: ApiKeySettingsProps) 
                   </Tag>
                 )}
               </Descriptions.Item>
+              <Descriptions.Item label="次要 API Key">
+                {hasSecondaryKey ? (
+                  <Tag color="success" icon={<CheckCircleOutlined />}>
+                    已設定
+                  </Tag>
+                ) : (
+                  <Tag color="warning" icon={<ExclamationCircleOutlined />}>
+                    未設定（可選）
+                  </Tag>
+                )}
+              </Descriptions.Item>
             </Descriptions>
           </Col>
         </Row>
@@ -244,6 +291,52 @@ export default function ApiKeySettings({ onApiKeyChange }: ApiKeySettingsProps) 
             type={testResult.success ? 'success' : 'error'}
             showIcon
             icon={testResult.success ? <CheckCircleOutlined /> : <ExclamationCircleOutlined />}
+          />
+        </div>
+      )}
+
+      {/* 次要金鑰設定 */}
+      <Divider />
+      <div style={{ marginBottom: 16 }}>
+        <Space>
+          <Text strong>Google Gemini 次要 API Key</Text>
+          <Tag>選填</Tag>
+        </Space>
+      </div>
+      <Row gutter={8}>
+        <Col flex="auto">
+          <Input.Password
+            value={secondaryGeminiApiKey}
+            onChange={(e) => setSecondaryGeminiApiKey(e.target.value)}
+            placeholder="輸入次要 Gemini API Key（可作為備援）"
+            disabled={saving || testingSecondary}
+            visibilityToggle={{
+              visible: showSecondaryKey,
+              onVisibleChange: setShowSecondaryKey
+            }}
+            iconRender={(visible) => (visible ? <EyeOutlined /> : <EyeInvisibleOutlined />)}
+          />
+        </Col>
+        <Col>
+          <Button
+            icon={<ExperimentOutlined />}
+            onClick={testSecondaryApiKey}
+            disabled={!secondaryGeminiApiKey.trim() || testingSecondary || saving}
+            loading={testingSecondary}
+          >
+            {testingSecondary ? '測試中' : '測試'}
+          </Button>
+        </Col>
+      </Row>
+
+      {testSecondaryResult && (
+        <div style={{ marginTop: 16, marginBottom: 24 }}>
+          <Alert
+            message={testSecondaryResult.success ? '次要金鑰測試成功' : '次要金鑰測試失敗'}
+            description={testSecondaryResult.message}
+            type={testSecondaryResult.success ? 'success' : 'error'}
+            showIcon
+            icon={testSecondaryResult.success ? <CheckCircleOutlined /> : <ExclamationCircleOutlined />}
           />
         </div>
       )}
