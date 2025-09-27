@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Card,
   Table,
@@ -95,7 +95,7 @@ export default function CashFlowManager() {
   })
 
   // 🔄 載入收支記錄
-  const loadRecords = async (page = 1, pageSize = 20) => {
+  const loadRecords = useCallback(async (page = 1, pageSize = 20) => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -131,11 +131,11 @@ export default function CashFlowManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   useEffect(() => {
     loadRecords()
-  }, [])
+  }, [loadRecords])
 
   // 🆕 新增收支記錄
   const handleAdd = async (values: any) => {

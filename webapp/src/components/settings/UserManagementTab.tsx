@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -70,7 +70,7 @@ export default function UserManagementTab() {
   })
 
   // 載入用戶列表
-  const loadUsers = async (page = 1, pageSize = 10) => {
+  const loadUsers = useCallback(async (page = 1, pageSize = 10) => {
     setLoading(true)
     try {
       const response = await fetch(`/api/users?page=${page}&limit=${pageSize}`)
@@ -91,11 +91,11 @@ export default function UserManagementTab() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadUsers()
-  }, [])
+  }, [loadUsers])
 
   // 更新用戶角色
   const updateUserRole = async (userId: string, newRole: Role) => {

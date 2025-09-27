@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table,
   Button,
@@ -28,7 +28,8 @@ import {
   PrinterOutlined,
   FilePdfOutlined,
   TruckOutlined,
-  InboxOutlined
+  InboxOutlined,
+  DownloadOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
@@ -127,7 +128,7 @@ export default function ShippingPage() {
   const [createLoading, setCreateLoading] = useState(false)
 
   // 載入出貨單列表
-  const loadShippingOrders = async () => {
+  const loadShippingOrders = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch('/api/shipping')
@@ -145,11 +146,11 @@ export default function ShippingPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadShippingOrders()
-  }, [])
+  }, [loadShippingOrders])
 
   // 獲取出貨狀態顏色
   const getStatusColor = (status: string) => {

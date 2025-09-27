@@ -114,7 +114,7 @@ export default function QuotationsPage() {
   }, [pagination.limit, filters])
 
   // 載入客戶列表
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     try {
       const response = await fetch('/api/customers')
       const data = await response.json()
@@ -124,10 +124,10 @@ export default function QuotationsPage() {
     } catch (error) {
       console.error('載入客戶列表失敗:', error)
     }
-  }
+  }, [])
 
   // 載入商品列表
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       const response = await fetch('/api/products')
       const data = await response.json()
@@ -137,10 +137,10 @@ export default function QuotationsPage() {
     } catch (error) {
       console.error('載入商品列表失敗:', error)
     }
-  }
+  }, [])
 
   // 載入統計資料
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const response = await fetch('/api/quotations/stats')
       if (response.ok) {
@@ -150,14 +150,14 @@ export default function QuotationsPage() {
     } catch (error) {
       console.error('載入統計資料失敗:', error)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadQuotations()
     loadCustomers()
     loadProducts()
     loadStats()
-  }, [])
+  }, [loadQuotations, loadCustomers, loadProducts, loadStats])
 
   useEffect(() => {
     loadQuotations(1)
