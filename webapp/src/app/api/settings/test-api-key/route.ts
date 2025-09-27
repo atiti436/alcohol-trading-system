@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { getClientIp, rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Simple rate limit: 10 requests / minute per IP
+    const ip = getClientIp(request)
+    const rl = rateLimit({ key: `test-api-key:${ip}`, limit: 10, windowMs: 60_000 })
+    if (!rl.allowed) {
+      return NextResponse.json({ success: false, error: 'Too many requests, please try later.' }, { status: 429 })
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: '未授權' }, { status: 401 })
@@ -19,7 +27,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 測試 Gemini API
+    // 測試 Gemini API（不回傳任何金鑰資訊）
     try {
       const testResponse = await fetch('https://generativelanguage.googleapis.com/v1/models?key=' + apiKey, {
         method: 'GET',

@@ -42,6 +42,10 @@ jobs:
       working-directory: ./webapp
       run: npm run check:permissions || echo "Permissions check completed with warnings"
 
+    - name: Run secret scan
+      working-directory: ./webapp
+      run: npm run check:secrets
+
     - name: Run security tests
       working-directory: ./webapp
       run: npm run test:security || echo "Security tests completed with warnings"

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
+import { logSensitiveAccess } from '@/lib/audit-log'
 import crypto from 'crypto'
 
 const RAW_KEY = process.env.ENCRYPTION_KEY || ''
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     const setting = await prisma.systemSetting.findUnique({ where: { key: 'gemini_api_key' } })
-    const configured = !!setting?.value
+    const configured = !!setting?.value || !!process.env.GEMINI_API_KEY || !!process.env.GOOGLE_GEMINI_API_KEY
 
     return NextResponse.json({ success: true, data: { geminiApiKey: '', configured } })
   } catch (error) {
@@ -82,10 +83,21 @@ export async function POST(request: NextRequest) {
       create: { key: 'gemini_api_key', value: encryptedKey, description: 'Google Gemini Vision API Key' }
     })
 
+    // 審計日誌（不含明文）
+    try {
+      await logSensitiveAccess({
+        userId: session.user.id,
+        userEmail: session.user.email || '',
+        userRole: session.user.role as any,
+        action: 'WRITE',
+        resourceType: 'SETTINGS',
+        sensitiveFields: ['gemini_api_key']
+      })
+    } catch {}
+
     return NextResponse.json({ success: true, message: 'API Key 已更新並儲存' })
   } catch (error) {
     console.error('保存API Key失敗:', error)
     return NextResponse.json({ success: false, error: '保存失敗' }, { status: 500 })
   }
 }
-

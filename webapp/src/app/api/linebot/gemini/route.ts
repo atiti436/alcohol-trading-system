@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getGeminiApiKey } from '@/lib/keys'
+import { getClientIp, rateLimit } from '@/lib/rate-limit'
 
 /**
  * 🤖 Room-6: Google Gemini AI 整合 API
@@ -153,6 +154,13 @@ function generateCostAnalysis(data: any) {
 // POST /api/linebot/gemini - 處理AI對話請求
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 30 req / minute per IP
+    const ip = getClientIp(request)
+    const rl = rateLimit({ key: `gemini:${ip}`, limit: 30, windowMs: 60_000 })
+    if (!rl.allowed) {
+      return NextResponse.json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const { message, userId, messageType = 'general' } = await request.json()
 
     const apiKey = await getGeminiApiKey(); if (!apiKey) {

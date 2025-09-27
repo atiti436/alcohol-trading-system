@@ -34,3 +34,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Security: API Key Management
+
+- Admin-only: Only SUPER_ADMIN can set API keys via Settings.
+- Write-only: UI never reveals existing keys; backend accepts write and stores encrypted.
+- Encrypted at rest: Keys are stored using AES-256-GCM with a strong `ENCRYPTION_KEY` (>= 32 chars recommended).
+- Server-only usage: All Gemini calls run on server routes; keys are never exposed to client bundles.
+- Audited changes: Each update writes an audit log entry (no plaintext).
+- Env fallback: Key is read from DB first; falls back to `GEMINI_API_KEY` (or legacy `GOOGLE_GEMINI_API_KEY`).

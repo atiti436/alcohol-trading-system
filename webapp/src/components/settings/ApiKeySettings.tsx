@@ -171,6 +171,9 @@ export default function ApiKeySettings({ onApiKeyChange }: ApiKeySettingsProps) 
         <Text type="secondary">
           設定 Google Gemini Vision API Key 以啟用PDF報單OCR識別功能
         </Text>
+        <Paragraph type="secondary" style={{ marginTop: 8 }}>
+          安全說明：此欄位僅用於「寫入」API Key，系統不會回顯或提供金鑰查詢；金鑰將以 AES-256-GCM 加密保存於後端設定，僅供伺服器端 API 呼叫使用，所有更新行為將記錄於審計日誌。
+        </Paragraph>
       </div>
 
       {/* 狀態顯示 */}
