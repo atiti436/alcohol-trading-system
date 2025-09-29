@@ -1,4 +1,4 @@
-// 在瀏覽器開發者工具中執行這段代碼來創建測試變體
+﻿// 在瀏覽器開發者工具中執行這段代碼來創建測試變體
 
 async function createTestVariants() {
   try {
@@ -10,7 +10,7 @@ async function createTestVariants() {
         product_id: 'W001', // 需要替換為實際的產品ID
         variant_code: 'W001-A',
         sku: 'W001-A-700-43',
-        variant_type: 'A',
+        variant_type: '標準款',
         description: '普通版',
         base_price: 21000,
         current_price: 21000,
@@ -24,7 +24,7 @@ async function createTestVariants() {
         product_id: 'W001',
         variant_code: 'W001-B',
         sku: 'W001-B-700-43',
-        variant_type: 'B',
+        variant_type: '禮盒版',
         description: '禮盒版',
         base_price: 23000,
         current_price: 23000,
@@ -38,7 +38,7 @@ async function createTestVariants() {
         product_id: 'W001',
         variant_code: 'W001-C',
         sku: 'W001-C-700-43',
-        variant_type: 'C',
+        variant_type: '紀念收藏',
         description: '收藏版',
         base_price: 25000,
         current_price: 25000,
@@ -52,7 +52,7 @@ async function createTestVariants() {
         product_id: 'W001',
         variant_code: 'W001-X',
         sku: 'W001-X-700-43',
-        variant_type: 'X',
+        variant_type: '瑕疵折扣',
         description: '損傷品',
         base_price: 18000,
         current_price: 18000,
@@ -81,3 +81,6 @@ async function createTestVariants() {
 
 // 執行函數
 createTestVariants();
+
+
+

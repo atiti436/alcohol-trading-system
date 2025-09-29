@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Card,
   Table,
@@ -82,7 +82,7 @@ export default function AgeingAnalysisReport() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>()
 
   // 載入帳齡分析數據
-  const loadAgeingAnalysis = async () => {
+  const loadAgeingAnalysis = useCallback(async () => {
     setLoading(true)
     try {
       // 載入摘要數據
@@ -129,11 +129,11 @@ export default function AgeingAnalysisReport() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedPeriod, selectedCustomer])
 
   useEffect(() => {
     loadAgeingAnalysis()
-  }, [selectedPeriod, selectedCustomer])
+  }, [loadAgeingAnalysis])
 
   // 帳齡分析表格欄位
   const ageingColumns = [

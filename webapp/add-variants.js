@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 添加測試變體 - 讓老闆能清楚看到變體差異
  */
 
@@ -36,7 +36,7 @@ async function addTestVariants() {
         product_id: yamazaki.id,
         variant_code: 'W001-A',
         sku: 'W001-A-700-43',
-        variant_type: 'A',
+        variant_type: '標準款',
         description: '普通版',
         base_price: 21000,
         current_price: 21000,
@@ -50,7 +50,7 @@ async function addTestVariants() {
         product_id: yamazaki.id,
         variant_code: 'W001-B',
         sku: 'W001-B-700-43',
-        variant_type: 'B',
+        variant_type: '禮盒版',
         description: '禮盒版',
         base_price: 23000,
         current_price: 23000,
@@ -64,7 +64,7 @@ async function addTestVariants() {
         product_id: yamazaki.id,
         variant_code: 'W001-C',
         sku: 'W001-C-700-43',
-        variant_type: 'C',
+        variant_type: '紀念收藏',
         description: '收藏版',
         base_price: 25000,
         current_price: 25000,
@@ -78,7 +78,7 @@ async function addTestVariants() {
         product_id: yamazaki.id,
         variant_code: 'W001-X',
         sku: 'W001-X-700-43',
-        variant_type: 'X',
+        variant_type: '瑕疵折扣',
         description: '損傷品',
         base_price: 18000,
         current_price: 18000,
@@ -105,7 +105,7 @@ async function addTestVariants() {
         product_id: hibiki.id,
         variant_code: 'W002-A',
         sku: 'W002-A-700-43',
-        variant_type: 'A',
+        variant_type: '標準款',
         description: '普通版',
         base_price: 35000,
         current_price: 35000,
@@ -119,7 +119,7 @@ async function addTestVariants() {
         product_id: hibiki.id,
         variant_code: 'W002-B',
         sku: 'W002-B-700-43',
-        variant_type: 'B',
+        variant_type: '禮盒版',
         description: '限定版',
         base_price: 40000,
         current_price: 40000,
@@ -163,3 +163,7 @@ async function addTestVariants() {
 
 // 直接執行
 addTestVariants().catch(console.error)
+
+
+
+

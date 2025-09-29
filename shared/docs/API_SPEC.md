@@ -223,7 +223,7 @@ interface ProductVariant {
   id: string
   productId: string
   variantCode: string     // W001-A, W001-C, W001-X
-  variantType: VariantType
+  variantType: string
   description: string     // "一般版", "100周年紀念版", "損傷品"
 
   // 變體特殊定價

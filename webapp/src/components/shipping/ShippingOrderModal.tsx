@@ -133,7 +133,7 @@ export function ShippingOrderModal({
       setTransferData([])
       setSelectedItems([])
     }
-  }, [visible])
+  }, [visible, form])
 
   // 銷售單選擇處理
   const handleSaleChange = (saleId: string) => {

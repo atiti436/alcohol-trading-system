@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Modal,
   Form,
@@ -63,14 +63,18 @@ const SpecialPriceManager: React.FC<SpecialPriceManagerProps> = ({
   const [specialPrices, setSpecialPrices] = useState<SpecialPrice[]>([])
   const [editingPrice, setEditingPrice] = useState<SpecialPrice | null>(null)
 
-  useEffect(() => {
+  const loadDataCallback = useCallback(() => {
     if (isVisible) {
       loadProducts()
       loadSpecialPrices()
     }
-  }, [isVisible, customer_id])
+  }, [isVisible, loadProducts, loadSpecialPrices])
 
-  const loadProducts = async () => {
+  useEffect(() => {
+    loadDataCallback()
+  }, [loadDataCallback])
+
+  const loadProducts = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch('/api/products?limit=999') // 載入所有產品
@@ -86,9 +90,9 @@ const SpecialPriceManager: React.FC<SpecialPriceManagerProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const loadSpecialPrices = async () => {
+  const loadSpecialPrices = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/customers/${customer_id}/special-prices`)
@@ -104,7 +108,7 @@ const SpecialPriceManager: React.FC<SpecialPriceManagerProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [customer_id])
 
   const handleAddEdit = (price?: SpecialPrice) => {
     setEditingPrice(price || null)

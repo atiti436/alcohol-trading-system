@@ -1,0 +1,1 @@
+This directory contains archived documents from the project's early stages (before 2025-09-29). The content is kept for historical reference but should not be considered current or used as a development guide. Please refer to the main `/docs` and `/shared/docs` directories for the latest documentation.

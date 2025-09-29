@@ -80,7 +80,7 @@ export function InventoryAdjustmentModal({
       setAdjustments([])
       form.resetFields()
     }
-  }, [inventoryItem, visible])
+  }, [inventoryItem, visible, form])
 
   const addAdjustment = () => {
     if (!inventoryItem) return

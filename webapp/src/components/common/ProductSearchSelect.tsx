@@ -24,6 +24,8 @@ import {
   ShoppingOutlined
 } from '@ant-design/icons'
 
+import { DEFAULT_VARIANT_TYPE_LABEL } from '../../../../shared/utils/constants'
+
 const { Text } = Typography
 const { Option } = Select
 
@@ -121,6 +123,7 @@ export default function ProductSearchSelect({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: values.name,
+          variant_type: values.variant_type?.trim() || DEFAULT_VARIANT_TYPE_LABEL,
           category: values.category || 'WHISKY',
           volume_ml: values.volume_ml || 750,
           alc_percentage: values.alc_percentage || 40,
@@ -218,11 +221,14 @@ export default function ProductSearchSelect({
                   <Button
                     key={variant.id}
                     size="small"
-                    type={variant.available_stock > 0 ? 'primary' : 'default'}
+                    type={variant.available_stock > 0 ? 'primary' : 'dashed'}
                     ghost
-                    disabled={variant.available_stock === 0}
                     onClick={() => handleProductSelect(product.id, variant.id)}
-                    style={{ fontSize: 11 }}
+                    style={{
+                      fontSize: 11,
+                      borderColor: variant.available_stock === 0 ? '#ff4d4f' : undefined,
+                      color: variant.available_stock === 0 ? '#ff4d4f' : undefined
+                    }}
                   >
                     {variant.variant_code}
                     {variant.available_stock > 0 ? (
@@ -302,7 +308,7 @@ export default function ProductSearchSelect({
                     type="dashed"
                     icon={<PlusOutlined />}
                     onClick={() => {
-                      quickAddForm.setFieldsValue({ name: searchValue })
+                      quickAddForm.setFieldsValue({ name: searchValue, variant_type: DEFAULT_VARIANT_TYPE_LABEL })
                       setQuickAddVisible(true)
                     }}
                   >
@@ -370,6 +376,15 @@ export default function ProductSearchSelect({
               <Option value="LIQUEUR">利口酒</Option>
               <Option value="OTHER">其他</Option>
             </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="variant_type"
+            label="預設變體名稱"
+            initialValue={DEFAULT_VARIANT_TYPE_LABEL}
+            rules={[{ max: 100, message: '最多 100 字' }]}
+          >
+            <Input placeholder="例如：木盒版、標準款" />
           </Form.Item>
 
           <div style={{ display: 'flex', gap: 16 }}>

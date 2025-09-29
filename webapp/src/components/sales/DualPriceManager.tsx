@@ -84,7 +84,7 @@ export function DualPriceManager({
       onPriceChange(payload)
       lastSentRef.current = payload
     }
-  }, [displayPrice, actualPrice])
+  }, [displayPrice, actualPrice, onPriceChange])
 
   // 預設價格策略
   const applyPricingStrategy = (strategy: string) => {

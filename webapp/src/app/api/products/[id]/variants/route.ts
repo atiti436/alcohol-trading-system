@@ -2,37 +2,37 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
-import { VariantType } from '@prisma/client'
+import { normalizeVariantType, generateVariantCode } from '@/lib/variant-utils'
 
 /**
- * ğŸ  Room-2: å•†å“è®Šé«”ç®¡ç† API
- * GET /api/products/[id]/variants - å•†å“è®Šé«”åˆ—è¡¨
- * POST /api/products/[id]/variants - æ–°å¢å•†å“è®Šé«”
+ * ?? Room-2: °Ó«~ÅÜÅéºŞ²z API
+ * GET /api/products/[id]/variants - ¨ú±oÅÜÅé²M³æ
+ * POST /api/products/[id]/variants - «Ø¥ß·sªºÅÜÅé
  */
 
-// GET /api/products/[id]/variants - å•†å“è®Šé«”åˆ—è¡¨
+// GET /api/products/[id]/variants - ¨ú±oÅÜÅé²M³æ
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // æ¬Šé™æª¢æŸ¥
+    // Åv­­ÀË¬d
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'æœªç™»å…¥' }, { status: 401 })
+      return NextResponse.json({ error: '¥¼µn¤J' }, { status: 401 })
     }
 
-    // æª¢æŸ¥å•†å“æ˜¯å¦å­˜åœ¨
+    // ÀË¬d°Ó«~¬O§_¦s¦b
     const product = await prisma.product.findUnique({
       where: { id: params.id },
       select: { id: true, name: true, product_code: true }
     })
 
     if (!product) {
-      return NextResponse.json({ error: 'å•†å“ä¸å­˜åœ¨' }, { status: 404 })
+      return NextResponse.json({ error: '°Ó«~¤£¦s¦b' }, { status: 404 })
     }
 
-    // æŸ¥è©¢è®Šé«”åˆ—è¡¨
+    // ¬d¸ßÅÜÅé²M³æ
     const variants = await prisma.productVariant.findMany({
       where: { product_id: params.id },
       orderBy: { variant_type: 'asc' },
@@ -54,24 +54,24 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('è®Šé«”åˆ—è¡¨æŸ¥è©¢å¤±æ•—:', error)
+    console.error('ÅÜÅé²M³æ¬d¸ß¥¢±Ñ:', error)
     return NextResponse.json(
-      { error: 'æŸ¥è©¢å¤±æ•—', details: error },
+      { error: '¬d¸ß¥¢±Ñ', details: error },
       { status: 500 }
     )
   }
 }
 
-// POST /api/products/[id]/variants - æ–°å¢å•†å“è®Šé«”
+// POST /api/products/[id]/variants - «Ø¥ß·sªºÅÜÅé
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // æ¬Šé™æª¢æŸ¥ - åªæœ‰SUPER_ADMINå’ŒEMPLOYEEå¯ä»¥æ–°å¢è®Šé«”
+    // Åv­­ÀË¬d - ¶È SUPER_ADMIN »P EMPLOYEE ¥i¥H«Ø¥ßÅÜÅé
     const session = await getServerSession(authOptions)
     if (!session?.user || session.user.role === 'INVESTOR') {
-      return NextResponse.json({ error: 'æ¬Šé™ä¸è¶³' }, { status: 403 })
+      return NextResponse.json({ error: 'Åv­­¤£¨¬' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -84,55 +84,75 @@ export async function POST(
       limited_edition = false,
       production_year,
       serial_number,
-      condition = 'æ­£å¸¸',
+      condition = '¨}¦n',
       stock_quantity = 0,
       sku
     } = body
 
-    // åŸºæœ¬é©—è­‰
-    if (!variant_type || !description || !base_price || !current_price || !sku) {
+    let normalizedVariantType = ''
+    try {
+      normalizedVariantType = normalizeVariantType(variant_type)
+    } catch (validationError) {
       return NextResponse.json({
-        error: 'å¿…å¡«æ¬„ä½ä¸å®Œæ•´',
-        required: ['variant_type', 'description', 'base_price', 'current_price', 'sku']
+        error: validationError instanceof Error ? validationError.message : 'ÅÜÅéÃş«¬¤£¦Xªk'
       }, { status: 400 })
     }
 
-    // æª¢æŸ¥å•†å“æ˜¯å¦å­˜åœ¨
+    const missingFields: string[] = []
+    if (!normalizedVariantType) missingFields.push('variant_type')
+    if (!description) missingFields.push('description')
+    if (!base_price) missingFields.push('base_price')
+    if (!current_price) missingFields.push('current_price')
+    if (!sku) missingFields.push('sku')
+
+    if (missingFields.length > 0) {
+      return NextResponse.json({
+        error: '¥²¶ñÄæ¦ì¥¼´£¨Ñ',
+        required: missingFields
+      }, { status: 400 })
+    }
+
+    // ÀË¬d°Ó«~¬O§_¦s¦b
     const product = await prisma.product.findUnique({
       where: { id: params.id },
       select: { product_code: true }
     })
 
     if (!product) {
-      return NextResponse.json({ error: 'å•†å“ä¸å­˜åœ¨' }, { status: 404 })
+      return NextResponse.json({ error: '°Ó«~¤£¦s¦b' }, { status: 404 })
     }
 
-    // æª¢æŸ¥è®Šé«”é¡å‹æ˜¯å¦å·²å­˜åœ¨
+    // ÀË¬dÅÜÅéÃş«¬¬O§_¤w¦s¦b¡]¦P¤@°Ó«~¤U¤£¥i­«½Æ¡^
     const existingVariant = await prisma.productVariant.findUnique({
       where: {
         product_id_variant_type: {
           product_id: params.id,
-          variant_type: variant_type as VariantType
+          variant_type: normalizedVariantType
         }
       }
     })
 
     if (existingVariant) {
       return NextResponse.json({
-        error: `è®Šé«”é¡å‹ ${variant_type} å·²å­˜åœ¨`
+        error: ÅÜÅéÃş«¬  ¤w¦s¦b
       }, { status: 400 })
     }
 
-    // ç”Ÿæˆè®Šé«”ç·¨è™Ÿ
-    const variant_code = `${product.product_code}-${variant_type}`
+    // ¥Í¦¨ÅÜÅé¥N½X
+    const variant_code = await generateVariantCode(
+      prisma,
+      params.id,
+      product.product_code,
+      normalizedVariantType
+    )
 
-    // å‰µå»ºè®Šé«”
+    // «Ø¥ßÅÜÅé
     const variant = await prisma.productVariant.create({
       data: {
         product_id: params.id,
         variant_code,
         sku,
-        variant_type,
+        variant_type: normalizedVariantType,
         description,
         base_price,
         current_price,
@@ -148,13 +168,13 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: variant,
-      message: 'è®Šé«”å‰µå»ºæˆåŠŸ'
+      message: 'ÅÜÅé«Ø¥ß¦¨¥\'
     })
 
   } catch (error) {
-    console.error('è®Šé«”å‰µå»ºå¤±æ•—:', error)
+    console.error('ÅÜÅé«Ø¥ß¥¢±Ñ:', error)
     return NextResponse.json(
-      { error: 'å‰µå»ºå¤±æ•—', details: error },
+      { error: '«Ø¥ß¥¢±Ñ', details: error },
       { status: 500 }
     )
   }

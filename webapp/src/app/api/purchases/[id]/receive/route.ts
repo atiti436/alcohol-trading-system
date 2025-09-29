@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
+import { DEFAULT_VARIANT_TYPE, generateVariantCode } from '@/lib/variant-utils'
+
 /**
  * 🏭 Room-3: 採購進貨收貨 API
  * POST /api/purchases/[id]/receive - 處理採購進貨，更新庫存
@@ -153,26 +155,28 @@ export async function POST(
           let variant = null
 
           if (item.product_id) {
+          const targetVariantType = DEFAULT_VARIANT_TYPE
             // 尋找現有的A類變體（正常品）
             variant = await tx.productVariant.findFirst({
               where: {
                 product_id: item.product_id,
-                variant_type: 'A'
+                variant_type: targetVariantType
               }
             })
 
             if (!variant) {
               // 創建新的A類變體
-              const variant_code = `${item.product?.product_code || 'P001'}-A`
-              const sku = `${item.product?.product_code || 'P001'}-A-001`
+              const productCode = item.product?.product_code || 'P001'
+              const variantCode = await generateVariantCode(tx, item.product_id, productCode, targetVariantType)
+              const sku = `SKU-${variantCode}`
 
               variant = await tx.productVariant.create({
                 data: {
                   product_id: item.product_id,
-                  variant_code: variant_code,
+                  variant_code: variantCode,
                   sku,
-                  variant_type: 'A',
-                  description: `${item.product_name} - 正常品`,
+                  variant_type: targetVariantType,
+                  description: `${item.product_name} - ${targetVariantType}`,
                   base_price: item.product?.standard_price || item.unit_price * exchange_rate,
                   current_price: item.product?.current_price || item.unit_price * exchange_rate,
                   cost_price: finalUnitCost,

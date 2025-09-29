@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
-import { AlcoholCategory, VariantType } from '@prisma/client'
+import { AlcoholCategory } from '@prisma/client'
+import { DEFAULT_VARIANT_TYPE, generateVariantCode, normalizeVariantType } from '@/lib/variant-utils'
 
 /**
  * POST /api/products/quick-add - 快速新增商品 API
@@ -27,6 +28,18 @@ export async function POST(request: NextRequest) {
       estimated_price,
       notes
     } = body
+
+    let variantType = DEFAULT_VARIANT_TYPE
+    if (typeof body.variant_type === 'string') {
+      try {
+        const normalized = normalizeVariantType(body.variant_type)
+        if (normalized) {
+          variantType = normalized
+        }
+      } catch {
+        // ignore invalid input and fall back to default label
+      }
+    }
 
     // 基本驗證
     if (!name?.trim()) {
@@ -64,14 +77,16 @@ export async function POST(request: NextRequest) {
           is_active: true
         }
       })
+      // 建立預設變體
+      const variantCode = await generateVariantCode(tx, product.id, product.product_code, variantType)
+      const sku = `SKU-${variantCode}`
 
-      // 自動建立基本變體 (A版)
       const variant = await tx.productVariant.create({
         data: {
           product_id: product.id,
-          variant_code: `${productCode}-A`,
-          variant_type: VariantType.A,
-          description: productInfo.condition || '原裝完整',
+          variant_code: variantCode,
+          variant_type: variantType,
+          description: productInfo.condition || variantType,
           base_price: product.standard_price,
           current_price: product.current_price,
           condition: 'Normal',
@@ -80,7 +95,7 @@ export async function POST(request: NextRequest) {
           available_stock: 0,
           cost_price: 0,
           weight_kg: product.weight_kg,
-          sku: `SKU-${productCode}-A`
+          sku
         }
       })
 

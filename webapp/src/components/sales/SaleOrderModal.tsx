@@ -167,7 +167,7 @@ export function SaleOrderModal({
       setOrderItems([])
       setSelectedCustomer(null)
     }
-  }, [editingSale, visible, customers])
+  }, [editingSale, visible, customers, form])
 
   // 客戶選擇處理
   const handleCustomerChange = (customer_id: string) => {

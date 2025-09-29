@@ -26,14 +26,7 @@ export enum AlcoholCategory {
   GIN = 'GIN'
 }
 
-// 商品變體類型
-export enum VariantType {
-  STANDARD = 'A',      // 一般版
-  ANNUAL = 'B',        // 年度限定
-  COMMEMORATE = 'C',   // 紀念版
-  SPECIAL = 'D',       // 特殊限定
-  DAMAGED = 'X'        // 損傷品
-}
+export const DEFAULT_VARIANT_TYPE_LABEL = '標準款'
 
 // 付款條件
 export enum PaymentTerms {
@@ -285,7 +278,7 @@ export const ROLE_PERMISSIONS = {
 export const VALIDATION_RULES = {
   // 商品
   PRODUCT_NAME_MAX_LENGTH: 100,
-  PRODUCT_CODE_PATTERN: /^W\d{3}(-[A-DX])?$/,
+  PRODUCT_CODE_PATTERN: /^W\d{3}$/,
 
   // 客戶
   CUSTOMER_NAME_MAX_LENGTH: 50,
