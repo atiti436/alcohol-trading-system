@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Card,
   Button,
@@ -51,10 +51,10 @@ export default function LineBotSettings({ onSettingsChange }: LineBotSettingsPro
 
   useEffect(() => {
     loadLineBotSettings()
-  }, [])
+  }, [loadLineBotSettings])
 
   // 載入已儲存的 LINE Bot 設定
-  const loadLineBotSettings = async () => {
+  const loadLineBotSettings = useCallback(async () => {
     try {
       const response = await fetch('/api/settings/linebot')
       if (response.ok) {
@@ -69,7 +69,7 @@ export default function LineBotSettings({ onSettingsChange }: LineBotSettingsPro
     } finally {
       setLoading(false)
     }
-  }
+  }, [form])
 
   // 測試 LINE Bot 設定
   const testLineBotSettings = async () => {

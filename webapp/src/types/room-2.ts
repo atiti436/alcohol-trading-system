@@ -100,14 +100,6 @@ export enum AlcoholCategory {
   OTHER = 'OTHER'
 }
 
-export enum VariantType {
-  A = 'A',  // 一般版
-  B = 'B',  // 年度限定版
-  C = 'C',  // 紀念版
-  D = 'D',  // 特殊限定版
-  X = 'X'   // 損傷品
-}
-
 export interface Product {
   id: string
   product_code: string      // P00001
@@ -139,7 +131,7 @@ export interface ProductVariant {
   id: string
   product_id: string
   variant_code: string    // P00001-A
-  variant_type: VariantType
+  variant_type: string
   description: string     // "一般版", "100周年紀念版"
   base_price: number       // 基礎售價
   current_price: number    // 目前售價
@@ -345,7 +337,7 @@ export interface UpdateProductRequest {
 }
 
 export interface CreateVariantRequest {
-  variant_type: VariantType
+  variant_type: string
   description: string
   base_price: number
   current_price: number

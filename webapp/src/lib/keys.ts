@@ -26,10 +26,17 @@ function decryptGCM(payload: string): string {
 
 export async function getGeminiApiKey(): Promise<string> {
   try {
-    const setting = await prisma.systemSetting.findUnique({ where: { key: 'gemini_api_key' } })
-    if (setting?.value) {
-      const key = decryptGCM(setting.value)
+    const [primary, secondary] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: 'gemini_api_key' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'gemini_api_key_secondary' } })
+    ])
+    if (primary?.value) {
+      const key = decryptGCM(primary.value)
       if (key) return key
+    }
+    if (secondary?.value) {
+      const key2 = decryptGCM(secondary.value)
+      if (key2) return key2
     }
   } catch {
     // ignore and fall back to env

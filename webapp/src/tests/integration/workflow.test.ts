@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🔄 工作流程整合測試
  * 測試完整的業務流程和系統整合
  */
@@ -61,7 +61,7 @@ describe('🔄 完整業務流程測試', () => {
       // 步驟 2: 建立產品變體
       const variant = await simulateCreateVariant(product.data.id, {
         variant_code: 'YAM18-A',
-        variant_type: 'A',
+        variant_type: '標準款',
         description: '原裝完整',
         condition: 'Normal'
       })

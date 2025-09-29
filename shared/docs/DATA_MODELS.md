@@ -99,7 +99,7 @@ enum AlcoholCategory {
 | `id` | 系統ID | String | ✅ | UUID，系統內部使用 | `cuid_var001` |
 | `product_id` | 所屬產品ID | String | ✅ | 關聯的產品ID | `cuid_xyz789` |
 | `variant_code` | 變體編號 | String | ✅ | 規則見 ID_DEFINITIONS.md | `P00001-A` |
-| `variant_type` | 變體類型 | VariantType | ✅ | A\|B\|C\|D\|X | `A` |
+| `variant_type` | 變體類型 | String | ✅ | 最多 100 字，可自由命名 | `標準款` |
 | `description` | 變體描述 | String | ✅ | 變體說明 | `一般版` |
 | `sku` | SKU編號 | String | ✅ | 庫存單位編號 | `P00001-700-43` |
 | `base_price` | 基礎售價 | Number | ✅ | 變體基礎價格 | `21000` |
@@ -120,13 +120,7 @@ enum AlcoholCategory {
 
 ### 3.1 變體類型說明 (Variant Type)
 
-| 類型代碼 | 中文名稱 | 用途說明 |
-| :--- | :--- | :--- |
-| `A` | 一般版 | 標準商品，正常銷售 |
-| `B` | 年度限定版 | 特定年份限定商品 |
-| `C` | 紀念版 | 紀念特殊事件的版本 |
-| `D` | 特殊限定版 | 特別限量或客製化商品 |
-| `X` | 損傷品 | 包裝破損但商品無損，折價銷售 |
+變體類型欄位改為自由輸入的文字欄位，建議使用簡潔明瞭的名稱描述包裝或限定資訊，例如「標準款」、「木盒版」、「感謝禮盒」。系統會保留原始輸入並據此生成唯一的變體代碼。
 
 ## 4. 採購單 (Purchase Order)
 

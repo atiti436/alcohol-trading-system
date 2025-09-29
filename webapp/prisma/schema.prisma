@@ -108,7 +108,7 @@ model ProductVariant {
   id                  String              @id @default(cuid())
   product_id          String
   variant_code        String              @unique
-  variant_type        VariantType
+  variant_type        String @db.VarChar(100)
   description         String
   base_price          Float
   current_price       Float
@@ -576,13 +576,6 @@ enum CustomerTier {
   NEW
 }
 
-enum VariantType {
-  A
-  B
-  C
-  D
-  X
-}
 
 enum QuotationStatus {
   PENDING

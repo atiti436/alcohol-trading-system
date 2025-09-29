@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { validateProductData } from '@/lib/validation'
+import { DEFAULT_VARIANT_TYPE, generateVariantCode } from '@/lib/variant-utils'
 import { DatabaseWhereCondition } from '@/types/business'
 import { AlcoholCategory } from '@prisma/client'
 import { Role } from '@/types/auth'
@@ -210,17 +211,19 @@ export async function POST(request: NextRequest) {
     // 自動創建預設變體（一般版）
     let defaultVariant = null
     if (create_default_variant) {
-      const variant_code = `${product_code}-A`
-      const sku = `${product_code}-A-700` // Example SKU
+      const defaultVariantType = DEFAULT_VARIANT_TYPE
+      const variant_code = await generateVariantCode(prisma, product.id, product_code, defaultVariantType)
+      const sku = `SKU-${variant_code}`
+
       defaultVariant = await prisma.productVariant.create({
         data: {
           product_id: product.id,
           variant_code,
           sku,
-          variant_type: 'A',
-          description: '一般版',
+          variant_type: defaultVariantType,
+          description: defaultVariantType,
           base_price: standard_price,
-          current_price: current_price
+          current_price
         }
       })
     }

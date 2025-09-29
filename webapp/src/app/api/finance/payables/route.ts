@@ -94,7 +94,8 @@ export async function POST(request: NextRequest) {
         due_date: dueDate,
         status,
         days_past_due: daysPastDue,
-        ap_category: ap_category || 'PURCHASE',
+        // Prisma 型別為 AccountsPayableCreateInput，不存在 ap_category 時改用 category 欄位
+        category: ap_category || 'PURCHASE',
         reference,
         notes,
         created_by: session.user.id

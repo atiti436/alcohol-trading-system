@@ -31,6 +31,7 @@ import dayjs from 'dayjs'
 import { HideFromInvestor } from '@/components/auth/RoleGuard'
 import { CreatePurchaseRequest, ProductWithVariants, ProductVariant, AlcoholCategory } from '@/types/room-2'
 import ProductSearchSelect from '@/components/common/ProductSearchSelect'
+import { DEFAULT_VARIANT_TYPE_LABEL } from '../../../../shared/utils/constants'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -169,7 +170,7 @@ export function PurchaseOrderModal({
         fundingSource: 'COMPANY'
       })
     }
-  }, [editingPurchase, visible])
+  }, [editingPurchase, visible, form])
 
   // 新增商品
   const addProduct = () => {
@@ -299,7 +300,7 @@ export function PurchaseOrderModal({
           id: selection.variantId,
           product_id: selection.productId, // 補齊缺少的 product_id
           variant_code: selection.variantCode,
-          variant_type: selection.variantType || 'A',
+          variant_type: selection.variantType || DEFAULT_VARIANT_TYPE_LABEL,
           description: selection.description || '原裝完整',
           base_price: selection.price || 0,
           current_price: selection.price || 0,

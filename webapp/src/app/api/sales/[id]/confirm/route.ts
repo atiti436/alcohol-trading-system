@@ -72,13 +72,15 @@ export async function POST(
         // 嘗試找到該商品下可用庫存足夠的變體，優先 A 版
         const variants = await prisma.productVariant.findMany({
           where: { product_id: item.product_id },
-          orderBy: { variant_type: 'asc' },
+          orderBy: [
+            { available_stock: 'desc' },
+            { variant_type: 'asc' }
+          ],
           select: { id: true, available_stock: true, variant_type: true }
         })
 
         // 先找 A，其次任何足夠庫存者
-        const preferred = variants.find(v => v.variant_type === 'A' && v.available_stock >= item.quantity)
-        const anyEnough = preferred || variants.find(v => v.available_stock >= item.quantity)
+        const anyEnough = variants.find(v => v.available_stock >= item.quantity)
         if (anyEnough) {
           variantIdToUse = anyEnough.id
           availableStock = anyEnough.available_stock
@@ -93,7 +95,7 @@ export async function POST(
       }
 
       if (availableStock < item.quantity) {
-        const productName = item.variant?.variant_code || item.product?.name || '未知商品'
+        const productName = item.variant?.variant_type || item.variant?.variant_code || item.product?.name || '未知商品'
         stockCheckErrors.push(`商品 ${productName} 庫存不足，需要 ${item.quantity}，可用 ${availableStock}`)
       } else if (!item.variant_id && variantIdToUse) {
         chosenVariants[item.id] = variantIdToUse

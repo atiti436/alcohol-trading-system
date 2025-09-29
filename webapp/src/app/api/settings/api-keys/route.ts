@@ -48,10 +48,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '未登入' }, { status: 401 })
     }
 
-    const setting = await prisma.systemSetting.findUnique({ where: { key: 'gemini_api_key' } })
-    const configured = !!setting?.value || !!process.env.GEMINI_API_KEY || !!process.env.GOOGLE_GEMINI_API_KEY
+    const [primary, secondary] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: 'gemini_api_key' } }),
+      prisma.systemSetting.findUnique({ where: { key: 'gemini_api_key_secondary' } })
+    ])
+    const configured = !!primary?.value || !!secondary?.value || !!process.env.GEMINI_API_KEY || !!process.env.GOOGLE_GEMINI_API_KEY
 
-    return NextResponse.json({ success: true, data: { geminiApiKey: '', configured } })
+    return NextResponse.json({ success: true, data: { geminiApiKey: '', configured, secondaryConfigured: !!secondary?.value } })
   } catch (error) {
     console.error('讀取API Keys失敗:', error)
     return NextResponse.json({ success: false, error: '讀取設定失敗' }, { status: 500 })
@@ -71,17 +74,30 @@ export async function POST(request: NextRequest) {
     requireKey()
 
     const body = await request.json()
-    const { geminiApiKey } = body || {}
-    if (!geminiApiKey || typeof geminiApiKey !== 'string') {
-      return NextResponse.json({ success: false, error: 'API Key 不能為空' }, { status: 400 })
+    const { geminiApiKey, secondaryGeminiApiKey } = body || {}
+    if (!geminiApiKey && !secondaryGeminiApiKey) {
+      return NextResponse.json({ success: false, error: '至少需要提供一組 API Key' }, { status: 400 })
     }
 
-    const encryptedKey = encrypt(geminiApiKey)
-    await prisma.systemSetting.upsert({
-      where: { key: 'gemini_api_key' },
-      update: { value: encryptedKey, updated_at: new Date() },
-      create: { key: 'gemini_api_key', value: encryptedKey, description: 'Google Gemini Vision API Key' }
-    })
+    if (geminiApiKey) {
+      if (typeof geminiApiKey !== 'string') return NextResponse.json({ success: false, error: 'API Key 格式不正確' }, { status: 400 })
+      const encryptedKey = encrypt(geminiApiKey)
+      await prisma.systemSetting.upsert({
+        where: { key: 'gemini_api_key' },
+        update: { value: encryptedKey, updated_at: new Date() },
+        create: { key: 'gemini_api_key', value: encryptedKey, description: 'Google Gemini Vision API Key (Primary)' }
+      })
+    }
+
+    if (secondaryGeminiApiKey) {
+      if (typeof secondaryGeminiApiKey !== 'string') return NextResponse.json({ success: false, error: '次要 API Key 格式不正確' }, { status: 400 })
+      const encryptedKey2 = encrypt(secondaryGeminiApiKey)
+      await prisma.systemSetting.upsert({
+        where: { key: 'gemini_api_key_secondary' },
+        update: { value: encryptedKey2, updated_at: new Date() },
+        create: { key: 'gemini_api_key_secondary', value: encryptedKey2, description: 'Google Gemini Vision API Key (Secondary)' }
+      })
+    }
 
     // 審計日誌（不含明文）
     try {
@@ -91,7 +107,7 @@ export async function POST(request: NextRequest) {
         userRole: session.user.role as any,
         action: 'WRITE',
         resourceType: 'SETTINGS',
-        sensitiveFields: ['gemini_api_key']
+        sensitiveFields: ['gemini_api_key', 'gemini_api_key_secondary']
       })
     } catch {}
 
