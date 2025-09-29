@@ -5,44 +5,63 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { normalizeVariantType, generateVariantCode } from '@/lib/variant-utils'
 
 /**
- * ?? Room-2: 商品變體管理 API
- * GET /api/products/[id]/variants - 取得變體清單
- * POST /api/products/[id]/variants - 建立新的變體
+ * @swagger
+ * /api/products/{id}/variants:
+ *   get:
+ *     summary: Get all variants for a specific product
+ *     description: Retrieves a list of all variants associated with a given product ID.
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the product.
+ *     responses:
+ *       200:
+ *         description: A list of variants.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     product:
+ *                       type: object
+ *                     variants:
+ *                       type: array
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: Product not found.
  */
-
-// GET /api/products/[id]/variants - 取得變體清單
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // 權限檢查
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: '未登入' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // 檢查商品是否存在
     const product = await prisma.product.findUnique({
       where: { id: params.id },
       select: { id: true, name: true, product_code: true }
     })
 
     if (!product) {
-      return NextResponse.json({ error: '商品不存在' }, { status: 404 })
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    // 查詢變體清單
     const variants = await prisma.productVariant.findMany({
       where: { product_id: params.id },
-      orderBy: { variant_type: 'asc' },
-      include: {
-        _count: {
-          select: {
-            sale_items: true
-          }
-        }
-      }
+      orderBy: { created_at: 'asc' },
     })
 
     return NextResponse.json({
@@ -52,26 +71,64 @@ export async function GET(
         variants
       }
     })
-
   } catch (error) {
-    console.error('變體清單查詢失敗:', error)
+    console.error('Failed to retrieve variants:', error)
     return NextResponse.json(
-      { error: '查詢失敗', details: error },
+      { error: 'Internal Server Error' },
       { status: 500 }
     )
   }
 }
 
-// POST /api/products/[id]/variants - 建立新的變體
+/**
+ * @swagger
+ * /api/products/{id}/variants:
+ *   post:
+ *     summary: Create a new variant for a product
+ *     description: Creates a new product variant for a given product ID.
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the product to add a variant to.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               variant_type:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               base_price:
+ *                 type: number
+ *               current_price:
+ *                 type: number
+ *               sku:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Variant created successfully.
+ *       400:
+ *         description: Bad request (e.g., missing fields, validation error).
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: Product not found.
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // 權限檢查 - 僅 SUPER_ADMIN 與 EMPLOYEE 可以建立變體
     const session = await getServerSession(authOptions)
     if (!session?.user || session.user.role === 'INVESTOR') {
-      return NextResponse.json({ error: '權限不足' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -80,65 +137,49 @@ export async function POST(
       description,
       base_price,
       current_price,
-      discount_rate,
-      limited_edition = false,
-      production_year,
-      serial_number,
-      condition = '良好',
       stock_quantity = 0,
-      sku
+      sku,
+      ...otherFields
     } = body
 
-    let normalizedVariantType = ''
-    try {
-      normalizedVariantType = normalizeVariantType(variant_type)
-    } catch (validationError) {
-      return NextResponse.json({
-        error: validationError instanceof Error ? validationError.message : '變體類型不合法'
-      }, { status: 400 })
-    }
-
+    // Validate required fields
     const missingFields: string[] = []
-    if (!normalizedVariantType) missingFields.push('variant_type')
+    if (!variant_type) missingFields.push('variant_type')
     if (!description) missingFields.push('description')
-    if (!base_price) missingFields.push('base_price')
-    if (!current_price) missingFields.push('current_price')
+    if (base_price === undefined) missingFields.push('base_price')
+    if (current_price === undefined) missingFields.push('current_price')
     if (!sku) missingFields.push('sku')
 
     if (missingFields.length > 0) {
       return NextResponse.json({
-        error: '必填欄位未提供',
-        required: missingFields
+        error: `Missing required fields: ${missingFields.join(', ')}`
       }, { status: 400 })
     }
+    
+    const normalizedVariantType = normalizeVariantType(variant_type);
 
-    // 檢查商品是否存在
     const product = await prisma.product.findUnique({
       where: { id: params.id },
       select: { product_code: true }
     })
 
     if (!product) {
-      return NextResponse.json({ error: '商品不存在' }, { status: 404 })
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    // 檢查變體類型是否已存在（同一商品下不可重複）
-    const existingVariant = await prisma.productVariant.findUnique({
-      where: {
-        product_id_variant_type: {
+    const existingVariant = await prisma.productVariant.findFirst({
+        where: {
           product_id: params.id,
-          variant_type: normalizedVariantType
-        }
-      }
-    })
+          variant_type: normalizedVariantType,
+        },
+    });
 
     if (existingVariant) {
       return NextResponse.json({
-        error: 變體類型  已存在
-      }, { status: 400 })
+        error: `Variant with type \'${normalizedVariantType}\' already exists for this product.`
+      }, { status: 409 }) // 409 Conflict is more appropriate
     }
 
-    // 生成變體代碼
     const variant_code = await generateVariantCode(
       prisma,
       params.id,
@@ -146,7 +187,6 @@ export async function POST(
       normalizedVariantType
     )
 
-    // 建立變體
     const variant = await prisma.productVariant.create({
       data: {
         product_id: params.id,
@@ -154,27 +194,23 @@ export async function POST(
         sku,
         variant_type: normalizedVariantType,
         description,
-        base_price,
-        current_price,
-        discount_rate,
-        limited_edition,
-        production_year,
-        serial_number,
-        condition,
-        stock_quantity
+        base_price: parseFloat(base_price),
+        current_price: parseFloat(current_price),
+        stock_quantity: parseInt(stock_quantity, 10),
+        ...otherFields
       }
     })
 
     return NextResponse.json({
       success: true,
       data: variant,
-      message: '變體建立成功'
-    })
+      message: 'Variant created successfully'
+    }, { status: 201 })
 
   } catch (error) {
-    console.error('變體建立失敗:', error)
+    console.error('Failed to create variant:', error)
     return NextResponse.json(
-      { error: '建立失敗', details: error },
+      { error: 'Internal Server Error' },
       { status: 500 }
     )
   }
