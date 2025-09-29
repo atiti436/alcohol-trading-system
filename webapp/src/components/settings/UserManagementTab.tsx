@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import {
@@ -125,15 +125,12 @@ export default function UserManagementTab() {
   // 切換用戶狀態
   const toggleUserStatus = async (userId: string, isActive: boolean) => {
     try {
-      const response = await fetch('/api/users/status', {
+      const response = await fetch(/api/users//status, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId,
-          is_active: isActive
-        })
+        body: JSON.stringify({ is_active: isActive })
       })
 
       const data = await response.json()
@@ -282,3 +279,5 @@ export default function UserManagementTab() {
     </Card>
   )
 }
+
+
