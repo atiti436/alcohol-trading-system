@@ -17,16 +17,17 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN npm run build
 
 FROM node:20-slim AS runner
-WORKDIR /app
+WORKDIR /app/webapp
 ENV NODE_ENV=production
 
-COPY --from=builder /app/webapp/node_modules ./webapp/node_modules
-COPY --from=builder /app/webapp/.next ./webapp/.next
-COPY --from=builder /app/webapp/public ./webapp/public
-COPY --from=builder /app/webapp/prisma ./webapp/prisma
-COPY --from=builder /app/webapp/shared ./webapp/shared
-COPY webapp/package.json webapp/package-lock.json ./webapp/
+# Copy all necessary files from builder stage
+COPY --from=builder /app/webapp/node_modules ./node_modules
+COPY --from=builder /app/webapp/.next ./.next
+COPY --from=builder /app/webapp/public ./public
+COPY --from=builder /app/webapp/prisma ./prisma
+COPY --from=builder /app/webapp/shared ./shared
+COPY --from=builder /app/webapp/package.json ./package.json
+COPY --from=builder /app/webapp/package-lock.json ./package-lock.json
 
-WORKDIR /app/webapp
 EXPOSE 3000
 CMD ["npm", "run", "start"]
