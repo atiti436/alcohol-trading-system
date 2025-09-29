@@ -8,9 +8,10 @@ const nextConfig = {
     ignoreBuildErrors: true
   },
   webpack: (config) => {
+    const path = require('path');
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@shared': require('path').join(__dirname, '../shared'),
+      '@shared': path.resolve(__dirname, '../shared'),
     };
     return config;
   },
