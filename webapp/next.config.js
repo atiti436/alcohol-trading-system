@@ -11,7 +11,14 @@ const nextConfig = {
     const path = require('path');
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@shared': path.resolve(__dirname, '../shared'),
+      '@shared': path.resolve(__dirname, './shared'),
+    };
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      '@shared': [
+        path.resolve(__dirname, './shared'),
+        path.resolve(__dirname, '../shared'),
+      ],
     };
     return config;
   },
