@@ -24,7 +24,7 @@ import {
   ShoppingOutlined
 } from '@ant-design/icons'
 
-import { DEFAULT_VARIANT_TYPE_LABEL } from '../../../../shared/utils/constants'
+import { DEFAULT_VARIANT_TYPE_LABEL } from '@shared/utils/constants'
 
 const { Text } = Typography
 const { Option } = Select

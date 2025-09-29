@@ -31,7 +31,7 @@ import dayjs from 'dayjs'
 import { HideFromInvestor } from '@/components/auth/RoleGuard'
 import { CreatePurchaseRequest, ProductWithVariants, ProductVariant, AlcoholCategory } from '@/types/room-2'
 import ProductSearchSelect from '@/components/common/ProductSearchSelect'
-import { DEFAULT_VARIANT_TYPE_LABEL } from '../../../../shared/utils/constants'
+import { DEFAULT_VARIANT_TYPE_LABEL } from '@shared/utils/constants'
 
 const { Option } = Select
 const { TextArea } = Input

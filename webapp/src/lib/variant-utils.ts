@@ -1,5 +1,5 @@
 ﻿import type { PrismaClient } from '@prisma/client'
-import { DEFAULT_VARIANT_TYPE_LABEL } from '../../../shared/utils/constants'
+import { DEFAULT_VARIANT_TYPE_LABEL } from '@shared/utils/constants'
 
 export const MAX_VARIANT_TYPE_LENGTH = 100
 export const DEFAULT_VARIANT_TYPE = DEFAULT_VARIANT_TYPE_LABEL
