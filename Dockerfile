@@ -3,14 +3,17 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY webapp/package*.json ./webapp/
-RUN npm ci --prefix webapp
+# Copy entire repository to handle build context properly
+COPY . .
 
-COPY webapp ./webapp
-COPY shared ./shared
-
+# Install dependencies (using npm install instead of npm ci to handle lock file sync issues)
 WORKDIR /app/webapp
+RUN npm install
+
+# Generate Prisma client
 RUN npx prisma generate
+
+# Build the application
 RUN npm run build
 
 FROM node:20-alpine AS runner
