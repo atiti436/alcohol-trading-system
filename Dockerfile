@@ -1,29 +1,23 @@
 ﻿# syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS deps
-WORKDIR /app
-
-COPY package*.json ./
-COPY webapp/package*.json ./webapp/
-COPY shared ./shared
-COPY prisma ./prisma
-RUN npm ci --prefix webapp
-
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY --from=deps /app/shared ./shared
-COPY --from=deps /app/prisma ./prisma
-COPY --from=deps /app/webapp/node_modules ./webapp/node_modules
-COPY . .
+
+COPY webapp/package*.json ./webapp/
+RUN npm ci --prefix webapp
+
+COPY webapp ./webapp
+COPY shared ./shared
+
 WORKDIR /app/webapp
-RUN npx prisma generate --schema=prisma/schema.prisma
+RUN npx prisma generate
 RUN npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=deps /app/webapp/node_modules ./webapp/node_modules
+COPY --from=builder /app/webapp/node_modules ./webapp/node_modules
 COPY --from=builder /app/webapp/.next ./webapp/.next
 COPY --from=builder /app/webapp/public ./webapp/public
 COPY --from=builder /app/webapp/prisma ./webapp/prisma
@@ -32,4 +26,4 @@ COPY webapp/package.json webapp/package-lock.json ./webapp/
 
 WORKDIR /app/webapp
 EXPOSE 3000
-CMD [\"npm\", \"run\", \"start\"]
+CMD ["npm", "run", "start"]
