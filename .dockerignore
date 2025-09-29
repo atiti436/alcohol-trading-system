@@ -1,0 +1,29 @@
+# Node modules
+**/node_modules
+**/.next
+
+# Git
+.git
+.gitignore
+
+# Documentation (但保留 shared/)
+docs/
+*.md
+!shared/**
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+
+# Environment
+.env.local
+.env*.local
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+npm-debug.log*
