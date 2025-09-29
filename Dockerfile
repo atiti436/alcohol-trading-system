@@ -1,6 +1,6 @@
 ﻿# syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 # Copy entire repository to handle build context properly
@@ -16,7 +16,7 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 # Build the application
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
