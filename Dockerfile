@@ -15,19 +15,11 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 # Build the application
 RUN npm run build
 
-# Debug: Verify build artifacts exist
-RUN echo "=== Verifying build artifacts ===" && \
-    ls -la && \
-    echo "=== .next directory ===" && \
-    ls -la .next/ && \
-    echo "=== package.json ===" && \
-    ls -la package.json
-
 FROM node:20-slim AS runner
 WORKDIR /app/webapp
 ENV NODE_ENV=production
 
-# Copy all necessary files from builder stage
+# Copy all necessary files from builder stage (no subdirectory needed)
 COPY --from=builder /app/webapp/node_modules ./node_modules
 COPY --from=builder /app/webapp/.next ./.next
 COPY --from=builder /app/webapp/public ./public
