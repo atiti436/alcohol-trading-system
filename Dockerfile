@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 
 FROM node:20-slim AS builder
 WORKDIR /app
@@ -12,6 +12,12 @@ RUN npm install
 
 # Generate Prisma client with explicit schema path
 RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Verify shared directory is accessible (debugging)
+RUN echo "Checking directory structure:" && \
+    ls -la /app/ && \
+    echo "Shared directory contents:" && \
+    ls -la /app/shared/
 
 # Build the application
 RUN npm run build
