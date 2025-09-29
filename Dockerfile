@@ -1,13 +1,12 @@
 # syntax=docker/dockerfile:1
 
 FROM node:20-slim AS builder
-WORKDIR /app
+WORKDIR /app/webapp
 
 # Copy webapp directory (which includes shared-src)
-COPY webapp ./webapp
+COPY webapp .
 
 # Install dependencies - postinstall will copy shared-src to shared
-WORKDIR /app/webapp
 RUN npm install
 
 # Generate Prisma client
@@ -15,6 +14,14 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build the application
 RUN npm run build
+
+# Debug: Verify build artifacts exist
+RUN echo "=== Verifying build artifacts ===" && \
+    ls -la && \
+    echo "=== .next directory ===" && \
+    ls -la .next/ && \
+    echo "=== package.json ===" && \
+    ls -la package.json
 
 FROM node:20-slim AS runner
 WORKDIR /app/webapp
