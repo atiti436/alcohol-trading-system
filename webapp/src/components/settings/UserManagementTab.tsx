@@ -125,7 +125,7 @@ export default function UserManagementTab() {
   // 切換用戶狀態
   const toggleUserStatus = async (userId: string, isActive: boolean) => {
     try {
-      const response = await fetch(/api/users//status, {
+      const response = await fetch(`/api/users/${userId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
