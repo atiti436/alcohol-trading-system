@@ -6,17 +6,12 @@ WORKDIR /app
 # Copy entire repository to handle build context properly
 COPY . .
 
-# Install dependencies - using npm install to handle any lock file sync issues
+# Install dependencies - postinstall will copy shared directory
 WORKDIR /app/webapp
 RUN npm install
 
 # Generate Prisma client with explicit schema path
 RUN npx prisma generate --schema=./prisma/schema.prisma
-
-# Copy shared directory into webapp for reliable path resolution
-RUN cp -r /app/shared /app/webapp/shared && \
-    echo "✅ Copied shared directory to webapp/" && \
-    ls -la /app/webapp/shared/
 
 # Build the application
 RUN npm run build

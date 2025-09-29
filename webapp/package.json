@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "test -d ../shared && cp -r ../shared . && echo '✅ Copied shared directory' || echo '⚠️ Shared directory not found'",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
