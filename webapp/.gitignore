@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Copied shared directory (generated during build)
 shared/
+
+# Copied shared directory from shared-src during build
+shared/

@@ -3,20 +3,14 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
-# Copy entire repository to handle build context properly
-COPY . .
+# Copy webapp directory (which includes shared-src)
+COPY webapp ./webapp
 
-# Debug: Check if shared directory exists
-RUN echo "=== Checking repository structure ===" && \
-    ls -la /app/ && \
-    echo "=== Checking shared directory ===" && \
-    ls -la /app/shared/ || echo "⚠️ shared directory not found in /app/"
-
-# Install dependencies - postinstall will copy shared directory
+# Install dependencies - postinstall will copy shared-src to shared
 WORKDIR /app/webapp
 RUN npm install
 
-# Generate Prisma client with explicit schema path
+# Generate Prisma client
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build the application
