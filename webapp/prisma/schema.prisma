@@ -98,11 +98,11 @@ model Product {
 
   // 🎯 三層價格架構（Product 層級作為預設值）
   cost_price     Float @default(0)
-  investor_price Float // 投資方價格
-  actual_price   Float // 實際價格
-  standard_price Float // 標準價（向下相容）
-  current_price  Float // 當前價（向下相容）
-  min_price      Float // 最低價
+  investor_price Float @default(0) // 投資方價格
+  actual_price   Float @default(0) // 實際價格
+  standard_price Float @default(0) // 標準價（向下相容）
+  current_price  Float @default(0) // 當前價（向下相容）
+  min_price      Float @default(0) // 最低價
 
   is_active  Boolean  @default(true)
   created_at DateTime @default(now())
@@ -127,10 +127,11 @@ model ProductVariant {
   description  String
 
   // 🎯 三層價格架構
-  cost_price     Float @default(0) // 成本價（真實成本）
-  investor_price Float // 投資方期望售價（INVESTOR 可見可改）
-  actual_price   Float // 實際售價（僅 SUPER_ADMIN 可見可改）
-  current_price  Float // 顯示用價格（向下相容）
+  cost_price     Float  @default(0) // 成本價（真實成本）
+  investor_price Float  @default(0) // 投資方期望售價（INVESTOR 可見可改）
+  actual_price   Float  @default(0) // 實際售價（僅 SUPER_ADMIN 可見可改）
+  current_price  Float  @default(0) // 顯示用價格（向下相容）
+  base_price     Float? // 向下相容（保留舊資料）
 
   discount_rate   Float?
   limited_edition Boolean @default(false)
