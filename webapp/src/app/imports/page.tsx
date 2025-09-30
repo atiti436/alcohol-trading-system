@@ -32,7 +32,8 @@ import {
   UploadOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  EditOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
@@ -106,6 +107,7 @@ export default function ImportsPage() {
 
   // Modal狀態
   const [viewModalVisible, setViewModalVisible] = useState(false)
+  const [editModalVisible, setEditModalVisible] = useState(false)
   const [selectedImport, setSelectedImport] = useState<ImportRecord | null>(null)
   const [declarationModalVisible, setDeclarationModalVisible] = useState(false)
   const [reviewModalVisible, setReviewModalVisible] = useState(false)
@@ -375,40 +377,55 @@ export default function ImportsPage() {
     {
       title: '操作',
       key: 'actions',
-      width: 120,
-      render: (record: ImportRecord) => (
-        <Space>
-          <Tooltip title="查看詳情">
-            <Button
-              icon={<EyeOutlined />}
-              size="small"
-              onClick={() => handleView(record)}
-            />
-          </Tooltip>
+      width: 180,
+      render: (record: ImportRecord) => {
+        const isAdmin = session?.user?.role === 'SUPER_ADMIN'
+        const canEdit = isAdmin && record.status !== 'COMPLETED'
 
-          {record.status === 'PENDING' && (
-            <Tooltip title="上傳報單">
+        return (
+          <Space>
+            <Tooltip title="查看詳情">
               <Button
-                icon={<UploadOutlined />}
+                icon={<EyeOutlined />}
                 size="small"
-                type="primary"
-                onClick={() => handleUploadDeclaration(record)}
+                onClick={() => handleView(record)}
               />
             </Tooltip>
-          )}
 
-          {(record.status === 'PROCESSING' || record.status === 'CUSTOMS_CLEARED') && (
-            <Tooltip title="收貨入庫">
-              <Button
-                icon={<CheckCircleOutlined />}
-                size="small"
-                type="primary"
-                onClick={() => handleReceiveImport(record)}
-              />
-            </Tooltip>
-          )}
-        </Space>
-      )
+            {canEdit && (
+              <Tooltip title="編輯">
+                <Button
+                  icon={<EditOutlined />}
+                  size="small"
+                  onClick={() => handleEdit(record)}
+                />
+              </Tooltip>
+            )}
+
+            {record.status === 'PENDING' && (
+              <Tooltip title="上傳報單">
+                <Button
+                  icon={<UploadOutlined />}
+                  size="small"
+                  type="primary"
+                  onClick={() => handleUploadDeclaration(record)}
+                />
+              </Tooltip>
+            )}
+
+            {(record.status === 'PROCESSING' || record.status === 'CUSTOMS_CLEARED') && (
+              <Tooltip title="收貨入庫">
+                <Button
+                  icon={<CheckCircleOutlined />}
+                  size="small"
+                  type="primary"
+                  onClick={() => handleReceiveImport(record)}
+                />
+              </Tooltip>
+            )}
+          </Space>
+        )
+      }
     }
   ]
 
@@ -416,6 +433,12 @@ export default function ImportsPage() {
   const handleView = (importRecord: ImportRecord) => {
     setSelectedImport(importRecord)
     setViewModalVisible(true)
+  }
+
+  // 處理編輯
+  const handleEdit = (importRecord: ImportRecord) => {
+    setSelectedImport(importRecord)
+    setEditModalVisible(true)
   }
 
   // 處理報單上傳
