@@ -3,6 +3,9 @@
 FROM node:20-slim AS builder
 WORKDIR /app/webapp
 
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 # Copy webapp directory (which includes shared-src)
 COPY webapp .
 
@@ -18,6 +21,9 @@ RUN npm run build
 FROM node:20-slim AS runner
 WORKDIR /app/webapp
 ENV NODE_ENV=production
+
+# Install OpenSSL for Prisma
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy all necessary files from builder stage (no subdirectory needed)
 COPY --from=builder /app/webapp/node_modules ./node_modules
