@@ -185,9 +185,9 @@ export default function ProductsPage() {
           </div>
           {(record.package_weight_kg || record.accessory_weight_kg || record.total_weight_kg) && (
             <div style={{ fontSize: '11px', color: '#999' }}>
-              {record.package_weight_kg && `包裝: ${record.package_weight_kg}kg `}
-              {record.accessory_weight_kg && `附件: ${record.accessory_weight_kg}kg `}
-              {record.total_weight_kg && `總重: ${record.total_weight_kg}kg`}
+              {record.package_weight_kg && `包裝: ${Number(record.package_weight_kg).toFixed(3)}kg `}
+              {record.accessory_weight_kg && `附件: ${Number(record.accessory_weight_kg).toFixed(3)}kg `}
+              {record.total_weight_kg && `總重: ${Number(record.total_weight_kg).toFixed(3)}kg`}
             </div>
           )}
           {record.supplier && (
@@ -443,7 +443,7 @@ export default function ProductsPage() {
       const result = await response.json()
 
       if (result.success) {
-        const originalProduct = result.data
+        const originalProduct = result.data.product  // 🔧 修正：API 回傳格式
 
         // 跳出編輯 Modal，預填資料
         setEditingProduct(null) // 設為 null 表示是新增模式
