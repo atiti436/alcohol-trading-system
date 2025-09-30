@@ -28,6 +28,14 @@ model User {
   created_sales               Sale[]
   created_cashflow_records    CashFlowRecord[]
 
+  // 🆕 重構新增的關聯
+  created_stock_transfers  StockTransfer[]
+  created_imports          Import[]            @relation("ImportCreator")
+  finalized_imports        Import[]            @relation("ImportFinalizer")
+  created_import_costs     ImportCost[]
+  created_cost_adjustments CostAdjustmentLog[]
+  notifications            Notification[]
+
   @@map("users")
 }
 
@@ -70,8 +78,8 @@ enum ApCategory {
 }
 
 model Product {
-  id                  String                 @id @default(cuid())
-  product_code        String                 @unique
+  id                  String          @id @default(cuid())
+  product_code        String          @unique
   name                String
   category            AlcoholCategory
   volume_ml           Int
@@ -79,58 +87,83 @@ model Product {
   weight_kg           Float
   package_weight_kg   Float?
   total_weight_kg     Float?
-  has_box             Boolean                @default(false)
-  has_accessories     Boolean                @default(false)
+  has_box             Boolean         @default(false)
+  has_accessories     Boolean         @default(false)
   accessory_weight_kg Float?
   accessories         String[]
   hs_code             String?
   supplier            String?
   manufacturing_date  String?
   expiry_date         String?
-  standard_price      Float
-  current_price       Float
-  cost_price          Float                  @default(0)
-  min_price           Float
-  is_active           Boolean                @default(true)
-  created_at          DateTime               @default(now())
-  updated_at          DateTime               @updatedAt
-  special_prices      CustomerSpecialPrice[]
-  variants            ProductVariant[]
-  purchase_items      PurchaseItem[]
-  quotations          Quotation[]
-  sale_items          SaleItem[]
-  shipping_items      ShippingItem[]
+
+  // 🎯 三層價格架構（Product 層級作為預設值）
+  cost_price     Float @default(0)
+  investor_price Float // 投資方價格
+  actual_price   Float // 實際價格
+  standard_price Float // 標準價（向下相容）
+  current_price  Float // 當前價（向下相容）
+  min_price      Float // 最低價
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 關聯
+  special_prices CustomerSpecialPrice[]
+  variants       ProductVariant[]
+  purchase_items PurchaseItem[]
+  quotations     Quotation[]
+  sale_items     SaleItem[]
+  shipping_items ShippingItem[]
 
   @@map("products")
 }
 
 model ProductVariant {
-  id                  String              @id @default(cuid())
-  product_id          String
-  variant_code        String              @unique
-  variant_type        String @db.VarChar(100)
-  description         String
-  base_price          Float
-  current_price       Float
-  discount_rate       Float?
-  limited_edition     Boolean             @default(false)
-  production_year     Int?
-  serial_number       String?
-  condition           String              @default("Normal")
-  stock_quantity      Int                 @default(0)
-  reserved_stock      Int                 @default(0)
-  available_stock     Int                 @default(0)
-  cost_price          Float               @default(0)
-  weight_kg           Float               @default(0)
-  created_at          DateTime            @default(now())
-  updated_at          DateTime            @updatedAt
-  sku                 String              @unique
+  id           String @id @default(cuid())
+  product_id   String
+  variant_code String @unique
+  variant_type String @db.VarChar(100)
+  description  String
+
+  // 🎯 三層價格架構
+  cost_price     Float @default(0) // 成本價（真實成本）
+  investor_price Float // 投資方期望售價（INVESTOR 可見可改）
+  actual_price   Float // 實際售價（僅 SUPER_ADMIN 可見可改）
+  current_price  Float // 顯示用價格（向下相容）
+
+  discount_rate   Float?
+  limited_edition Boolean @default(false)
+  production_year Int?
+  serial_number   String?
+  condition       String  @default("Normal")
+
+  // 🏪 倉庫標記
+  warehouse Warehouse @default(COMPANY)
+
+  // 📦 庫存管理
+  stock_quantity  Int @default(0)
+  reserved_stock  Int @default(0)
+  available_stock Int @default(0)
+
+  weight_kg Float @default(0)
+
+  // ✅ 停用機制
+  is_active Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  sku        String   @unique
+
+  // 關聯
   inventory_movements InventoryMovement[]
   product             Product             @relation(fields: [product_id], references: [id], onDelete: Cascade)
   sale_items          SaleItem[]
   shipping_items      ShippingItem[]
+  source_transfers    StockTransfer[]     @relation("SourceVariant")
+  target_transfers    StockTransfer[]     @relation("TargetVariant")
+  import_items        ImportItem[]
 
-  @@unique([product_id, variant_type])
   @@map("product_variants")
 }
 
@@ -158,7 +191,7 @@ model CustomerSpecialPrice {
 }
 
 model InventoryMovement {
-  id              String         @id @default(cuid())
+  id              String   @id @default(cuid())
   variant_id      String
   movement_type   String
   adjustment_type String?
@@ -167,37 +200,43 @@ model InventoryMovement {
   reference_id    String?
   reference_type  String?
   created_by      String?
-  created_at      DateTime       @default(now())
+  created_at      DateTime @default(now())
   quantity_after  Int
   quantity_before Int
   quantity_change Int
-  total_cost      Float          @default(0)
-  unit_cost       Float          @default(0)
-  variant         ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+  total_cost      Float    @default(0)
+  unit_cost       Float    @default(0)
 
+  // 🏪 倉庫標記
+  warehouse Warehouse @default(COMPANY)
+
+  variant ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+
+  @@index([warehouse])
   @@map("inventory_movements")
 }
 
 model Purchase {
-  id                 String         @id @default(cuid())
-  purchase_number    String         @unique
+  id                 String            @id @default(cuid())
+  purchase_number    String            @unique
   funding_source     String
   supplier           String
-  currency           String         @default("JPY")
+  currency           String            @default("JPY")
   exchange_rate      Float
   total_amount       Float
-  status             String         @default("PENDING")
+  status             String            @default("PENDING")
   declaration_number String?
   declaration_date   DateTime?
   received_date      DateTime?
   notes              String?
   created_by         String
-  created_at         DateTime       @default(now())
-  updated_at         DateTime       @updatedAt
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
   receipts           GoodsReceipt[]
   items              PurchaseItem[]
   accounts_payable   AccountsPayable[]
-  creator            User           @relation(fields: [created_by], references: [id])
+  creator            User              @relation(fields: [created_by], references: [id])
+  Import             Import[]
 
   @@map("purchases")
 }
@@ -284,7 +323,7 @@ model Sale {
 }
 
 model SaleItem {
-  id                   String          @id @default(cuid())
+  id                   String  @id @default(cuid())
   sale_id              String
   product_id           String
   variant_id           String?
@@ -293,17 +332,24 @@ model SaleItem {
   actual_unit_price    Float?
   total_price          Float
   actual_total_price   Float?
-  is_personal_purchase Boolean         @default(false)
-  created_at           DateTime        @default(now())
-  updated_at           DateTime        @updatedAt
-  product              Product         @relation(fields: [product_id], references: [id])
-  sale                 Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
-  variant              ProductVariant? @relation(fields: [variant_id], references: [id])
-  shipping_items       ShippingItem[]
+  is_personal_purchase Boolean @default(false)
 
+  // 🎯 成本與利潤追蹤
+  cost_price Float? // 銷售時的加權平均成本
+  profit     Float? // 利潤 = actual_unit_price - cost_price
+  import_id  String? // 關聯進貨單（用於成本回溯調整）
+
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+  product        Product         @relation(fields: [product_id], references: [id])
+  sale           Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  variant        ProductVariant? @relation(fields: [variant_id], references: [id])
+  import         Import?         @relation(fields: [import_id], references: [id], onDelete: SetNull)
+  shipping_items ShippingItem[]
+
+  @@index([import_id])
   @@map("sale_items")
 }
-
 
 model AccountingEntry {
   id              String         @id @default(cuid())
@@ -380,23 +426,23 @@ model PaymentRecord {
 
 // 應付帳款表 - 我們欠供應商的錢
 model AccountsPayable {
-  id               String             @id @default(cuid())
-  ap_number        String             @unique
+  id               String            @id @default(cuid())
+  ap_number        String            @unique
   purchase_id      String?
   supplier_name    String
   original_amount  Float
   remaining_amount Float
   due_date         DateTime
-  status           String             @default("PENDING") // PENDING, OVERDUE, PAID, PARTIAL
-  days_past_due    Int                @default(0)
-  ap_category      ApCategory         @default(PURCHASE)
+  status           String            @default("PENDING") // PENDING, OVERDUE, PAID, PARTIAL
+  days_past_due    Int               @default(0)
+  ap_category      ApCategory        @default(PURCHASE)
   reference        String?
   notes            String?
   created_by       String
-  created_at       DateTime           @default(now())
-  updated_at       DateTime           @updatedAt
-  creator          User               @relation(fields: [created_by], references: [id])
-  purchase         Purchase?          @relation(fields: [purchase_id], references: [id])
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+  creator          User              @relation(fields: [created_by], references: [id])
+  purchase         Purchase?         @relation(fields: [purchase_id], references: [id])
   payments         SupplierPayment[]
 
   @@map("accounts_payable")
@@ -404,18 +450,18 @@ model AccountsPayable {
 
 // 供應商付款記錄
 model SupplierPayment {
-  id                    String          @id @default(cuid())
-  payment_number        String          @unique
-  accounts_payable_id   String
-  payment_amount        Float
-  payment_date          DateTime
-  payment_method        String // CASH, BANK_TRANSFER, CHECK, CREDIT_CARD, OTHER
-  reference_number      String?
-  notes                 String?
-  created_by            String
-  created_at            DateTime        @default(now())
-  accounts_payable      AccountsPayable @relation(fields: [accounts_payable_id], references: [id])
-  creator               User            @relation(fields: [created_by], references: [id])
+  id                  String          @id @default(cuid())
+  payment_number      String          @unique
+  accounts_payable_id String
+  payment_amount      Float
+  payment_date        DateTime
+  payment_method      String // CASH, BANK_TRANSFER, CHECK, CREDIT_CARD, OTHER
+  reference_number    String?
+  notes               String?
+  created_by          String
+  created_at          DateTime        @default(now())
+  accounts_payable    AccountsPayable @relation(fields: [accounts_payable_id], references: [id])
+  creator             User            @relation(fields: [created_by], references: [id])
 
   @@map("supplier_payments")
 }
@@ -483,45 +529,47 @@ model ShippingItem {
   @@map("shipping_items")
 }
 
-model ImportRecord {
-  id                  String       @id @default(cuid())
-  import_number       String       @unique
+// ⚠️ 舊版進貨記錄 - 保留用於資料遷移
+model LegacyImportRecord {
+  id                  String             @id @default(cuid())
+  import_number       String             @unique
   purchase_id         String
   purchase_number     String
   supplier            String
   declaration_number  String?
   declaration_date    DateTime?
   total_value         Float
-  currency            String       @default("TWD")
-  exchange_rate       Float        @default(1.0)
-  status              String       @default("PENDING")
-  alcohol_tax         Float        @default(0)
-  business_tax        Float        @default(0)
-  trade_promotion_fee Float        @default(0)
-  total_taxes         Float        @default(0)
+  currency            String             @default("TWD")
+  exchange_rate       Float              @default(1.0)
+  status              String             @default("PENDING")
+  alcohol_tax         Float              @default(0)
+  business_tax        Float              @default(0)
+  trade_promotion_fee Float              @default(0)
+  total_taxes         Float              @default(0)
   extracted_data      String?
   notes               String?
-  created_at          DateTime     @default(now())
-  updated_at          DateTime     @updatedAt
-  items               ImportItem[]
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+  items               LegacyImportItem[]
 
   @@map("import_records")
 }
 
-model ImportItem {
-  id                 String       @id @default(cuid())
+// ⚠️ 舊版進貨明細 - 保留用於資料遷移
+model LegacyImportItem {
+  id                 String             @id @default(cuid())
   import_record_id   String
   product_name       String
   quantity           Int
-  alcohol_percentage Float        @default(40)
-  volume             Int          @default(700)
+  alcohol_percentage Float              @default(40)
+  volume             Int                @default(700)
   dutiable_value     Float
-  alcohol_tax        Float        @default(0)
-  business_tax       Float        @default(0)
+  alcohol_tax        Float              @default(0)
+  business_tax       Float              @default(0)
   tariff_code        String?
-  created_at         DateTime     @default(now())
-  updated_at         DateTime     @updatedAt
-  import_record      ImportRecord @relation(fields: [import_record_id], references: [id], onDelete: Cascade)
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+  import_record      LegacyImportRecord @relation(fields: [import_record_id], references: [id], onDelete: Cascade)
 
   @@map("import_items")
 }
@@ -576,7 +624,6 @@ enum CustomerTier {
   NEW
 }
 
-
 enum QuotationStatus {
   PENDING
   ACCEPTED
@@ -586,7 +633,7 @@ enum QuotationStatus {
 
 // 審計日誌模型
 model AuditLog {
-  id              String   @id @default(cuid())
+  id              String            @id @default(cuid())
   user_id         String
   user_email      String
   user_role       Role
@@ -597,13 +644,13 @@ model AuditLog {
   ip_address      String?
   user_agent      String?
   additional_info Json?
-  created_at      DateTime @default(now())
+  created_at      DateTime          @default(now())
 
-  @@map("audit_logs")
   @@index([user_id])
   @@index([created_at])
   @@index([action])
   @@index([resource_type])
+  @@map("audit_logs")
 }
 
 // 審計操作類型
@@ -647,46 +694,46 @@ enum AuditResourceType {
 
 // 💰 簡單收支記錄模型
 model CashFlowRecord {
-  id               String           @id @default(cuid())
-  type             CashFlowType     // 收入或支出
-  amount           Float            // 金額
-  description      String           // 描述
-  category         String?          // 分類（可選）
-  funding_source   FundingSource    // 資金來源：投資方或個人墊付
-  transaction_date DateTime         // 交易日期
-  reference        String?          // 參考編號（發票號碼、訂單編號等）
-  notes            String?          // 備註
-  created_by       String           // 記錄創建者
-  created_at       DateTime         @default(now())
-  updated_at       DateTime         @updatedAt
+  id               String        @id @default(cuid())
+  type             CashFlowType // 收入或支出
+  amount           Float // 金額
+  description      String // 描述
+  category         String? // 分類（可選）
+  funding_source   FundingSource // 資金來源：投資方或個人墊付
+  transaction_date DateTime // 交易日期
+  reference        String? // 參考編號（發票號碼、訂單編號等）
+  notes            String? // 備註
+  created_by       String // 記錄創建者
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
 
   // 關聯
-  creator          User             @relation(fields: [created_by], references: [id])
+  creator User @relation(fields: [created_by], references: [id])
 
-  @@map("cashflow_records")
   @@index([type])
   @@index([funding_source])
   @@index([transaction_date])
   @@index([created_by])
+  @@map("cashflow_records")
 }
 
 // 公司設定表
 model CompanySettings {
   id           String   @id @default(cuid())
-  name         String   // 公司名稱
-  englishName  String?  // 英文名稱
-  address      String   // 公司地址
-  phone        String   // 聯絡電話
-  email        String?  // 電子信箱
-  website      String?  // 官方網站
-  taxId        String   // 統一編號
-  bankName     String?  // 銀行名稱
-  bankAccount  String?  // 帳戶號碼
-  bankCode     String?  // 銀行代碼
+  name         String // 公司名稱
+  englishName  String? // 英文名稱
+  address      String // 公司地址
+  phone        String // 聯絡電話
+  email        String? // 電子信箱
+  website      String? // 官方網站
+  taxId        String // 統一編號
+  bankName     String? // 銀行名稱
+  bankAccount  String? // 帳戶號碼
+  bankCode     String? // 銀行代碼
   // 現代聯絡方式
-  lineId       String?  // LINE ID
-  customField1 String?  // 自訂欄位1 (如 WeChat ID)
-  customField2 String?  // 自訂欄位2 (如 Telegram)
+  lineId       String? // LINE ID
+  customField1 String? // 自訂欄位1 (如 WeChat ID)
+  customField2 String? // 自訂欄位2 (如 Telegram)
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
@@ -695,13 +742,290 @@ model CompanySettings {
 
 // 收支類型
 enum CashFlowType {
-  INCOME   // 收入
-  EXPENSE  // 支出
+  INCOME // 收入
+  EXPENSE // 支出
 }
 
 // 資金來源
 enum FundingSource {
-  INVESTOR  // 投資方資金
-  PERSONAL  // 個人墊付
-  COMPANY   // 公司資金
+  INVESTOR // 投資方資金
+  PERSONAL // 個人墊付
+  COMPANY // 公司資金
+}
+
+// ========== 🆕 重構新增的模型 (2025-10-01) ==========
+
+// 🏪 倉庫類型
+enum Warehouse {
+  COMPANY // 公司倉（投資方資金）
+  PRIVATE // 個人倉（個人資金）
+}
+
+// 📦 品號調撥記錄
+model StockTransfer {
+  id              String @id @default(cuid())
+  transfer_number String @unique
+
+  // 來源變體
+  source_variant_id   String
+  source_variant_code String
+
+  // 目標變體
+  target_variant_id   String
+  target_variant_code String
+
+  // 調撥數量
+  quantity Int
+
+  // 成本繼承
+  unit_cost  Float
+  total_cost Float
+
+  // 調撥原因
+  reason String // 'DAMAGED', 'REPACKAGE', 'OTHER'
+  notes  String?
+
+  // 審計欄位
+  created_by String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 關聯
+  source_variant ProductVariant @relation("SourceVariant", fields: [source_variant_id], references: [id], onDelete: Restrict)
+  target_variant ProductVariant @relation("TargetVariant", fields: [target_variant_id], references: [id], onDelete: Restrict)
+  creator        User           @relation(fields: [created_by], references: [id])
+
+  @@index([source_variant_id])
+  @@index([target_variant_id])
+  @@index([created_at])
+  @@map("stock_transfers")
+}
+
+// 🚚 進貨單（重新設計）
+model Import {
+  id            String @id @default(cuid())
+  import_number String @unique
+
+  // 關聯採購單
+  purchase_id     String?
+  purchase_number String?
+
+  // 進貨類型
+  import_type String    @default("COMPANY") // 'COMPANY', 'PRIVATE'
+  warehouse   Warehouse @default(COMPANY)
+
+  // 供應商資訊
+  supplier String
+
+  // 幣別與匯率
+  currency      String @default("JPY")
+  exchange_rate Float  @default(1.0)
+
+  // 報關資訊
+  declaration_number String?
+  declaration_date   DateTime?
+  customs_date       DateTime?
+
+  // 海關抽驗
+  customs_seized  Boolean @default(false)
+  seized_quantity Int     @default(0)
+
+  // 商品總價（未稅）
+  goods_total Float
+
+  // 關稅（個別計算）
+  tariff_amount Float @default(0)
+
+  // 費用總額（待後續加入）
+  additional_costs_total Float @default(0)
+
+  // 最終總成本
+  final_total_cost Float @default(0)
+
+  // 結算狀態
+  is_finalized Boolean   @default(false)
+  finalized_at DateTime?
+  finalized_by String?
+
+  // 進貨狀態
+  status String @default("PENDING") // 'PENDING', 'IN_TRANSIT', 'CUSTOMS', 'RECEIVED', 'FINALIZED'
+
+  // 備註
+  notes String?
+
+  // 審計欄位
+  created_by String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 關聯
+  purchase             Purchase?           @relation(fields: [purchase_id], references: [id], onDelete: SetNull)
+  creator              User                @relation("ImportCreator", fields: [created_by], references: [id])
+  finalizer            User?               @relation("ImportFinalizer", fields: [finalized_by], references: [id])
+  items                ImportItem[]
+  costs                ImportCost[]
+  cost_adjustment_logs CostAdjustmentLog[]
+  sale_items           SaleItem[]
+
+  @@index([purchase_id])
+  @@index([warehouse])
+  @@index([status])
+  @@index([created_at])
+  @@map("imports")
+}
+
+// 📋 進貨明細（新版）
+model ImportItem {
+  id        String @id @default(cuid())
+  import_id String
+
+  // 商品資訊
+  variant_id   String
+  variant_code String
+  product_name String
+
+  // 數量
+  ordered_quantity  Int
+  received_quantity Int
+  damaged_quantity  Int @default(0)
+
+  // 單價與小計
+  unit_price Float
+  subtotal   Float
+
+  // 關稅（個別商品）
+  tariff_rate   Float?
+  tariff_amount Float  @default(0)
+
+  // 分攤後費用
+  allocated_costs Float @default(0)
+
+  // 最終單位成本
+  final_unit_cost Float @default(0)
+
+  // 審計欄位
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 關聯
+  import  Import         @relation(fields: [import_id], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+
+  @@index([import_id])
+  @@index([variant_id])
+  @@map("import_items_v2")
+}
+
+// 💰 進貨費用池
+model ImportCost {
+  id        String @id @default(cuid())
+  import_id String
+
+  // 費用類型
+  cost_type String // 'INSPECTION', 'CUSTOMS_FEE', 'SHIPPING', 'STORAGE', 'OTHER'
+  cost_name String
+
+  // 金額
+  amount   Float
+  currency String @default("TWD")
+
+  // 分攤方式
+  allocation_method String @default("BY_AMOUNT") // 'BY_AMOUNT', 'BY_QUANTITY', 'INDIVIDUAL'
+
+  // 發票/單據資訊
+  invoice_number String?
+  invoice_date   DateTime?
+
+  // 付款狀態
+  is_paid Boolean   @default(false)
+  paid_at DateTime?
+
+  // 備註
+  notes String?
+
+  // 審計欄位
+  created_by String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 關聯
+  import  Import @relation(fields: [import_id], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [created_by], references: [id])
+
+  @@index([import_id])
+  @@index([cost_type])
+  @@index([is_paid])
+  @@map("import_costs")
+}
+
+// 📊 成本調整歷史
+model CostAdjustmentLog {
+  id        String @id @default(cuid())
+  import_id String
+
+  // 調整資訊
+  adjustment_type String // 'FINALIZE', 'MANUAL'
+  old_cost        Float
+  new_cost        Float
+  cost_diff       Float
+
+  // 影響範圍
+  affected_sales_count Int   @default(0)
+  total_adjustment     Float @default(0)
+
+  // 說明
+  reason String?
+
+  // 審計欄位
+  created_by String
+  created_at DateTime @default(now())
+
+  // 關聯
+  import  Import @relation(fields: [import_id], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [created_by], references: [id])
+
+  @@index([import_id])
+  @@index([created_at])
+  @@map("cost_adjustment_logs")
+}
+
+// 🔔 通知系統
+model Notification {
+  id String @id @default(cuid())
+
+  // 通知類型
+  type String // 'IMPORT_FINALIZED', 'STOCK_LOW', 'PAYMENT_DUE', 'SHIPMENT_REMINDER', 'PRICE_ALERT'
+
+  // 通知內容
+  title   String
+  message String
+  link    String?
+
+  // 接收者
+  recipient_id   String
+  recipient_role Role?
+
+  // 優先級
+  priority String @default("NORMAL") // 'LOW', 'NORMAL', 'HIGH', 'URGENT'
+
+  // 閱讀狀態
+  is_read Boolean   @default(false)
+  read_at DateTime?
+
+  // 相關資源
+  resource_type String?
+  resource_id   String?
+
+  // 審計欄位
+  created_at DateTime  @default(now())
+  expires_at DateTime?
+
+  // 關聯
+  recipient User @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
+
+  @@index([recipient_id])
+  @@index([is_read])
+  @@index([created_at])
+  @@index([type])
+  @@map("notifications")
 }
