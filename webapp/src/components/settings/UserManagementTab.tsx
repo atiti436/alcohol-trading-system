@@ -24,7 +24,8 @@ import {
   EditOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  DeleteOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import { Role } from '@/types/auth'
@@ -147,6 +148,27 @@ export default function UserManagementTab() {
     }
   }
 
+  // 刪除用戶
+  const deleteUser = async (userId: string, userName: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        message.success(`已刪除用戶：${userName}`)
+        loadUsers(pagination.current, pagination.pageSize)
+      } else {
+        message.error(data.error || '刪除失敗')
+      }
+    } catch (error) {
+      console.error('刪除用戶失敗:', error)
+      message.error('刪除用戶失敗')
+    }
+  }
+
   // 角色標籤渲染
   const renderRoleTag = (role: Role) => {
     const roleConfig = {
@@ -241,6 +263,31 @@ export default function UserManagementTab() {
                 icon={record.is_active ? <ExclamationCircleOutlined /> : <CheckCircleOutlined />}
               >
                 {record.is_active ? '停用' : '啟用'}
+              </Button>
+            </Popconfirm>
+
+            <Popconfirm
+              title={
+                <div>
+                  <div>確定要刪除用戶「{record.name}」嗎？</div>
+                  <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
+                    此操作無法撤銷！如果用戶有業務記錄，建議改為停用。
+                  </div>
+                </div>
+              }
+              onConfirm={() => deleteUser(record.id, record.name)}
+              okText="確定刪除"
+              cancelText="取消"
+              okButtonProps={{ danger: true }}
+              disabled={isCurrentUser}
+            >
+              <Button
+                danger
+                size="small"
+                disabled={isCurrentUser}
+                icon={<DeleteOutlined />}
+              >
+                刪除
               </Button>
             </Popconfirm>
           </Space>

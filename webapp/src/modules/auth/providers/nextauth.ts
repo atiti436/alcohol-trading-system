@@ -29,6 +29,7 @@ export const authOptions: NextAuthOptions = {
           token.id = dbUser.id
           token.role = dbUser.role as Role
           token.investor_id = dbUser.investor_id || undefined
+          token.is_active = dbUser.is_active
         } else {
           // 檢查是否為管理員白名單
           const adminEmails = [
@@ -44,11 +45,19 @@ export const authOptions: NextAuthOptions = {
               name: user.name!,
               image: user.image,
               role: isAdmin ? Role.SUPER_ADMIN : Role.PENDING,
+              is_active: true,
             },
           })
+
+          // 通知管理員有新用戶申請（非管理員才通知）
+          if (!isAdmin) {
+            await notifyAdminPending(user.email!, user.name || '')
+          }
+
           token.id = newUser.id
           token.role = newUser.role as Role
           token.investor_id = newUser.investor_id ?? undefined
+          token.is_active = newUser.is_active
         }
       }
 
@@ -64,20 +73,37 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async signIn({ user }) {
-      // 嚴格：PENDING 與停用不可進系統
+      // 檢查 email 是否存在
       if (!user?.email) return false
+
+      // 檢查是否為管理員白名單
+      const adminEmails = [
+        'manpan.whisky@gmail.com',
+      ]
+      const isAdmin = adminEmails.includes(user.email.toLowerCase())
+
+      // 如果是管理員，直接允許登入
+      if (isAdmin) return true
+
+      // 檢查資料庫中的用戶
       const dbUser = await prisma.user.findUnique({ where: { email: user.email } })
-      if (dbUser) {
-        if (!dbUser.is_active) return '/auth/error?reason=deactivated'
-        if ((dbUser as any).role === (Role as any).PENDING) {
-          await notifyAdminPending(user.email, user.name || '')
-          return '/auth/pending'
-        }
-        return true
+
+      // 首次登入或用戶不存在，允許通過（會在 jwt callback 建立用戶）
+      // 然後重定向到待審核頁面
+      if (!dbUser) {
+        return '/auth/pending'
       }
-      // 尚未建立（首次登入），視為申請中
-      await notifyAdminPending(user.email, user.name || '')
-      return '/auth/pending'
+
+      // 用戶已存在，檢查狀態
+      if (!dbUser.is_active) {
+        return '/auth/error?reason=deactivated'
+      }
+
+      if ((dbUser as any).role === (Role as any).PENDING) {
+        return '/auth/pending'
+      }
+
+      return true
     },
   },
   events: {
