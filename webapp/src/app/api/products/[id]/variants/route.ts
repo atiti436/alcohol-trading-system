@@ -138,10 +138,12 @@ export async function POST(
     const {
       variant_type,
       description,
-      base_price,
+      cost_price = 0,
+      investor_price,
+      actual_price,
       current_price,
       stock_quantity = 0,
-      sku,
+      warehouse = 'COMPANY',
       ...otherFields
     } = body
 
@@ -149,17 +151,15 @@ export async function POST(
     const missingFields: string[] = []
     if (!variant_type) missingFields.push('variant_type')
     if (!description) missingFields.push('description')
-    if (base_price === undefined) missingFields.push('base_price')
+    if (investor_price === undefined) missingFields.push('investor_price')
+    if (actual_price === undefined) missingFields.push('actual_price')
     if (current_price === undefined) missingFields.push('current_price')
-    if (!sku) missingFields.push('sku')
 
     if (missingFields.length > 0) {
       return NextResponse.json({
         error: `Missing required fields: ${missingFields.join(', ')}`
       }, { status: 400 })
     }
-    
-    const normalizedVariantType = normalizeVariantType(variant_type);
 
     const product = await prisma.product.findUnique({
       where: { id: params.id },
@@ -170,36 +170,38 @@ export async function POST(
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    const existingVariant = await prisma.productVariant.findFirst({
-        where: {
-          product_id: params.id,
-          variant_type: normalizedVariantType,
-        },
-    });
+    // 🎯 新邏輯：生成流水號變體代碼（P0001-001, P0001-002...）
+    const existingVariants = await prisma.productVariant.findMany({
+      where: { product_id: params.id },
+      select: { variant_code: true },
+      orderBy: { variant_code: 'desc' }
+    })
 
-    if (existingVariant) {
-      return NextResponse.json({
-        error: `Variant with type \'${normalizedVariantType}\' already exists for this product.`
-      }, { status: 409 }) // 409 Conflict is more appropriate
+    let nextSequence = 1
+    if (existingVariants.length > 0) {
+      const lastCode = existingVariants[0].variant_code
+      const match = lastCode.match(/-(\d+)$/)
+      if (match) {
+        nextSequence = parseInt(match[1]) + 1
+      }
     }
 
-    const variant_code = await generateVariantCode(
-      prisma,
-      params.id,
-      product.product_code,
-      normalizedVariantType
-    )
+    const variant_code = `${product.product_code}-${nextSequence.toString().padStart(3, '0')}`
+    const sku = `SKU-${variant_code}`
 
     const variant = await prisma.productVariant.create({
       data: {
         product_id: params.id,
         variant_code,
         sku,
-        variant_type: normalizedVariantType,
+        variant_type,
         description,
-        base_price: parseFloat(base_price),
-        current_price: parseFloat(current_price),
-        stock_quantity: parseInt(stock_quantity, 10),
+        cost_price: parseFloat(cost_price.toString()),
+        investor_price: parseFloat(investor_price.toString()),
+        actual_price: parseFloat(actual_price.toString()),
+        current_price: parseFloat(current_price.toString()),
+        stock_quantity: parseInt(stock_quantity.toString(), 10),
+        warehouse,
         ...otherFields
       }
     })

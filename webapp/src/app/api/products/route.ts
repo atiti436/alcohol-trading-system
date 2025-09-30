@@ -204,10 +204,14 @@ export async function POST(request: NextRequest) {
         supplier,
         manufacturing_date: manufacturing_date ? manufacturing_date.toISOString() : null,
         expiry_date: expiry_date ? expiry_date.toISOString() : null,
-        standard_price,
-        current_price,
-        cost_price: 0, // 初始成本為0，等進貨後更新
-        min_price
+
+        // 🎯 三層價格架構
+        cost_price: 0,                              // 初始成本為0，等進貨後更新
+        investor_price: standard_price * 0.9,       // 預設為標準價的90%
+        actual_price: standard_price,               // 實際售價
+        standard_price,                             // 標準價
+        current_price,                              // 當前價
+        min_price                                   // 最低價
       }
     })
 
@@ -215,7 +219,8 @@ export async function POST(request: NextRequest) {
     let defaultVariant = null
     if (create_default_variant) {
       const defaultVariantType = DEFAULT_VARIANT_TYPE
-      const variant_code = await generateVariantCode(prisma, product.id, product_code, defaultVariantType)
+      // 🎯 使用流水號（P0001-001）
+      const variant_code = `${product_code}-001`
       const sku = `SKU-${variant_code}`
 
       defaultVariant = await prisma.productVariant.create({
@@ -225,8 +230,14 @@ export async function POST(request: NextRequest) {
           sku,
           variant_type: defaultVariantType,
           description: defaultVariantType,
-          base_price: standard_price,
-          current_price
+
+          // 🎯 三層價格架構（繼承 Product）
+          cost_price: 0,
+          investor_price: product.investor_price,
+          actual_price: product.actual_price,
+          current_price: product.current_price,
+
+          warehouse: 'COMPANY'
         }
       })
     }

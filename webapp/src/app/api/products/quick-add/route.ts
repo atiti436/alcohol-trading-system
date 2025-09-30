@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     // 使用 transaction 確保資料一致性
     const result = await prisma.$transaction(async (tx) => {
       // 建立產品
+      const basePrice = estimated_price || productInfo.estimated_price || 0
       const product = await tx.product.create({
         data: {
           product_code: productCode,
@@ -77,17 +78,23 @@ export async function POST(request: NextRequest) {
           has_box: productInfo.has_box,
           has_accessories: false,
           supplier: supplier || productInfo.brand || '待確認',
-          standard_price: estimated_price || productInfo.estimated_price || 0,
-          current_price: estimated_price || productInfo.estimated_price || 0,
-          cost_price: 0, // 待採購時填入
-          min_price: (estimated_price || productInfo.estimated_price || 0) * 0.8, // 預設最低價為標準價的80%
+
+          // 🎯 三層價格架構
+          cost_price: 0,                    // 待採購時填入
+          investor_price: basePrice * 0.9,  // 預設為估價的90%
+          actual_price: basePrice,          // 實際售價
+          standard_price: basePrice,        // 標準價
+          current_price: basePrice,         // 當前價
+          min_price: basePrice * 0.8,       // 預設最低價為標準價的80%
+
           is_active: true
         }
       })
       // 若有提供變體名稱，建立變體；否則只建立商品
       let variant = null
       if (variantType) {
-        const variantCode = await generateVariantCode(tx, product.id, product.product_code, variantType)
+        // 🎯 使用流水號邏輯（P0001-001）
+        const variantCode = `${product.product_code}-001`
         const sku = `SKU-${variantCode}`
 
         variant = await tx.productVariant.create({
@@ -96,14 +103,19 @@ export async function POST(request: NextRequest) {
             variant_code: variantCode,
             variant_type: variantType,
             description: productInfo.condition || variantType,
-            base_price: product.standard_price,
+
+            // 🎯 三層價格架構（繼承 Product）
+            cost_price: 0,
+            investor_price: product.investor_price,
+            actual_price: product.actual_price,
             current_price: product.current_price,
+
             condition: 'Normal',
             stock_quantity: 0,
             reserved_stock: 0,
             available_stock: 0,
-            cost_price: 0,
             weight_kg: product.weight_kg,
+            warehouse: 'COMPANY',
             sku
           }
         })
