@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏭 Room-3: 庫存異動記錄 API
  * 負責庫存異動歷史查詢和統計

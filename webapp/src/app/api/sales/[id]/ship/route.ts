@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏭 Room-4: 銷售出貨 API
  * POST /api/sales/[id]/ship - 處理銷售出貨，扣減庫存

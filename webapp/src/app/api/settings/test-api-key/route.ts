@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { getClientIp, rateLimit } from '@/lib/rate-limit'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Simple rate limit: 10 requests / minute per IP

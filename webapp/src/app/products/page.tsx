@@ -24,7 +24,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
-  AppstoreOutlined
+  AppstoreOutlined,
+  CopyOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import type {
@@ -270,7 +271,7 @@ export default function ProductsPage() {
     {
       title: '操作',
       key: 'actions',
-      width: 120,
+      width: 150,
       render: (record: ProductWithVariants) => (
         <Space>
           <Tooltip title="查看詳情">
@@ -285,6 +286,13 @@ export default function ProductsPage() {
               icon={<EditOutlined />}
               size="small"
               onClick={() => handleEdit(record)}
+            />
+          </Tooltip>
+          <Tooltip title="複製商品">
+            <Button
+              icon={<CopyOutlined />}
+              size="small"
+              onClick={() => handleDuplicate(record.id)}
             />
           </Tooltip>
           {session?.user?.role === 'SUPER_ADMIN' && (
@@ -423,6 +431,29 @@ export default function ProductsPage() {
     } catch (error) {
       message.error('刪除失敗')
       console.error(error)
+    }
+  }
+
+  // 處理複製商品
+  const handleDuplicate = async (id: string) => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/products/${id}/duplicate`, {
+        method: 'POST'
+      })
+      const result = await response.json()
+
+      if (result.success) {
+        message.success('商品複製成功！')
+        loadProducts() // 重新載入商品列表
+      } else {
+        message.error(result.error || '複製失敗')
+      }
+    } catch (error) {
+      message.error('複製失敗')
+      console.error(error)
+    } finally {
+      setLoading(false)
     }
   }
 

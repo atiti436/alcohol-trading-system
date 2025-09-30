@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 📦 Room-5: 出貨單管理 API
  * 核心功能：出貨單生成 + PDF列印 + 投資方數據隔離

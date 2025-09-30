@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏠 Room-2: 客戶專價管理 API
  * 負責客戶專屬價格設定、查詢、修改功能

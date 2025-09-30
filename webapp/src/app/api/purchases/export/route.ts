@@ -4,6 +4,9 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
 import { assertSameOrigin, rateLimit } from '@/lib/security'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 function escapeCsv(val: any): string {
   if (val === null || val === undefined) return ''
   const s = String(val)

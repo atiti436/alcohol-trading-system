@@ -4,6 +4,9 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 // 更新報價 Schema
 const UpdateQuotationSchema = z.object({
   customer_id: z.string().optional(),

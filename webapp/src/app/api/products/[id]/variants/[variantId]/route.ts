@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏠 Room-2: 單一商品變體管理 API
  * GET /api/products/[id]/variants/[variantId] - 變體詳情

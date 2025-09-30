@@ -4,6 +4,9 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
 import { Role } from '@/types/auth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/settings/linebot - 取得 LINE Bot 設定
  * POST /api/settings/linebot - 儲存 LINE Bot 設定

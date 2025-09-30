@@ -4,6 +4,9 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
 import { Role } from '@/types/auth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 // PUT /api/users/[id]/status - 切換啟用/停用（僅 SUPER_ADMIN）
 export async function PUT(
   request: NextRequest,

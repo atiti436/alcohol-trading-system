@@ -8,6 +8,9 @@ import {
   CustomerQueryParams,
   StandardApiResponse
 } from '@/types/api'
+
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
 import { CustomerTier, PaymentTerms } from '@prisma/client'
 
 /**

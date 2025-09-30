@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { withAppActiveUser } from '@/modules/auth/middleware/permissions'
 import { Role } from '@/types/auth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/inventory/adjustments - 創建庫存調整記錄
  */

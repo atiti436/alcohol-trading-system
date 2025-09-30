@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 // 將進貨記錄狀態標記為 RECEIVED（配合前端完成收貨入庫後的狀態同步）
 export async function POST(
   request: NextRequest,

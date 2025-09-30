@@ -4,6 +4,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { normalizeVariantType, generateVariantCode } from '@/lib/variant-utils'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * @swagger
  * /api/products/{id}/variants:

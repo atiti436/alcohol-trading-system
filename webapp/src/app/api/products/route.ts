@@ -8,6 +8,9 @@ import { DatabaseWhereCondition } from '@/types/business'
 import { AlcoholCategory } from '@prisma/client'
 import { Role } from '@/types/auth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏠 Room-2: Product 模組 API
  * 負責商品基本資料管理、變體系統、分類管理

@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { Role } from '@/types/auth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/settings/test-linebot - 測試 LINE Bot 設定
  * 🔒 僅 SUPER_ADMIN 可存取

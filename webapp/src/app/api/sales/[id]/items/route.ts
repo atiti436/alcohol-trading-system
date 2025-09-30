@@ -4,6 +4,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { Role } from '@/types/auth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 💰 Room-4: 銷售明細管理 API
  * 核心功能：商品明細 + 雙重價格計算

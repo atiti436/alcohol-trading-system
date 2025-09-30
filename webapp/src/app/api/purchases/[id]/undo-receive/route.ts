@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 撤銷收貨API
  * POST /api/purchases/[id]/undo-receive

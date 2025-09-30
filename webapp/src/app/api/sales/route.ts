@@ -7,6 +7,9 @@ import { validateSaleData } from '@/lib/validation'
 import { DatabaseWhereCondition } from '@/types/business'
 import { Sale, SaleItem, Customer, Product, ProductVariant } from '@prisma/client'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 // Define Sale with included relations
 type SaleWithRelations = Sale & {
   customer: Pick<Customer, 'id' | 'name' | 'tier'>

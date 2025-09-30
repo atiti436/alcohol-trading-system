@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma' 
+import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/products/search - 強化的產品搜尋 API

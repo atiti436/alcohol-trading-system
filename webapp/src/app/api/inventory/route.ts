@@ -11,6 +11,9 @@ import {
 } from '@/types/api'
 import { AlcoholCategory } from '@prisma/client'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏭 Room-3: Inventory 庫存管理 API
  * 負責庫存查詢、庫存異動記錄、庫存統計

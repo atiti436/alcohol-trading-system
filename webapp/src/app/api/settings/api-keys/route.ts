@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { logSensitiveAccess } from '@/lib/audit-log'
 import crypto from 'crypto'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 const RAW_KEY = process.env.ENCRYPTION_KEY || ''
 const KEY = crypto.createHash('sha256').update(RAW_KEY || 'dev-key').digest() // 32 bytes
 

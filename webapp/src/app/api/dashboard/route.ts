@@ -6,6 +6,9 @@ import { PermissionContext, Role } from '@/types/auth'
 import { SaleItem, Product, DashboardData } from '@/types/business'
 import { MonthlySalesAccumulator } from '@/types/api'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/dashboard - 獲取Dashboard資料
  * 🔒 根據使用者角色返回不同的Dashboard數據

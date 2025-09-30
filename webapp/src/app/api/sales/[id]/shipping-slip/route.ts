@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏭 Room-4: 出貨單查詢 API
  * GET /api/sales/[id]/shipping-slip - 獲取出貨單數據用於重新列印

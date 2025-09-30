@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🧯 Admin 取消銷售單（含庫存還原）
  * 只給已登入使用者使用（建議 SUPER_ADMIN），用於 Demo 或誤觸快速回復。

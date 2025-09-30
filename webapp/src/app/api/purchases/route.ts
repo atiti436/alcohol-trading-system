@@ -9,6 +9,9 @@ import {
   StandardApiResponse
 } from '@/types/api'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏭 Room-3: Purchase 採購管理 API
  * 負責採購單管理、供應商管理、成本計算

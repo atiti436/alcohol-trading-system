@@ -5,6 +5,9 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 
 import { DEFAULT_VARIANT_TYPE, generateVariantCode } from '@/lib/variant-utils'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🏭 Room-3: 採購進貨收貨 API
  * POST /api/purchases/[id]/receive - 處理採購進貨，更新庫存

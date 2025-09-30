@@ -5,6 +5,9 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { AlcoholCategory } from '@prisma/client'
 import { DEFAULT_VARIANT_TYPE, generateVariantCode, normalizeVariantType } from '@/lib/variant-utils'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/products/quick-add - 快速新增商品 API
  * 專門用於採購單、報價單中快速建立商品

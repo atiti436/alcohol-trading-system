@@ -6,6 +6,9 @@ import { DatabaseWhereCondition, GroupingQuery } from '@/types/business'
 import { ProductAnalysisAccumulator } from '@/types/api'
 import { Role } from '@/types/auth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 📊 Room-5: 報表圖表 API
  * 核心功能：銷售統計 + 圖表數據 + 投資方數據隔離

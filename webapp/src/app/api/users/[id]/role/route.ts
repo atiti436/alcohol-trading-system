@@ -4,6 +4,9 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { prisma } from '@/lib/prisma'
 import { Role } from '@/types/auth'
 
+// 強制動態渲染
+export const dynamic = 'force-dynamic'
+
 /**
  * 🔐 用戶角色管理 API
  * PUT /api/users/[id]/role - 修改用戶角色 (只有管理員可以操作)
