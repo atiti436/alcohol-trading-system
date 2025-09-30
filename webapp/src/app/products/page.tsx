@@ -438,16 +438,40 @@ export default function ProductsPage() {
   const handleDuplicate = async (id: string) => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/products/${id}/duplicate`, {
-        method: 'POST'
-      })
+      // 獲取原商品資料
+      const response = await fetch(`/api/products/${id}`)
       const result = await response.json()
 
       if (result.success) {
-        message.success('商品複製成功！')
-        loadProducts() // 重新載入商品列表
+        const originalProduct = result.data
+
+        // 跳出編輯 Modal，預填資料
+        setEditingProduct(null) // 設為 null 表示是新增模式
+        form.setFieldsValue({
+          name: `${originalProduct.name} (副本)`,
+          category: originalProduct.category,
+          supplier: originalProduct.supplier,
+          volume_ml: originalProduct.volume_ml,
+          alc_percentage: originalProduct.alc_percentage,
+          weight_kg: originalProduct.weight_kg,
+          package_weight_kg: originalProduct.package_weight_kg,
+          has_box: originalProduct.has_box,
+          has_accessories: originalProduct.has_accessories,
+          accessory_weight_kg: originalProduct.accessory_weight_kg,
+          accessories: originalProduct.accessories?.join(', '),
+          hs_code: originalProduct.hs_code,
+          manufacturing_date: originalProduct.manufacturing_date,
+          expiry_date: originalProduct.expiry_date,
+          cost_price: originalProduct.cost_price,
+          standard_price: originalProduct.standard_price,
+          current_price: originalProduct.current_price,
+          min_price: originalProduct.min_price,
+          description: originalProduct.description
+        })
+        setModalVisible(true)
+        message.info('已載入原商品資料，請修改後儲存')
       } else {
-        message.error(result.error || '複製失敗')
+        message.error(result.error || '無法載入商品資料')
       }
     } catch (error) {
       message.error('複製失敗')
