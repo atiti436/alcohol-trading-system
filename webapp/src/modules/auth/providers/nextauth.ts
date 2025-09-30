@@ -21,6 +21,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       // 首次登入時從資料庫載入使用者資料
       if (account && user) {
+        // 用戶已在 signIn callback 中建立，這裡只需載入
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email! },
         })
@@ -30,34 +31,6 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role as Role
           token.investor_id = dbUser.investor_id || undefined
           token.is_active = dbUser.is_active
-        } else {
-          // 檢查是否為管理員白名單
-          const adminEmails = [
-            'manpan.whisky@gmail.com',
-          ]
-
-          const isAdmin = adminEmails.includes(user.email!.toLowerCase())
-
-          // 首次登入建立使用者
-          const newUser = await prisma.user.create({
-            data: {
-              email: user.email!,
-              name: user.name!,
-              image: user.image,
-              role: isAdmin ? Role.SUPER_ADMIN : Role.PENDING,
-              is_active: true,
-            },
-          })
-
-          // 通知管理員有新用戶申請（非管理員才通知）
-          if (!isAdmin) {
-            await notifyAdminPending(user.email!, user.name || '')
-          }
-
-          token.id = newUser.id
-          token.role = newUser.role as Role
-          token.investor_id = newUser.investor_id ?? undefined
-          token.is_active = newUser.is_active
         }
       }
 
@@ -82,17 +55,33 @@ export const authOptions: NextAuthOptions = {
       ]
       const isAdmin = adminEmails.includes(user.email.toLowerCase())
 
+      // 檢查資料庫中的用戶
+      let dbUser = await prisma.user.findUnique({ where: { email: user.email } })
+
+      // 首次登入，立即建立用戶記錄
+      if (!dbUser) {
+        console.log(`[NextAuth] 首次登入，建立用戶: ${user.email}`)
+
+        dbUser = await prisma.user.create({
+          data: {
+            email: user.email,
+            name: user.name || user.email,
+            image: user.image,
+            role: isAdmin ? Role.SUPER_ADMIN : Role.PENDING,
+            is_active: true,
+          },
+        })
+
+        // 通知管理員有新用戶申請（非管理員才通知）
+        if (!isAdmin) {
+          await notifyAdminPending(user.email, user.name || '')
+        }
+
+        console.log(`[NextAuth] 用戶已建立: ${dbUser.id}, 角色: ${dbUser.role}`)
+      }
+
       // 如果是管理員，直接允許登入
       if (isAdmin) return true
-
-      // 檢查資料庫中的用戶
-      const dbUser = await prisma.user.findUnique({ where: { email: user.email } })
-
-      // 首次登入或用戶不存在，允許通過（會在 jwt callback 建立用戶）
-      // 然後重定向到待審核頁面
-      if (!dbUser) {
-        return '/auth/pending'
-      }
 
       // 用戶已存在，檢查狀態
       if (!dbUser.is_active) {
