@@ -181,7 +181,8 @@ export default function ProductsPage() {
             {record.name}
           </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
-            {record.volume_ml}ml • {record.alc_percentage}% • 酒液: {record.weight_kg}kg
+            {record.volume_ml}ml • {record.alc_percentage}%
+            {record.weight_kg && ` • 空瓶: ${Number(record.weight_kg).toFixed(3)}kg`}
           </div>
           {(record.package_weight_kg || record.accessory_weight_kg || record.total_weight_kg) && (
             <div style={{ fontSize: '11px', color: '#999' }}>
@@ -748,19 +749,22 @@ export default function ProductsPage() {
           {/* 空瓶費申報 - 重量資訊 */}
           <div style={{ background: '#f5f5f5', padding: '16px', borderRadius: '6px', marginBottom: '16px' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '12px' }}>空瓶費申報重量</div>
+            <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
+              依政府規定，每 2 個月需申報空瓶服務費。請填寫以下重量資訊：
+            </div>
 
             {/* 空瓶重量 - 永遠顯示 */}
             <Form.Item
               name="weight_kg"
               label="空瓶重量 (kg)"
-              tooltip="酒瓶本身重量，不含包裝和附件"
+              tooltip="空酒瓶本身重量（不含酒液、包裝、附件）。若無空瓶可量測，可暫時留空。"
               style={{ marginBottom: '16px' }}
             >
               <InputNumber
-                placeholder="0.8"
+                placeholder="0.5"
                 step={0.1}
                 min={0}
-                precision={2}
+                precision={3}
                 style={{ width: '200px' }}
               />
             </Form.Item>
@@ -812,50 +816,47 @@ export default function ProductsPage() {
                 }}
               </Form.Item>
 
-              {/* 總重量 - 有任何額外重量時顯示 */}
+              {/* 總重量 - 自動計算顯示 */}
               <Form.Item shouldUpdate>
                 {({ getFieldValue }) => {
+                  const emptyBottleWeight = getFieldValue('weight_kg') || 0
                   const hasBox = getFieldValue('has_box')
                   const hasAccessories = getFieldValue('has_accessories')
-                  return (hasBox || hasAccessories) ? (
+                  const packageWeight = hasBox ? (getFieldValue('package_weight_kg') || 0) : 0
+                  const accessoryWeight = hasAccessories ? (getFieldValue('accessory_weight_kg') || 0) : 0
+
+                  // 總重量 = 空瓶 + 外盒 + 附件（不再乘以 2）
+                  const totalWeight = emptyBottleWeight + packageWeight + accessoryWeight
+
+                  // 自動更新表單值
+                  if (totalWeight > 0) {
+                    setTimeout(() => {
+                      form.setFieldValue('total_weight_kg', parseFloat(totalWeight.toFixed(3)))
+                    }, 0)
+                  }
+
+                  // 只在有總重時顯示
+                  return totalWeight > 0 ? (
                     <Form.Item
-                      label="總重量 (kg) - 自動計算"
-              tooltip="自動計算：空瓶 + 外盒 + 附件重量"
-                      style={{ minWidth: '200px' }}
+                      label="申報總重 (kg)"
+                      tooltip="自動計算：空瓶 + 外盒 + 附件重量"
+                      style={{ minWidth: '250px' }}
                     >
-                      <Form.Item shouldUpdate noStyle>
-                        {({ getFieldValue }) => {
-                          const alcoholWeight = getFieldValue('weight_kg') || 0
-                          const packageWeight = hasBox ? (getFieldValue('package_weight_kg') || 0) : 0
-                          const accessoryWeight = hasAccessories ? (getFieldValue('accessory_weight_kg') || 0) : 0
-                          const totalWeight = alcoholWeight * 2 + packageWeight + accessoryWeight // 酒液*2當作酒液+空瓶
-
-                          // 自動更新表單值
-                          if (totalWeight > 0) {
-                            setTimeout(() => {
-                              form.setFieldValue('total_weight_kg', parseFloat(totalWeight.toFixed(2)))
-                            }, 0)
-                          }
-
-                          return (
-                            <div style={{
-                              padding: '8px 12px',
-                              background: '#f0f8ff',
-                              border: '1px solid #d1ecf1',
-                              borderRadius: '6px',
-                              fontWeight: 'bold',
-                              color: '#31708f'
-                            }}>
-                              {totalWeight.toFixed(2)} kg
-                              <div style={{ fontSize: '11px', fontWeight: 'normal', marginTop: '2px' }}>
-                                酒液+空瓶:{(alcoholWeight * 2).toFixed(1)}kg
-                                {packageWeight > 0 && ` + 外盒:${packageWeight}kg`}
-                                {accessoryWeight > 0 && ` + 附件:${accessoryWeight}kg`}
-                              </div>
-                            </div>
-                          )
-                        }}
-                      </Form.Item>
+                      <div style={{
+                        padding: '8px 12px',
+                        background: '#f0f8ff',
+                        border: '1px solid #d1ecf1',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        color: '#31708f'
+                      }}>
+                        {totalWeight.toFixed(3)} kg
+                        <div style={{ fontSize: '11px', fontWeight: 'normal', marginTop: '2px', color: '#666' }}>
+                          {emptyBottleWeight > 0 && `空瓶: ${emptyBottleWeight.toFixed(3)}kg`}
+                          {packageWeight > 0 && ` + 外盒: ${packageWeight.toFixed(3)}kg`}
+                          {accessoryWeight > 0 && ` + 附件: ${accessoryWeight.toFixed(3)}kg`}
+                        </div>
+                      </div>
                       <Form.Item name="total_weight_kg" noStyle>
                         <input type="hidden" />
                       </Form.Item>

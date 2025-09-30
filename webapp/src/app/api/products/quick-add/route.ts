@@ -32,15 +32,19 @@ export async function POST(request: NextRequest) {
       notes
     } = body
 
-    let variantType = DEFAULT_VARIANT_TYPE
-    if (typeof body.variant_type === 'string') {
+    // 變體名稱改為選填，若未提供則不創建變體
+    let variantType: string | null = null
+    if (typeof body.variant_type === 'string' && body.variant_type.trim()) {
       try {
-        const normalized = normalizeVariantType(body.variant_type)
+        const normalized = normalizeVariantType(body.variant_type.trim())
         if (normalized) {
           variantType = normalized
         }
-      } catch {
-        // ignore invalid input and fall back to default label
+      } catch (err) {
+        return NextResponse.json(
+          { error: (err as Error).message },
+          { status: 400 }
+        )
       }
     }
 
@@ -80,27 +84,30 @@ export async function POST(request: NextRequest) {
           is_active: true
         }
       })
-      // 建立預設變體
-      const variantCode = await generateVariantCode(tx, product.id, product.product_code, variantType)
-      const sku = `SKU-${variantCode}`
+      // 若有提供變體名稱，建立變體；否則只建立商品
+      let variant = null
+      if (variantType) {
+        const variantCode = await generateVariantCode(tx, product.id, product.product_code, variantType)
+        const sku = `SKU-${variantCode}`
 
-      const variant = await tx.productVariant.create({
-        data: {
-          product_id: product.id,
-          variant_code: variantCode,
-          variant_type: variantType,
-          description: productInfo.condition || variantType,
-          base_price: product.standard_price,
-          current_price: product.current_price,
-          condition: 'Normal',
-          stock_quantity: 0,
-          reserved_stock: 0,
-          available_stock: 0,
-          cost_price: 0,
-          weight_kg: product.weight_kg,
-          sku
-        }
-      })
+        variant = await tx.productVariant.create({
+          data: {
+            product_id: product.id,
+            variant_code: variantCode,
+            variant_type: variantType,
+            description: productInfo.condition || variantType,
+            base_price: product.standard_price,
+            current_price: product.current_price,
+            condition: 'Normal',
+            stock_quantity: 0,
+            reserved_stock: 0,
+            available_stock: 0,
+            cost_price: 0,
+            weight_kg: product.weight_kg,
+            sku
+          }
+        })
+      }
 
       return { product, variant }
     })
@@ -108,7 +115,7 @@ export async function POST(request: NextRequest) {
     // 📝 記錄快速新增日誌
     console.log(`[QUICK-ADD] 用戶 ${session.user.email} 快速新增商品: ${name} (${productCode})`)
 
-    return NextResponse.json({
+    const responseData: any = {
       success: true,
       message: '商品快速新增成功',
       data: {
@@ -120,26 +127,34 @@ export async function POST(request: NextRequest) {
           standard_price: result.product.standard_price,
           supplier: result.product.supplier
         },
-        variant: {
-          id: result.variant.id,
-          variant_code: result.variant.variant_code,
-          variant_type: result.variant.variant_type,
-          description: result.variant.description,
-          current_price: result.variant.current_price
-        },
         // 🎯 返回用於選擇的格式化資料
         for_selection: {
           id: result.product.id,
           name: result.product.name,
           product_code: result.product.product_code,
           price: result.product.standard_price,
-          variant_id: result.variant.id,
-          variant_code: result.variant.variant_code,
-          display_name: `${result.product.name} (${result.variant.variant_code})`,
+          variant_id: result.variant?.id || null,
+          variant_code: result.variant?.variant_code || result.product.product_code,
+          display_name: result.variant
+            ? `${result.product.name} (${result.variant.variant_code})`
+            : result.product.name,
           is_new: true // 標記為新建商品
         }
       }
-    })
+    }
+
+    // 若有建立變體，加入變體資訊
+    if (result.variant) {
+      responseData.data.variant = {
+        id: result.variant.id,
+        variant_code: result.variant.variant_code,
+        variant_type: result.variant.variant_type,
+        description: result.variant.description,
+        current_price: result.variant.current_price
+      }
+    }
+
+    return NextResponse.json(responseData)
 
   } catch (error) {
     console.error('快速新增商品失敗:', error)
