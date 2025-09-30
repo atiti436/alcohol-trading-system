@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
-import { Card, Row, Col, Typography, Space, Switch, Form, Input, Button, Select, Divider, message, Tabs, Alert, Tag } from 'antd'
+import React, { useMemo, useState, useEffect } from 'react'
+import { Card, Row, Col, Typography, Space, Switch, Form, Input, Button, Select, Divider, message, Tabs, Alert, Tag, Spin } from 'antd'
 import {
   SettingOutlined,
   SecurityScanOutlined,
@@ -20,10 +20,22 @@ const { Title, Text } = Typography
 const { Option } = Select
 const { TabPane } = Tabs
 
+interface UserStats {
+  superAdmin: number
+  investor: number
+  employee: number
+  pending: number
+  total: number
+  active: number
+  inactive: number
+}
+
 export default function SettingsPage() {
   const { data: session } = useSession()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
+  const [userStats, setUserStats] = useState<UserStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
   const router = useRouter()
   const params = useSearchParams()
   const activeTab = useMemo(() => params.get('tab') || 'general', [params])
@@ -41,8 +53,31 @@ export default function SettingsPage() {
     }
   }
 
+  // 載入用戶統計數據
+  const loadUserStats = async () => {
+    setStatsLoading(true)
+    try {
+      const response = await fetch('/api/users/stats')
+      const data = await response.json()
+      if (data.success) {
+        setUserStats(data.data)
+      }
+    } catch (error) {
+      console.error('載入用戶統計失敗:', error)
+    } finally {
+      setStatsLoading(false)
+    }
+  }
+
   // 只有SUPER_ADMIN能看到完整設定
   const isAdmin = session?.user?.role === 'SUPER_ADMIN'
+
+  // 當進入安全設定分頁時載入統計數據
+  useEffect(() => {
+    if (isAdmin && activeTab === 'security') {
+      loadUserStats()
+    }
+  }, [isAdmin, activeTab])
 
   return (
     <div style={{ padding: 0 }}>
@@ -184,21 +219,43 @@ export default function SettingsPage() {
                     權限管理
                   </React.Fragment>
                 }>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Text strong>角色統計</Text>
-                    <div style={{ padding: '8px 0' }}>
-                      <Text>超級管理員: 1 人</Text>
+                  {statsLoading ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                      <Spin tip="載入統計數據中..." />
                     </div>
-                    <div style={{ padding: '8px 0' }}>
-                      <Text>投資方: 0 人</Text>
-                    </div>
-                    <div style={{ padding: '8px 0' }}>
-                      <Text>員工: 0 人</Text>
-                    </div>
-                    <Button type="link" style={{ padding: 0 }}>
-                      管理用戶權限 →
-                    </Button>
-                  </Space>
+                  ) : (
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Text strong>角色統計</Text>
+                      <div style={{ padding: '8px 0' }}>
+                        <Text>超級管理員: {userStats?.superAdmin || 0} 人</Text>
+                      </div>
+                      <div style={{ padding: '8px 0' }}>
+                        <Text>投資方: {userStats?.investor || 0} 人</Text>
+                      </div>
+                      <div style={{ padding: '8px 0' }}>
+                        <Text>員工: {userStats?.employee || 0} 人</Text>
+                      </div>
+                      {userStats && userStats.pending > 0 && (
+                        <div style={{ padding: '8px 0' }}>
+                          <Text type="warning">待審核: {userStats.pending} 人</Text>
+                        </div>
+                      )}
+                      <Divider style={{ margin: '12px 0' }} />
+                      <div style={{ padding: '8px 0' }}>
+                        <Text type="secondary">總用戶數: {userStats?.total || 0} 人</Text>
+                      </div>
+                      <div style={{ padding: '8px 0' }}>
+                        <Text type="secondary">啟用: {userStats?.active || 0} 人 / 停用: {userStats?.inactive || 0} 人</Text>
+                      </div>
+                      <Button
+                        type="primary"
+                        style={{ marginTop: 8 }}
+                        onClick={() => router.push('/settings?tab=users')}
+                      >
+                        管理用戶權限 →
+                      </Button>
+                    </Space>
+                  )}
                 </Card>
               </Col>
             </Row>
