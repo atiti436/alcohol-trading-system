@@ -41,6 +41,7 @@ import { HideFromInvestor } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
 import CustomsDeclarationUpload from '@/components/customs/CustomsDeclarationUpload'
 import CustomsDeclarationReview from '@/components/customs/CustomsDeclarationReview'
+import ImportEditModal from '@/components/imports/ImportEditModal'
 
 const { Search } = Input
 const { Option } = Select
@@ -904,6 +905,21 @@ export default function ImportsPage() {
           />
         )}
       </Modal>
+
+      {/* 編輯進貨單Modal */}
+      <ImportEditModal
+        visible={editModalVisible}
+        importRecord={selectedImport}
+        onCancel={() => {
+          setEditModalVisible(false)
+          setSelectedImport(null)
+        }}
+        onSuccess={() => {
+          setEditModalVisible(false)
+          setSelectedImport(null)
+          loadImports()
+        }}
+      />
     </div>
   )
 }
