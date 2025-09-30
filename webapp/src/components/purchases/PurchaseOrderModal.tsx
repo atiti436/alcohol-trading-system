@@ -139,10 +139,7 @@ export function PurchaseOrderModal({
       form.setFieldsValue({
         supplier: editingPurchase.supplier,
         currency: editingPurchase.currency,
-        exchangeRate: editingPurchase.exchangeRate,
         fundingSource: editingPurchase.fundingSource,
-        declarationNumber: editingPurchase.declarationNumber,
-        declarationDate: editingPurchase.declarationDate ? dayjs(editingPurchase.declarationDate) : null,
         notes: editingPurchase.notes
       })
 
@@ -166,7 +163,6 @@ export function PurchaseOrderModal({
       setOrderItems([])
       form.setFieldsValue({
         currency: 'JPY',
-        exchangeRate: 0.2,
         fundingSource: 'COMPANY'
       })
     }
@@ -331,25 +327,8 @@ export function PurchaseOrderModal({
   // 計算總金額
   const total_amount = orderItems.reduce((sum, item) => sum + item.total_price, 0)
 
-  // 取得表單幣別和匯率
+  // 取得表單幣別
   const selectedCurrency = form.getFieldValue('currency') || 'TWD'
-  const selectedExchangeRate = form.getFieldValue('exchangeRate') || 1
-
-  // 計算台幣金額 - 正確公式：外幣金額 × 匯率 = 台幣金額
-  const twd_amount = selectedCurrency === 'TWD' ? total_amount : total_amount * selectedExchangeRate
-
-  // 幣別變更處理
-  const handleCurrencyChange = (currency: string) => {
-    if (currency === 'TWD') {
-      form.setFieldValue('exchangeRate', 1)
-    } else if (currency === 'JPY') {
-      // 日幣預設匯率 0.2（避免出現匯率需大於0的誤判）
-      form.setFieldValue('exchangeRate', 0.2)
-    } else {
-      // 其他幣別維持手動輸入
-      form.setFieldValue('exchangeRate', undefined)
-    }
-  }
 
   // 表格欄位定義
   const columns = [
@@ -478,10 +457,8 @@ export function PurchaseOrderModal({
         // 後端採用 snake_case 欄位命名
         supplier: values.supplier,
         currency: values.currency,
-        exchange_rate: Number(values.exchangeRate),
+        exchange_rate: 1, // 預設匯率為1，實際匯率在進貨時填寫
         funding_source: values.fundingSource,
-        declaration_number: values.declarationNumber,
-        declaration_date: values.declarationDate?.format('YYYY-MM-DD'),
         notes: values.notes,
         items: orderItems.map(item => ({
           product_id: item.product_id,
@@ -508,16 +485,6 @@ export function PurchaseOrderModal({
     ],
     currency: [
       { required: true, message: '請選擇幣別' }
-    ],
-    exchangeRate: [
-      { required: true, message: '請輸入匯率' },
-      {
-        type: 'number' as const,
-        min: 0.001,
-        max: 1000,
-        message: '匯率必須在0.001到1000之間',
-        transform: (value: any) => Number(value)
-      }
     ],
     fundingSource: [
       { required: true, message: '請選擇資金來源' }
@@ -557,10 +524,7 @@ export function PurchaseOrderModal({
               label="幣別"
               rules={validationRules.currency}
             >
-              <Select
-                placeholder="請選擇幣別"
-                onChange={handleCurrencyChange}
-              >
+              <Select placeholder="請選擇幣別">
                 <Option value="JPY">日圓 (JPY)</Option>
                 <Option value="USD">美元 (USD)</Option>
                 <Option value="EUR">歐元 (EUR)</Option>
@@ -571,31 +535,6 @@ export function PurchaseOrderModal({
           </Col>
           <Col span={6}>
             <Form.Item
-              name="exchangeRate"
-              label="匯率"
-              rules={validationRules.exchangeRate}
-            >
-              <InputNumber
-                style={{ width: '100%' }}
-                placeholder="請輸入匯率"
-                step={0.001}
-                min={0.001}
-                max={1000}
-                precision={3}
-                parser={(value) => {
-                  const cleaned = (value || '').replace(/[^\d.]/g, '')
-                  const num = parseFloat(cleaned)
-                  return isNaN(num) ? 0 : num
-                }}
-                formatter={(value) => value ? `${value}` : ''}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item
               name="fundingSource"
               label="資金來源"
               rules={validationRules.fundingSource}
@@ -604,16 +543,6 @@ export function PurchaseOrderModal({
                 <Option value="COMPANY">公司資金</Option>
                 <Option value="PERSONAL">個人調貨</Option>
               </Select>
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name="declarationNumber" label="報單號碼">
-              <Input placeholder="請輸入報單號碼" />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name="declarationDate" label="報關日期">
-              <DatePicker style={{ width: '100%' }} placeholder="請選擇報關日期" />
             </Form.Item>
           </Col>
         </Row>
@@ -646,20 +575,13 @@ export function PurchaseOrderModal({
 
         {orderItems.length > 0 && (
           <div style={{ textAlign: 'right', marginTop: 16 }}>
-            <div style={{ marginBottom: 8 }}>
-              <Text style={{ fontSize: '16px' }}>
-                總金額 ({selectedCurrency})：{selectedCurrency} {total_amount.toLocaleString()}
-              </Text>
-            </div>
+            <Title level={4} style={{ margin: 0 }}>
+              總金額：{selectedCurrency} {total_amount.toLocaleString()}
+            </Title>
             {selectedCurrency !== 'TWD' && (
-              <Title level={4} style={{ color: '#52c41a', margin: 0 }}>
-                台幣金額：NT$ {twd_amount.toLocaleString()}
-              </Title>
-            )}
-            {selectedCurrency === 'TWD' && (
-              <Title level={4} style={{ margin: 0 }}>
-                總金額：NT$ {total_amount.toLocaleString()}
-              </Title>
+              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: 4 }}>
+                ※ 實際台幣金額將在轉進貨時依照當日匯率計算
+              </Text>
             )}
           </div>
         )}
