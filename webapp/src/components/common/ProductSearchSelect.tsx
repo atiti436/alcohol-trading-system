@@ -34,6 +34,7 @@ interface ProductSearchSelectProps {
   onChange?: (value: any) => void
   placeholder?: string
   allowQuickAdd?: boolean
+  showStock?: boolean // 是否顯示庫存資訊（報價單不需要）
   style?: React.CSSProperties
 }
 
@@ -65,6 +66,7 @@ export default function ProductSearchSelect({
   onChange,
   placeholder = "搜尋商品... (如: 山崎, NIKKA, 響)",
   allowQuickAdd = true,
+  showStock = false, // 預設不顯示庫存（報價單場景）
   style
 }: ProductSearchSelectProps) {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -77,14 +79,11 @@ export default function ProductSearchSelect({
 
   // 🔍 執行搜尋
   const performSearch = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([])
-      return
-    }
-
     setSearchLoading(true)
     try {
-      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}&limit=15`)
+      // 支援空搜尋，顯示所有商品（用於下拉選單功能）
+      const searchQuery = query.trim() || '*' // 空搜尋用 * 代表全部
+      const response = await fetch(`/api/products/search?q=${encodeURIComponent(searchQuery)}&limit=20`)
       const data = await response.json()
 
       if (data.success) {
@@ -217,36 +216,40 @@ export default function ProductSearchSelect({
 
               {/* 變體選擇 */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {product.variants.map(variant => (
-                  <Button
-                    key={variant.id}
-                    size="small"
-                    type={variant.available_stock > 0 ? 'primary' : 'dashed'}
-                    ghost
-                    onClick={() => handleProductSelect(product.id, variant.id)}
-                    style={{
-                      fontSize: 11,
-                      borderColor: variant.available_stock === 0 ? '#ff4d4f' : undefined,
-                      color: variant.available_stock === 0 ? '#ff4d4f' : undefined
-                    }}
-                  >
-                    {variant.variant_code}
-                    {variant.available_stock > 0 ? (
-                      <span style={{ marginLeft: 4 }}>
-                        (庫存: {variant.available_stock})
-                      </span>
-                    ) : (
-                      <span style={{ marginLeft: 4, color: '#ff4d4f' }}>
-                        (無庫存)
-                      </span>
-                    )}
-                  </Button>
-                ))}
+                {product.variants.map(variant => {
+                  const hasStock = variant.available_stock > 0
+
+                  return (
+                    <Button
+                      key={variant.id}
+                      size="small"
+                      type="primary"
+                      ghost
+                      onClick={() => handleProductSelect(product.id, variant.id)}
+                      style={{ fontSize: 11 }}
+                    >
+                      {variant.variant_code}
+                      {variant.variant_type && ` - ${variant.variant_type}`}
+                      {/* 只在啟用庫存顯示時才顯示庫存資訊 */}
+                      {showStock && (
+                        hasStock ? (
+                          <span style={{ marginLeft: 4, color: '#52c41a' }}>
+                            (庫存: {variant.available_stock})
+                          </span>
+                        ) : (
+                          <span style={{ marginLeft: 4, color: '#ff4d4f' }}>
+                            (無庫存)
+                          </span>
+                        )
+                      )}
+                    </Button>
+                  )
+                })}
               </div>
 
               {product.variants.length === 0 && (
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  ⚠️ 此商品暫無可用庫存
+                  ⚠️ 此商品尚未建立變體
                 </Text>
               )}
             </div>
@@ -258,19 +261,30 @@ export default function ProductSearchSelect({
 
   return (
     <div style={style}>
-      {/* 主搜尋框 */}
-      <Input.Search
-        placeholder={placeholder}
+      {/* 🔽 下拉選單 + 搜尋框 */}
+      <AutoComplete
         value={searchValue}
-        onChange={(e) => handleSearch(e.target.value)}
-        loading={searchLoading}
-        enterButton={<SearchOutlined />}
-        size="large"
-        style={{ marginBottom: 8 }}
-      />
+        onChange={handleSearch}
+        options={[]}
+        style={{ width: '100%', marginBottom: 8 }}
+        onFocus={() => {
+          // 點擊時自動觸發一次搜尋（顯示常用商品）
+          if (!searchValue) {
+            handleSearch('')
+          }
+        }}
+      >
+        <Input.Search
+          placeholder={placeholder}
+          loading={searchLoading}
+          enterButton={<SearchOutlined />}
+          size="large"
+          allowClear
+        />
+      </AutoComplete>
 
-      {/* 搜尋結果區域 */}
-      {searchValue && (
+      {/* 搜尋結果區域 - 也支援空搜尋顯示常用商品 */}
+      {(searchValue || searchResults.length > 0) && (
         <div
           style={{
             maxHeight: '300px',

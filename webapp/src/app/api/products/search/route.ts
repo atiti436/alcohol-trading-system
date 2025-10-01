@@ -24,37 +24,37 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || ''
     const limit = parseInt(searchParams.get('limit') || '20')
 
-    if (!query.trim()) {
-      return NextResponse.json({
-        success: true,
-        data: [],
-        message: '請輸入搜尋關鍵字'
-      })
-    }
-
-    // 🔍 強化的模糊搜尋邏輯
-    const searchTerms = query.trim().toLowerCase().split(/\s+/)
+    // 🆕 支援 * 查詢（顯示所有商品，用於下拉選單）
+    const isShowAll = query.trim() === '*'
 
     // 建立動態搜尋條件
-    const searchConditions = searchTerms.map(term => ({
-      OR: [
-        // 產品名稱包含關鍵字
-        { name: { contains: term, mode: Prisma.QueryMode.insensitive } },
-        // 產品編號包含關鍵字
-        { product_code: { contains: term, mode: Prisma.QueryMode.insensitive } },
-        // 供應商包含關鍵字
-        { supplier: { contains: term, mode: Prisma.QueryMode.insensitive } },
-        // 變體描述包含關鍵字
-        { variants: { some: { description: { contains: term, mode: Prisma.QueryMode.insensitive } } } },
-        // 變體代碼包含關鍵字
-        { variants: { some: { variant_code: { contains: term, mode: Prisma.QueryMode.insensitive } } } }
-      ]
-    }))
+    let searchConditions: any[] = []
+
+    if (!isShowAll && query.trim()) {
+      // 🔍 強化的模糊搜尋邏輯
+      const searchTerms = query.trim().toLowerCase().split(/\s+/)
+
+      searchConditions = searchTerms.map(term => ({
+        OR: [
+          // 產品名稱包含關鍵字
+          { name: { contains: term, mode: Prisma.QueryMode.insensitive } },
+          // 產品編號包含關鍵字
+          { product_code: { contains: term, mode: Prisma.QueryMode.insensitive } },
+          // 供應商包含關鍵字
+          { supplier: { contains: term, mode: Prisma.QueryMode.insensitive } },
+          // 變體描述包含關鍵字
+          { variants: { some: { description: { contains: term, mode: Prisma.QueryMode.insensitive } } } },
+          // 變體代碼包含關鍵字
+          { variants: { some: { variant_code: { contains: term, mode: Prisma.QueryMode.insensitive } } } }
+        ]
+      }))
+    }
 
     const products = await prisma.product.findMany({
       where: {
         is_active: true,
-        AND: searchConditions
+        // 🔍 如果是顯示全部，不加搜尋條件
+        ...(searchConditions.length > 0 && { AND: searchConditions })
       },
       take: limit,
       orderBy: [
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       ],
       include: {
         variants: {
-          where: { stock_quantity: { gt: 0 } }, // 只顯示有庫存的變體
+          // ✅ 移除庫存限制，報價單/採購單不需要庫存即可選擇
           select: {
             id: true,
             variant_code: true,
@@ -72,9 +72,15 @@ export async function GET(request: NextRequest) {
             current_price: true,
             stock_quantity: true,
             available_stock: true,
-            condition: true
+            condition: true,
+            // 新增欄位以支援完整顯示
+            volume_ml: true,
+            alc_percentage: true,
+            cost_price: true,
+            investor_price: true,
+            actual_price: true
           },
-          orderBy: { variant_type: 'asc' }
+          orderBy: { variant_code: 'asc' }
         },
         _count: {
           select: {
@@ -87,48 +93,60 @@ export async function GET(request: NextRequest) {
     // 🎯 智能排序：越匹配的越前面
     const scoredProducts = products.map(product => {
       let score = 0
-      const productName = product.name.toLowerCase()
-      const productCode = product.product_code.toLowerCase()
 
-      searchTerms.forEach(term => {
-        // 名稱完全匹配 +10分
-        if (productName === term) score += 10
-        // 名稱開頭匹配 +5分
-        else if (productName.startsWith(term)) score += 5
-        // 名稱包含 +2分
-        else if (productName.includes(term)) score += 2
+      if (!isShowAll && query.trim()) {
+        const searchTerms = query.trim().toLowerCase().split(/\s+/)
+        const productName = product.name.toLowerCase()
+        const productCode = product.product_code.toLowerCase()
 
-        // 產品編號匹配 +3分
-        if (productCode.includes(term)) score += 3
-      })
+        searchTerms.forEach(term => {
+          // 名稱完全匹配 +10分
+          if (productName === term) score += 10
+          // 名稱開頭匹配 +5分
+          else if (productName.startsWith(term)) score += 5
+          // 名稱包含 +2分
+          else if (productName.includes(term)) score += 2
+
+          // 產品編號匹配 +3分
+          if (productCode.includes(term)) score += 3
+        })
+      }
 
       return { ...product, searchScore: score }
     })
 
-    // 按分數排序
-    const sortedProducts = scoredProducts.sort((a, b) => b.searchScore - a.searchScore)
+    // 按分數排序（顯示全部時按名稱排序）
+    const sortedProducts = isShowAll
+      ? scoredProducts.sort((a, b) => a.name.localeCompare(b.name))
+      : scoredProducts.sort((a, b) => b.searchScore - a.searchScore)
 
     // 🏷️ 加入搜尋結果標籤
-    const enhancedResults = sortedProducts.map(product => ({
-      id: product.id,
-      name: product.name,
-      product_code: product.product_code,
-      category: product.category,
-      supplier: product.supplier,
-      standard_price: product.standard_price,
-      current_price: product.current_price,
-      variants: product.variants,
-      variant_count: product._count.variants,
-      has_stock: product.variants.length > 0,
-      // 🔍 搜尋匹配資訊
-      match_info: {
-        score: product.searchScore,
-        matched_terms: searchTerms.filter(term =>
-          product.name.toLowerCase().includes(term) ||
-          product.product_code.toLowerCase().includes(term)
-        )
+    const enhancedResults = sortedProducts.map(product => {
+      const matchedTerms = isShowAll || !query.trim()
+        ? []
+        : query.trim().toLowerCase().split(/\s+/).filter(term =>
+            product.name.toLowerCase().includes(term) ||
+            product.product_code.toLowerCase().includes(term)
+          )
+
+      return {
+        id: product.id,
+        name: product.name,
+        product_code: product.product_code,
+        category: product.category,
+        supplier: product.supplier,
+        standard_price: product.standard_price,
+        current_price: product.current_price,
+        variants: product.variants,
+        variant_count: product._count.variants,
+        has_stock: product.variants.length > 0,
+        // 🔍 搜尋匹配資訊
+        match_info: {
+          score: product.searchScore,
+          matched_terms: matchedTerms
+        }
       }
-    }))
+    })
 
     return NextResponse.json({
       success: true,
