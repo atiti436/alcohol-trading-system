@@ -172,10 +172,14 @@ export default function ProductSearchSelect({
     const variant = product?.variants.find(v => v.id === variantId)
 
     if (product && variant && onChange) {
+      // 組合完整商品名稱：商品名稱 - 變體描述
+      const variantName = variant.description || variant.variant_type || '標準款'
+      const fullProductName = `${product.name} - ${variantName}`
+
       onChange({
         productId: product.id,
         variantId: variant.id,
-        productName: product.name,
+        productName: fullProductName, // ✅ 傳遞完整名稱
         productCode: product.product_code,
         variantCode: variant.variant_code,
         variantType: variant.variant_type,
