@@ -451,34 +451,16 @@ export default function ProductsPage() {
       const result = await response.json()
 
       if (result.success) {
-        const originalProduct = result.data.product  // 🔧 修正：API 回傳格式
+        const originalProduct = result.data.product
 
-        // 跳出編輯 Modal，預填基本資料（不含價格，因為價格在變體層級）
+        // 🎯 新架構：只複製 name + category
         setEditingProduct(null) // 設為 null 表示是新增模式
         form.setFieldsValue({
           name: `${originalProduct.name} (副本)`,
-          category: originalProduct.category,
-          supplier: originalProduct.supplier,
-          volume_ml: originalProduct.volume_ml,
-          alc_percentage: originalProduct.alc_percentage,
-          weight_kg: originalProduct.weight_kg,
-          package_weight_kg: originalProduct.package_weight_kg,
-          has_box: originalProduct.has_box,
-          has_accessories: originalProduct.has_accessories,
-          accessory_weight_kg: originalProduct.accessory_weight_kg,
-          accessories: originalProduct.accessories?.join(', '),
-          hs_code: originalProduct.hs_code,
-          manufacturing_date: originalProduct.manufacturing_date,
-          expiry_date: originalProduct.expiry_date,
-          description: originalProduct.description,
-          // 🎯 變體資訊留空，需要重新填寫
-          variant_type: '',
-          cost_price: 0,
-          investor_price: 0,
-          actual_price: 0
+          category: originalProduct.category
         })
         setModalVisible(true)
-        message.info('已載入原商品資料，請修改變體資訊後儲存')
+        message.info('已載入原商品資料（品名 + 分類），請修改後儲存。變體需另外新增。')
       } else {
         message.error(result.error || '無法載入商品資料')
       }
@@ -491,43 +473,15 @@ export default function ProductsPage() {
   }
 
   // 處理表單提交
-  const handleSubmit = async (values: ProductFormData & {
-    accessories?: string
-    variant_type?: string
-    cost_price?: number
-    investor_price?: number
-    actual_price?: number
-  }) => {
+  const handleSubmit = async (values: { name: string; category: string }) => {
     try {
-      // 處理accessories欄位
-      const formData: any = {
-        ...values,
-        accessories: values.accessories
-          ? values.accessories.split(',').map(item => item.trim()).filter(Boolean)
-          : []
+      // 🎯 新架構：只提交 name + category
+      const formData = {
+        name: values.name.trim(),
+        category: values.category
       }
 
-      // 🎯 新增商品時，提取變體資料
-      if (!editingProduct && values.variant_type) {
-        formData.variant = {
-          variant_type: values.variant_type,
-          cost_price: values.cost_price || 0,
-          investor_price: values.investor_price || 0,
-          actual_price: values.actual_price || 0,
-          current_price: values.investor_price || 0 // current_price 預設為 investor_price
-        }
-        // 移除 Product 層級的舊價格欄位
-        delete formData.standard_price
-        delete formData.current_price
-        delete formData.min_price
-        delete formData.variant_type
-        delete formData.cost_price
-        delete formData.investor_price
-        delete formData.actual_price
-      }
-
-      // 調試輸出
-      console.log('提交的商品資料:', formData)
+      console.log('提交的商品 BASE 資料:', formData)
 
       const url = editingProduct
         ? `/api/products/${editingProduct.id}`
@@ -544,11 +498,15 @@ export default function ProductsPage() {
       const result = await response.json()
 
       if (result.success) {
-        message.success(result.message)
+        message.success(result.message || '商品 BASE 創建成功')
         setModalVisible(false)
         loadProducts()
+
+        // 🎯 新增成功後提示用戶新增變體
+        if (!editingProduct) {
+          message.info('請點擊「查看詳情」新增變體以設定完整規格', 5)
+        }
       } else {
-        // 更詳細的錯誤顯示
         console.error('API 錯誤回應:', result)
         message.error(`${result.error}${result.details ? ': ' + result.details : ''}`)
       }
@@ -631,290 +589,52 @@ export default function ProductsPage() {
 
       {/* 新增/編輯Modal */}
       <Modal
-        title={editingProduct ? '編輯商品' : '新增商品'}
+        title={editingProduct ? '編輯商品' : '新增商品 BASE'}
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
-        width={800}
+        width={500}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          onValuesChange={(changedValues) => {
-            if (
-              'weight_kg' in changedValues ||
-              'package_weight_kg' in changedValues ||
-              'accessory_weight_kg' in changedValues ||
-              'has_box' in changedValues ||
-              'has_accessories' in changedValues
-            ) {
-              try {
-                const { weight_kg, package_weight_kg, accessory_weight_kg, has_box, has_accessories } =
-                  form.getFieldsValue(['weight_kg','package_weight_kg','accessory_weight_kg','has_box','has_accessories']) as any
-                const base = Number(weight_kg) || 0
-                const pkg = has_box ? (Number(package_weight_kg) || 0) : 0
-                const acc = has_accessories ? (Number(accessory_weight_kg) || 0) : 0
-                const total = Number((base + pkg + acc).toFixed(2))
-                form.setFieldsValue({ total_weight_kg: total })
-              } catch (e) {}
-            }
-          }}
         >
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Form.Item
-              name="name"
-              label="商品名稱"
-              rules={[{ required: true, message: '請輸入商品名稱' }]}
-              style={{ flex: 2 }}
-            >
-              <Input placeholder="請輸入商品名稱" />
-            </Form.Item>
-            <Form.Item
-              name="category"
-              label="分類"
-              rules={[{ required: true, message: '請選擇分類' }]}
-              style={{ flex: 1 }}
-            >
-              <Select placeholder="選擇分類">
-                <Option value="WHISKY">威士忌</Option>
-                <Option value="WINE">葡萄酒</Option>
-                <Option value="SAKE">清酒</Option>
-                <Option value="BEER">啤酒</Option>
-                <Option value="SPIRITS">烈酒</Option>
-                <Option value="LIQUEUR">利口酒</Option>
-                <Option value="OTHER">其他</Option>
-              </Select>
-            </Form.Item>
-          </div>
-
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Form.Item
-              name="volume_ml"
-              label="容量(ml)"
-              rules={[{ required: true, message: '請輸入容量' }]}
-              style={{ flex: 1 }}
-            >
-              <InputNumber placeholder="700" style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item
-              name="alc_percentage"
-              label="酒精度(%)"
-              rules={[{ required: true, message: '請輸入酒精度' }]}
-              style={{ flex: 1 }}
-            >
-              <InputNumber placeholder="43.0" step={0.1} style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item
-              name="weight_kg"
-              label="重量(kg)"
-              rules={[{ required: true, message: '請輸入重量' }]}
-              style={{ flex: 1 }}
-            >
-              <InputNumber placeholder="1.2" step={0.1} style={{ width: '100%' }} />
-            </Form.Item>
-          </div>
-
-          {/* 首個變體設定（強制） */}
-          <div style={{ background: '#e6f7ff', padding: '16px', borderRadius: '6px', marginBottom: '16px' }}>
-            <div style={{ marginBottom: '12px' }}>
-              <Text strong>首個變體設定</Text>
-              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                商品必須至少有一個變體，變體編號將自動生成為 P0001-001
-              </div>
-            </div>
-
-            <Form.Item
-              name="variant_type"
-              label="變體描述"
-              rules={[{ required: true, message: '請輸入變體描述' }]}
-              tooltip="例如：亮面新版(日版)、木盒禮盒版、標準款等"
-            >
-              <Input placeholder="請輸入變體描述，例如：標準款、日版、禮盒版" />
-            </Form.Item>
-
-            <div style={{ marginBottom: '8px', fontSize: '12px', color: '#666' }}>
-              <strong>三層價格架構：</strong>
-              <span style={{ color: '#ff4d4f' }}> 成本價</span> ≤
-              <span style={{ color: '#52c41a' }}> 期望售價</span> ≤
-              <span style={{ color: '#1890ff' }}> 實際售價</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <Form.Item
-                name="cost_price"
-                label="成本價"
-                rules={[{ required: true, message: '請輸入成本價' }]}
-                style={{ flex: 1 }}
-                tooltip="進貨成本（可在進貨後自動更新）"
-              >
-                <InputNumber placeholder="15000" min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item
-                name="investor_price"
-                label="期望售價"
-                rules={[{ required: true, message: '請輸入期望售價' }]}
-                style={{ flex: 1 }}
-                tooltip="投資方期望的售價（投資方可見並調整）"
-              >
-                <InputNumber placeholder="18000" min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item
-                name="actual_price"
-                label="實際售價"
-                rules={[{ required: true, message: '請輸入實際售價' }]}
-                style={{ flex: 1 }}
-                tooltip="市場實際售價（僅管理員可見）"
-              >
-                <InputNumber placeholder="21000" min={0} style={{ width: '100%' }} />
-              </Form.Item>
+          {/* 🎯 只需填寫品名和分類，規格在變體層級 */}
+          <div style={{ background: '#e6f7ff', padding: '12px', borderRadius: '6px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', color: '#1890ff' }}>
+              💡 <strong>簡化流程：</strong>先創建商品 BASE（品名 + 分類），儲存後再新增變體以設定完整規格（容量、酒精度、重量、價格等）
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Form.Item name="supplier" label="供應商" style={{ flex: 1 }}>
-              <Input placeholder="請輸入供應商" />
-            </Form.Item>
-            <Form.Item name="brand" label="品牌" style={{ flex: 1 }}>
-              <Input placeholder="請輸入品牌" />
-            </Form.Item>
-          </div>
-
-          <Form.Item name="description" label="商品描述">
-            <Input.TextArea placeholder="請輸入商品描述" rows={3} />
+          <Form.Item
+            name="name"
+            label="商品名稱（品名）"
+            rules={[{ required: true, message: '請輸入商品名稱' }]}
+            tooltip="例如：山崎18年、麥卡倫12年、拉菲紅酒"
+          >
+            <Input placeholder="請輸入商品名稱，例如：山崎18年" />
           </Form.Item>
 
-          <Form.Item name="accessories" label="附件清單">
-            <Input placeholder="請輸入附件，用逗號分隔，例如：證書, 特製木盒, 說明書" />
+          <Form.Item
+            name="category"
+            label="商品分類"
+            rules={[{ required: true, message: '請選擇分類' }]}
+          >
+            <Select placeholder="選擇分類">
+              <Option value="WHISKY">威士忌</Option>
+              <Option value="WINE">葡萄酒</Option>
+              <Option value="SAKE">清酒</Option>
+              <Option value="BEER">啤酒</Option>
+              <Option value="SPIRITS">烈酒</Option>
+              <Option value="LIQUEUR">利口酒</Option>
+              <Option value="OTHER">其他</Option>
+            </Select>
           </Form.Item>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <Form.Item name="has_box" label="有外盒" valuePropName="checked" style={{ flex: 1 }}>
-              <Switch />
-            </Form.Item>
-            <Form.Item name="has_accessories" label="有附件" valuePropName="checked" style={{ flex: 1 }}>
-              <Switch />
-            </Form.Item>
-          </div>
-
-          {/* 空瓶費申報 - 重量資訊 */}
-          <div style={{ background: '#f5f5f5', padding: '16px', borderRadius: '6px', marginBottom: '16px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '12px' }}>空瓶費申報重量</div>
-            <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
-              依政府規定，每 2 個月需申報空瓶服務費。請填寫以下重量資訊：
-            </div>
-
-            {/* 空瓶重量 - 永遠顯示 */}
-            <Form.Item
-              name="weight_kg"
-              label="空瓶重量 (kg)"
-              tooltip="空酒瓶本身重量（不含酒液、包裝、附件）。若無空瓶可量測，可暫時留空。"
-              style={{ marginBottom: '16px' }}
-            >
-              <InputNumber
-                placeholder="0.5"
-                step={0.1}
-                min={0}
-                precision={3}
-                style={{ width: '200px' }}
-              />
-            </Form.Item>
-
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              {/* 有外盒時顯示外盒重量 */}
-              <Form.Item shouldUpdate>
-                {({ getFieldValue }) => {
-                  const hasBox = getFieldValue('has_box')
-                  return hasBox ? (
-                    <Form.Item
-                      name="package_weight_kg"
-                      label="外盒重量 (kg)"
-                      tooltip="外盒包裝重量"
-                      style={{ minWidth: '180px' }}
-                    >
-                      <InputNumber
-                        placeholder="0.5"
-                        step={0.1}
-                        min={0}
-                        precision={2}
-                        style={{ width: '100%' }}
-                      />
-                    </Form.Item>
-                  ) : null
-                }}
-              </Form.Item>
-
-              {/* 有附件時顯示附件重量 */}
-              <Form.Item shouldUpdate>
-                {({ getFieldValue }) => {
-                  const hasAccessories = getFieldValue('has_accessories')
-                  return hasAccessories ? (
-                    <Form.Item
-                      name="accessory_weight_kg"
-                      label="附件重量 (kg)"
-                      tooltip="證書、木盒等附件重量"
-                      style={{ minWidth: '180px' }}
-                    >
-                      <InputNumber
-                        placeholder="0.2"
-                        step={0.1}
-                        min={0}
-                        precision={2}
-                        style={{ width: '100%' }}
-                      />
-                    </Form.Item>
-                  ) : null
-                }}
-              </Form.Item>
-
-              {/* 總重量 - 自動計算顯示 */}
-              <Form.Item shouldUpdate>
-                {({ getFieldValue }) => {
-                  const emptyBottleWeight = getFieldValue('weight_kg') || 0
-                  const hasBox = getFieldValue('has_box')
-                  const hasAccessories = getFieldValue('has_accessories')
-                  const packageWeight = hasBox ? (getFieldValue('package_weight_kg') || 0) : 0
-                  const accessoryWeight = hasAccessories ? (getFieldValue('accessory_weight_kg') || 0) : 0
-
-                  // 總重量 = 空瓶 + 外盒 + 附件（不再乘以 2）
-                  const totalWeight = emptyBottleWeight + packageWeight + accessoryWeight
-
-                  // 自動更新表單值
-                  if (totalWeight > 0) {
-                    setTimeout(() => {
-                      form.setFieldValue('total_weight_kg', parseFloat(totalWeight.toFixed(3)))
-                    }, 0)
-                  }
-
-                  // 只在有總重時顯示
-                  return totalWeight > 0 ? (
-                    <Form.Item
-                      label="申報總重 (kg)"
-                      tooltip="自動計算：空瓶 + 外盒 + 附件重量"
-                      style={{ minWidth: '250px' }}
-                    >
-                      <div style={{
-                        padding: '8px 12px',
-                        background: '#f0f8ff',
-                        border: '1px solid #d1ecf1',
-                        borderRadius: '6px',
-                        fontWeight: 'bold',
-                        color: '#31708f'
-                      }}>
-                        {totalWeight.toFixed(3)} kg
-                        <div style={{ fontSize: '11px', fontWeight: 'normal', marginTop: '2px', color: '#666' }}>
-                          {emptyBottleWeight > 0 && `空瓶: ${emptyBottleWeight.toFixed(3)}kg`}
-                          {packageWeight > 0 && ` + 外盒: ${packageWeight.toFixed(3)}kg`}
-                          {accessoryWeight > 0 && ` + 附件: ${accessoryWeight.toFixed(3)}kg`}
-                        </div>
-                      </div>
-                      <Form.Item name="total_weight_kg" noStyle>
-                        <input type="hidden" />
-                      </Form.Item>
-                    </Form.Item>
-                  ) : null
-                }}
-              </Form.Item>
+          <div style={{ background: '#fffbe6', padding: '12px', borderRadius: '6px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '12px', color: '#ad8b00' }}>
+              📦 <strong>下一步：</strong>儲存後請點擊「查看詳情」或「變體管理」新增變體，每個變體可設定不同的容量（700ML/750ML）、酒精度（43%/48%）、包裝、價格等
             </div>
           </div>
 
@@ -924,7 +644,7 @@ export default function ProductsPage() {
                 取消
               </Button>
               <Button type="primary" htmlType="submit">
-                {editingProduct ? '更新' : '新增'}
+                {editingProduct ? '更新' : '創建 BASE'}
               </Button>
             </Space>
           </Form.Item>
