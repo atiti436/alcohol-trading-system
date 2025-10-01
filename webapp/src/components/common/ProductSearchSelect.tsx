@@ -222,12 +222,10 @@ export default function ProductSearchSelect({
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {product.variants.map(variant => {
                   const hasStock = variant.available_stock > 0
-                  // 優先顯示 description，其次 variant_type，最後只顯示 variant_code
-                  const variantLabel = variant.description
-                    ? `${variant.variant_code} - ${variant.description}`
-                    : variant.variant_type
-                    ? `${variant.variant_code} - ${variant.variant_type}`
-                    : variant.variant_code
+                  // 顯示格式：商品名稱 - 變體描述
+                  // 例如：山崎18年 - 一般亮面版本
+                  const variantName = variant.description || variant.variant_type || '標準款'
+                  const variantLabel = `${product.name} - ${variantName}`
 
                   return (
                     <Button
