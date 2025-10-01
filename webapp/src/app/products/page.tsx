@@ -228,43 +228,42 @@ export default function ProductsPage() {
       ]
     },
     {
-      title: '價格資訊',
-      key: 'pricing',
-      width: 120,
-      render: (record: Product) => (
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
-            目前: ${record.current_price.toLocaleString()}
-          </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            標準: ${record.standard_price.toLocaleString()}
-          </div>
-          <div style={{ fontSize: '12px', color: '#999' }}>
-            底線: ${record.min_price.toLocaleString()}
-          </div>
-        </div>
-      )
+      title: '變體數量',
+      key: 'variants_count',
+      width: 100,
+      align: 'center' as const,
+      render: (record: ProductWithVariants) => {
+        const variantCount = record.variants?.length || 0
+        return (
+          <Badge
+            count={variantCount}
+            showZero
+            style={{ backgroundColor: variantCount > 0 ? '#52c41a' : '#d9d9d9' }}
+          />
+        )
+      }
     },
     {
-      title: '變體/庫存',
-      key: 'variants',
-      width: 120,
-      render: (record: ProductWithVariants) => (
-        <div style={{ textAlign: 'center' }}>
-          <Badge count={record._count.variants} showZero>
+      title: '庫存資訊',
+      key: 'stock_info',
+      width: 140,
+      render: (record: ProductWithVariants) => {
+        const totalStock = record.variants?.reduce((sum, v) => sum + (v.stock_quantity || 0), 0) || 0
+        return (
+          <div style={{ textAlign: 'center' }}>
             <Button
               icon={<AppstoreOutlined />}
               size="small"
               onClick={() => handleViewVariants(record)}
             >
-              變體
+              {record._count.variants} 個變體
             </Button>
-          </Badge>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-            庫存: {record.variants?.reduce((sum, v) => sum + (v.stock_quantity || 0), 0) || 0}
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+              總庫存: <span style={{ fontWeight: 'bold', color: totalStock > 0 ? '#52c41a' : '#ff4d4f' }}>{totalStock}</span>
+            </div>
           </div>
-        </div>
-      )
+        )
+      }
     },
     {
       title: '狀態',
@@ -454,7 +453,7 @@ export default function ProductsPage() {
       if (result.success) {
         const originalProduct = result.data.product  // 🔧 修正：API 回傳格式
 
-        // 跳出編輯 Modal，預填資料
+        // 跳出編輯 Modal，預填基本資料（不含價格，因為價格在變體層級）
         setEditingProduct(null) // 設為 null 表示是新增模式
         form.setFieldsValue({
           name: `${originalProduct.name} (副本)`,
@@ -471,14 +470,15 @@ export default function ProductsPage() {
           hs_code: originalProduct.hs_code,
           manufacturing_date: originalProduct.manufacturing_date,
           expiry_date: originalProduct.expiry_date,
-          cost_price: originalProduct.cost_price,
-          standard_price: originalProduct.standard_price,
-          current_price: originalProduct.current_price,
-          min_price: originalProduct.min_price,
-          description: originalProduct.description
+          description: originalProduct.description,
+          // 🎯 變體資訊留空，需要重新填寫
+          variant_type: '',
+          cost_price: 0,
+          investor_price: 0,
+          actual_price: 0
         })
         setModalVisible(true)
-        message.info('已載入原商品資料，請修改後儲存')
+        message.info('已載入原商品資料，請修改變體資訊後儲存')
       } else {
         message.error(result.error || '無法載入商品資料')
       }

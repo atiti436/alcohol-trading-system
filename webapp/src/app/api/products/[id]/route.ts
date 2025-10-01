@@ -30,7 +30,29 @@ export async function GET(
 
     const product = await prisma.product.findUnique({
       where: { id: params.id },
-      include: {
+      select: {
+        // ✅ 只選擇需要的欄位，排除 deprecated 的價格欄位
+        id: true,
+        product_code: true,
+        name: true,
+        category: true,
+        volume_ml: true,
+        alc_percentage: true,
+        weight_kg: true,
+        package_weight_kg: true,
+        total_weight_kg: true,
+        has_box: true,
+        has_accessories: true,
+        accessory_weight_kg: true,
+        accessories: true,
+        hs_code: true,
+        supplier: true,
+        manufacturing_date: true,
+        expiry_date: true,
+        is_active: true,
+        created_at: true,
+        updated_at: true,
+        // ❌ 不回傳 deprecated 的 Product 層級價格
         variants: {
           select: {
             id: true,
@@ -104,18 +126,10 @@ export async function GET(
     // 🔧 修正：計算總庫存（所有變體）- 使用統一命名規範
     const total_stock_quantity = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
 
-    // 🔒 如果是投資人，額外過濾 Product 層級的 actual_price
-    const filteredProduct = session.user.role === 'INVESTOR'
-      ? {
-          ...product,
-          actual_price: undefined  // 移除商品的 actual_price
-        }
-      : product
-
     return NextResponse.json({
       success: true,
       data: {
-        product: filteredProduct,
+        product, // ✅ 已在 select 階段排除 deprecated 價格欄位
         statistics: {
           totalVariants: product._count.variants,
           totalSales: product._count.sale_items,

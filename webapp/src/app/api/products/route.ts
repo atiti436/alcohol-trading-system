@@ -75,7 +75,30 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
         orderBy: { [orderBy]: order },
-        include: {
+        select: {
+          // ✅ 只選擇需要的欄位，排除 deprecated 的價格欄位
+          id: true,
+          product_code: true,
+          name: true,
+          category: true,
+          volume_ml: true,
+          alc_percentage: true,
+          weight_kg: true,
+          package_weight_kg: true,
+          total_weight_kg: true,
+          has_box: true,
+          has_accessories: true,
+          accessory_weight_kg: true,
+          accessories: true,
+          hs_code: true,
+          supplier: true,
+          manufacturing_date: true,
+          expiry_date: true,
+          is_active: true,
+          created_at: true,
+          updated_at: true,
+          // ❌ 不回傳 deprecated 的 Product 層級價格
+          // cost_price, investor_price, actual_price, standard_price, current_price, min_price
           variants: {
             select: {
               id: true,
@@ -103,18 +126,10 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
-    // 🔒 如果是投資人，過濾 Product 層級的 actual_price
-    const filteredProducts = session.user.role === 'INVESTOR'
-      ? products.map(p => ({
-          ...p,
-          actual_price: undefined
-        }))
-      : products
-
     return NextResponse.json({
       success: true,
       data: {
-        products: filteredProducts,
+        products,
         total,
         page,
         limit,
