@@ -5,6 +5,7 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 import { DatabaseWhereCondition, GroupingQuery } from '@/types/business'
 import { ProductAnalysisAccumulator } from '@/types/api'
 import { Role } from '@/types/auth'
+import { getWarehouseFilter, canViewActualPrice } from '@/lib/permissions'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'

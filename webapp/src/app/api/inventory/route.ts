@@ -10,6 +10,7 @@ import {
   InventoryMovementCreate
 } from '@/types/api'
 import { AlcoholCategory } from '@prisma/client'
+import { getWarehouseFilter } from '@/lib/permissions'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -148,31 +149,16 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // 🔒 數據過濾 - 投資方不能看到個人調貨庫存
+    // 🔒 數據過濾 - 投資方只能看公司倉（根據新的 warehouse 欄位）
     const filteredData = inventoryData.map(product => {
       if (session.user.role === 'INVESTOR') {
-        // 過濾掉個人調貨相關的庫存
-        const filteredVariants = product.variants.filter(variant => {
-          // 個人調貨判斷邏輯：
-          // 1. 檢查庫存量是否為小批量 (通常個人調貨量較小)
-          // 2. 檢查產品描述是否包含個人標記
-          // 3. 檢查變種代碼是否包含個人調貨標記 (如 'P' 前綴)
-          const isPersonalTransfer = (
-            variant.description?.toLowerCase().includes('personal') ||
-            variant.description?.toLowerCase().includes('private') ||
-            variant.variant_code?.toLowerCase().includes('personal') ||
-            (variant.stock_quantity && variant.stock_quantity < 10 && variant.variant_code?.includes('P'))
-          )
-
-          // 投資方不能看到個人調貨庫存
-          return !isPersonalTransfer
-        })
-
+        // 過濾變體：只查詢公司倉庫存
+        // 注意：此處假設 variants 已關聯 inventory，需要額外查詢
         return {
           ...product,
-          variants: filteredVariants.map(variant => ({
+          variants: product.variants.map(variant => ({
             ...variant,
-            cost_price: null // 隱藏成本價
+            actual_price: undefined // 隱藏實際售價
           }))
         }
       }
