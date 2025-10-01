@@ -35,6 +35,9 @@ import type {
   ProductFormData,
   ProductFilters
 } from '@/types/room-2'
+import VariantListView from '@/components/products/VariantListView'
+import VariantCreateModal from '@/components/products/VariantCreateModal'
+import InvestorPriceModal from '@/components/products/InvestorPriceModal'
 
 const { Search } = Input
 const { Option } = Select
@@ -67,6 +70,11 @@ export default function ProductsPage() {
   const [editingVariant, setEditingVariant] = useState<any>(null)
   const [form] = Form.useForm()
   const [variantForm] = Form.useForm()
+
+  // 新組件狀態
+  const [variantCreateModalVisible, setVariantCreateModalVisible] = useState(false)
+  const [investorPriceModalVisible, setInvestorPriceModalVisible] = useState(false)
+  const [selectedVariant, setSelectedVariant] = useState<any>(null)
 
   // 變體代碼/SKU 自動生成工具（簡單 slug 規則）
   const slugify = (s: string) => (s || '')
@@ -893,103 +901,50 @@ export default function ProductsPage() {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              onClick={handleAddVariant}
+              onClick={() => setVariantCreateModalVisible(true)}
             >
               新增變體
             </Button>
           </Space>
         }
-        width={900}
+        width={1000}
       >
         {selectedProduct && (
           <div>
-            <p>商品編號: {selectedProduct.product_code}</p>
-            <p>變體數量: {selectedProduct._count.variants} 個</p>
-
-            {selectedProduct.variants && selectedProduct.variants.length > 0 ? (
-              <Table
-                dataSource={selectedProduct.variants}
-                pagination={false}
-                size="small"
-                columns={[
-                  {
-                    title: '變體編號',
-                    dataIndex: 'variant_code',
-                    key: 'variant_code',
-                    width: 120
-                  },
-                  {
-                    title: '描述',
-                    dataIndex: 'description',
-                    key: 'description',
-                    render: (desc: string, record: any) => (
-                      <span style={{ fontWeight: 'bold' }}>
-                        {desc || record.variant_type || '未設定'}
-                      </span>
-                    )
-                  },
-                  {
-                    title: '價格',
-                    dataIndex: 'current_price',
-                    key: 'current_price',
-                    width: 100,
-                    render: (price: number) => `NT$ ${price?.toLocaleString() || 0}`
-                  },
-                  {
-                    title: '庫存',
-                    key: 'stock',
-                    width: 80,
-                    render: (record: any) => (
-                      <span style={{
-                        color: (record.available_stock || record.stock_quantity || 0) > 0 ? 'green' : 'red'
-                      }}>
-                        {record.available_stock || record.stock_quantity || 0}瓶
-                      </span>
-                    )
-                  },
-                  {
-                    title: '狀況',
-                    dataIndex: 'condition',
-                    key: 'condition',
-                    render: (condition: string) => condition || '狀況良好'
-                  },
-                  {
-                    title: '操作',
-                    key: 'actions',
-                    width: 120,
-                    render: (record: any) => (
-                      <Space>
-                        <Button
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => handleEditVariant(record)}
-                          
-                        />
-                        <Popconfirm
-                          title="確定要刪除此變體嗎？"
-                          onConfirm={() => handleDeleteVariant(record)}
-                          okText="確定"
-                          cancelText="取消"
-                        >
-                          <Button
-                            size="small"
-                            danger
-                            icon={<DeleteOutlined />}
-                            
-                          />
-                        </Popconfirm>
-                      </Space>
-                    )
-                  }
-                ]}
-              />
-            ) : (
-              <div style={{ background: '#f5f5f5', padding: '16px', marginTop: '16px' }}>
-                <p style={{ margin: 0, color: '#666' }}>
-                  此商品尚無變體資料
-                </p>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <div>
+                <p>商品編號: <Text code strong>{selectedProduct.product_code}</Text></p>
+                <p>變體數量: <Text strong>{selectedProduct._count.variants} 個</Text></p>
               </div>
-            )}
+
+              {selectedProduct.variants && selectedProduct.variants.length > 0 ? (
+                <VariantListView
+                  variants={selectedProduct.variants.map((v: any) => ({
+                    id: v.id,
+                    variant_code: v.variant_code,
+                    variant_type: v.variant_type,
+                    description: v.description,
+                    cost_price: Number(v.cost_price || 0),
+                    investor_price: Number(v.investor_price || 0),
+                    actual_price: Number(v.actual_price || 0),
+                    stock_quantity: v.stock_quantity || 0,
+                    is_active: true
+                  }))}
+                  userRole={session?.user?.role || 'EMPLOYEE'}
+                  onAdjustPrice={(variant) => {
+                    setSelectedVariant(variant)
+                    setInvestorPriceModalVisible(true)
+                  }}
+                  loading={loading}
+                />
+              ) : (
+                <div style={{ background: '#f5f5f5', padding: '16px', marginTop: '16px' }}>
+                  <p style={{ margin: 0, color: '#666' }}>
+                    此商品尚無變體資料
+                  </p>
+                </div>
+              )}
+            </Space>
           </div>
         )}
       </Modal>
@@ -1192,6 +1147,35 @@ export default function ProductsPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 新組件：變體新增Modal */}
+      <VariantCreateModal
+        visible={variantCreateModalVisible}
+        product={selectedProduct ? {
+          id: selectedProduct.id,
+          product_code: selectedProduct.product_code,
+          name: selectedProduct.name
+        } : null}
+        nextVariantNumber={selectedProduct?.variants ?
+          String((selectedProduct.variants.length + 1)).padStart(3, '0') : '001'}
+        onCancel={() => setVariantCreateModalVisible(false)}
+        onSuccess={() => {
+          setVariantCreateModalVisible(false)
+          fetchProducts()
+        }}
+      />
+
+      {/* 新組件：投資方調價Modal */}
+      <InvestorPriceModal
+        visible={investorPriceModalVisible}
+        variant={selectedVariant}
+        productId={selectedProduct?.id || ''}
+        onCancel={() => setInvestorPriceModalVisible(false)}
+        onSuccess={() => {
+          setInvestorPriceModalVisible(false)
+          fetchProducts()
+        }}
+      />
     </div>
   )
 }
