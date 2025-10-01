@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Modal, Form, Input, InputNumber, Select, Space, Typography, Alert, Divider } from 'antd'
+import { Modal, Form, Input, InputNumber, Select, Space, Typography, Alert, Divider, Switch, DatePicker } from 'antd'
 import { InfoCircleOutlined } from '@ant-design/icons'
+import dayjs from 'dayjs'
 
 const { Text } = Typography
 const { TextArea } = Input
@@ -44,9 +45,23 @@ export default function VariantCreateModal({
       form.setFieldsValue({
         variant_type: '',
         description: '',
+        // 酒類規格
+        volume_ml: 700,
+        alc_percentage: 43.0,
+        // 重量與包裝
+        weight_kg: 0,
+        has_box: false,
+        package_weight_kg: 0,
+        has_accessories: false,
+        accessory_weight_kg: 0,
+        accessories: '',
+        // 價格
         cost_price: 0,
         investor_price: 0,
         actual_price: 0,
+        // 其他
+        hs_code: '',
+        supplier: '',
         warehouse: 'COMPANY'
       })
     }
@@ -57,16 +72,46 @@ export default function VariantCreateModal({
       const values = await form.validateFields()
       setLoading(true)
 
+      // 計算總重量
+      const weight_kg = values.weight_kg || 0
+      const package_weight_kg = values.has_box ? (values.package_weight_kg || 0) : 0
+      const accessory_weight_kg = values.has_accessories ? (values.accessory_weight_kg || 0) : 0
+      const total_weight_kg = weight_kg + package_weight_kg + accessory_weight_kg
+
+      // 處理附件清單（字串轉陣列）
+      const accessories = values.accessories
+        ? values.accessories.split(',').map((item: string) => item.trim()).filter(Boolean)
+        : []
+
       const response = await fetch(`/api/products/${product?.id}/variants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // 基本資訊
           variant_type: values.variant_type,
           description: values.description,
+          // 酒類規格
+          volume_ml: values.volume_ml,
+          alc_percentage: values.alc_percentage,
+          // 重量與包裝
+          weight_kg,
+          package_weight_kg: values.has_box ? package_weight_kg : null,
+          has_box: values.has_box,
+          has_accessories: values.has_accessories,
+          accessory_weight_kg: values.has_accessories ? accessory_weight_kg : null,
+          accessories,
+          total_weight_kg,
+          // 價格
           cost_price: values.cost_price,
           investor_price: values.investor_price,
           actual_price: values.actual_price,
           current_price: values.actual_price, // 當前價格預設等於實際售價
+          // 其他資訊
+          hs_code: values.hs_code || null,
+          supplier: values.supplier || null,
+          manufacturing_date: values.manufacturing_date ? values.manufacturing_date.toISOString() : null,
+          expiry_date: values.expiry_date ? values.expiry_date.toISOString() : null,
+          // 倉庫
           warehouse: values.warehouse
         })
       })
@@ -107,7 +152,7 @@ export default function VariantCreateModal({
       onOk={handleSubmit}
       onCancel={handleCancel}
       confirmLoading={loading}
-      width={700}
+      width={900}
       okText="確認新增"
       cancelText="取消"
     >
@@ -132,17 +177,34 @@ export default function VariantCreateModal({
         <Divider style={{ margin: '12px 0' }} />
 
         {/* 表單 */}
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" onValuesChange={(changedValues) => {
+          // 自動計算總重量
+          if (
+            'weight_kg' in changedValues ||
+            'package_weight_kg' in changedValues ||
+            'accessory_weight_kg' in changedValues ||
+            'has_box' in changedValues ||
+            'has_accessories' in changedValues
+          ) {
+            const weight_kg = form.getFieldValue('weight_kg') || 0
+            const has_box = form.getFieldValue('has_box')
+            const has_accessories = form.getFieldValue('has_accessories')
+            const package_weight_kg = has_box ? (form.getFieldValue('package_weight_kg') || 0) : 0
+            const accessory_weight_kg = has_accessories ? (form.getFieldValue('accessory_weight_kg') || 0) : 0
+            const total = weight_kg + package_weight_kg + accessory_weight_kg
+            form.setFieldValue('total_weight_kg', parseFloat(total.toFixed(3)))
+          }
+        }}>
+          {/* 1. 基本資訊 */}
+          <Divider orientation="left">基本資訊</Divider>
+
           <Form.Item
             label="變體類型"
             name="variant_type"
             rules={[{ required: true, message: '請輸入變體類型' }]}
-            tooltip="例如：亮面新版(日版)、木盒禮盒版、損傷版(盒損)"
+            tooltip="例如：標準款、禮盒版、日版、盒損版"
           >
-            <Input
-              placeholder="請輸入變體類型（自由文字）"
-              maxLength={100}
-            />
+            <Input placeholder="請輸入變體類型" maxLength={100} />
           </Form.Item>
 
           <Form.Item
@@ -151,15 +213,119 @@ export default function VariantCreateModal({
             rules={[{ required: true, message: '請輸入描述' }]}
           >
             <TextArea
-              rows={3}
+              rows={2}
               placeholder="請輸入變體的詳細描述"
               maxLength={500}
             />
           </Form.Item>
 
+          {/* 2. 酒類規格 */}
+          <Divider orientation="left">酒類規格</Divider>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item
+              label="容量 (ml)"
+              name="volume_ml"
+              rules={[{ required: true, message: '請輸入容量' }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber placeholder="700" min={0} style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Form.Item
+              label="酒精度 (%)"
+              name="alc_percentage"
+              rules={[{ required: true, message: '請輸入酒精度' }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber placeholder="43.0" min={0} max={100} step={0.1} style={{ width: '100%' }} />
+            </Form.Item>
+          </div>
+
+          {/* 3. 重量與包裝 */}
+          <Divider orientation="left">重量與包裝（空瓶費申報）</Divider>
+
+          <Form.Item
+            label="空瓶重量 (kg)"
+            name="weight_kg"
+            rules={[{ required: true, message: '請輸入空瓶重量' }]}
+            tooltip="空酒瓶本身重量（不含酒液、包裝、附件）"
+          >
+            <InputNumber placeholder="1.2" min={0} step={0.1} precision={3} style={{ width: '100%' }} />
+          </Form.Item>
+
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <Form.Item name="has_box" label="有外盒" valuePropName="checked" style={{ flex: 0 }}>
+              <Switch />
+            </Form.Item>
+
+            <Form.Item shouldUpdate style={{ flex: 1, marginBottom: 0 }}>
+              {({ getFieldValue }) =>
+                getFieldValue('has_box') ? (
+                  <Form.Item name="package_weight_kg" label="外盒重量 (kg)" style={{ marginBottom: 0 }}>
+                    <InputNumber placeholder="0.5" min={0} step={0.1} precision={3} style={{ width: '100%' }} />
+                  </Form.Item>
+                ) : null
+              }
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <Form.Item name="has_accessories" label="有附件" valuePropName="checked" style={{ flex: 0 }}>
+              <Switch />
+            </Form.Item>
+
+            <Form.Item shouldUpdate style={{ flex: 1, marginBottom: 0 }}>
+              {({ getFieldValue }) =>
+                getFieldValue('has_accessories') ? (
+                  <Form.Item name="accessory_weight_kg" label="附件重量 (kg)" style={{ marginBottom: 0 }}>
+                    <InputNumber placeholder="0.2" min={0} step={0.1} precision={3} style={{ width: '100%' }} />
+                  </Form.Item>
+                ) : null
+              }
+            </Form.Item>
+          </div>
+
+          <Form.Item shouldUpdate>
+            {({ getFieldValue }) => {
+              const weight_kg = getFieldValue('weight_kg') || 0
+              const has_box = getFieldValue('has_box')
+              const has_accessories = getFieldValue('has_accessories')
+              const package_weight_kg = has_box ? (getFieldValue('package_weight_kg') || 0) : 0
+              const accessory_weight_kg = has_accessories ? (getFieldValue('accessory_weight_kg') || 0) : 0
+              const total = weight_kg + package_weight_kg + accessory_weight_kg
+
+              return total > 0 ? (
+                <div style={{
+                  padding: '8px 12px',
+                  background: '#f0f8ff',
+                  border: '1px solid #d1ecf1',
+                  borderRadius: '6px',
+                  fontWeight: 'bold',
+                  color: '#31708f'
+                }}>
+                  申報總重：{total.toFixed(3)} kg
+                  <div style={{ fontSize: '11px', fontWeight: 'normal', marginTop: '2px' }}>
+                    {weight_kg > 0 && `空瓶: ${weight_kg.toFixed(3)}kg`}
+                    {package_weight_kg > 0 && ` + 外盒: ${package_weight_kg.toFixed(3)}kg`}
+                    {accessory_weight_kg > 0 && ` + 附件: ${accessory_weight_kg.toFixed(3)}kg`}
+                  </div>
+                  <Form.Item name="total_weight_kg" noStyle>
+                    <input type="hidden" />
+                  </Form.Item>
+                </div>
+              ) : null
+            }}
+          </Form.Item>
+
+          <Form.Item label="附件清單" name="accessories">
+            <Input placeholder="請輸入附件，用逗號分隔，例如：證書, 特製木盒, 說明書" />
+          </Form.Item>
+
+          {/* 4. 價格設定 */}
           <Divider orientation="left">價格設定（三層價格）</Divider>
 
-          <Space size="large" style={{ width: '100%' }} direction="vertical">
+          <div style={{ display: 'flex', gap: '16px' }}>
             <Form.Item
               label="成本價"
               name="cost_price"
@@ -168,6 +334,7 @@ export default function VariantCreateModal({
                 { type: 'number', min: 0, message: '成本價不能為負數' }
               ]}
               tooltip="進貨的實際成本"
+              style={{ flex: 1 }}
             >
               <InputNumber
                 style={{ width: '100%' }}
@@ -184,7 +351,8 @@ export default function VariantCreateModal({
                 { required: true, message: '請輸入期望售價' },
                 { type: 'number', min: 0, message: '價格不能為負數' }
               ]}
-              tooltip="投資方設定的期望售價（投資方可後續調整）"
+              tooltip="投資方設定的期望售價"
+              style={{ flex: 1 }}
             >
               <InputNumber
                 style={{ width: '100%' }}
@@ -202,6 +370,7 @@ export default function VariantCreateModal({
                 { type: 'number', min: 0, message: '價格不能為負數' }
               ]}
               tooltip="您的實際售價（僅 SUPER_ADMIN 可見）"
+              style={{ flex: 1 }}
             >
               <InputNumber
                 style={{ width: '100%' }}
@@ -210,8 +379,32 @@ export default function VariantCreateModal({
                 placeholder="0.00"
               />
             </Form.Item>
-          </Space>
+          </div>
 
+          {/* 5. 其他資訊 */}
+          <Divider orientation="left">其他資訊</Divider>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item label="稅則號碼 (HS Code)" name="hs_code" style={{ flex: 1 }}>
+              <Input placeholder="請輸入稅則號碼" />
+            </Form.Item>
+
+            <Form.Item label="供應商" name="supplier" style={{ flex: 1 }}>
+              <Input placeholder="請輸入供應商" />
+            </Form.Item>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Form.Item label="生產日期" name="manufacturing_date" style={{ flex: 1 }}>
+              <DatePicker style={{ width: '100%' }} placeholder="選擇生產日期" />
+            </Form.Item>
+
+            <Form.Item label="有效期限" name="expiry_date" style={{ flex: 1 }}>
+              <DatePicker style={{ width: '100%' }} placeholder="選擇有效期限" />
+            </Form.Item>
+          </div>
+
+          {/* 6. 倉庫設定 */}
           <Divider orientation="left">倉庫設定</Divider>
 
           <Form.Item
