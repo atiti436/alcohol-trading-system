@@ -1161,7 +1161,7 @@ export default function ProductsPage() {
         onCancel={() => setVariantCreateModalVisible(false)}
         onSuccess={() => {
           setVariantCreateModalVisible(false)
-          fetchProducts()
+          loadProducts()
         }}
       />
 
@@ -1173,7 +1173,7 @@ export default function ProductsPage() {
         onCancel={() => setInvestorPriceModalVisible(false)}
         onSuccess={() => {
           setInvestorPriceModalVisible(false)
-          fetchProducts()
+          loadProducts()
         }}
       />
     </div>
