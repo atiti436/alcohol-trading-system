@@ -154,6 +154,16 @@ export async function POST(request: NextRequest) {
       validUntil = new Date(data.valid_until)
     }
 
+    // 驗證用戶是否存在
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    })
+
+    if (!user) {
+      console.error('用戶不存在:', session.user.id)
+      return NextResponse.json({ error: '用戶不存在，請重新登入' }, { status: 400 })
+    }
+
     // 創建報價記錄
     const quotation = await prisma.quotation.create({
       data: {
