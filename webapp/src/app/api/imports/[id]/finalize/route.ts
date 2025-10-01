@@ -97,23 +97,25 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
 
       const affectedVariantIds = [...new Set(inventoryMovements.map(m => m.variant_id))]
 
-      // 3. 更新剩餘庫存成本 (加權平均)
+      // 3. 更新剩餘庫存成本 (加權平均) - 使用新的獨立 Inventory 表
       for (const variantId of affectedVariantIds) {
-        const currentInventory = await tx.inventory.findFirst({
+        // 同時更新公司倉和個人倉的庫存
+        const inventories = await tx.inventory.findMany({
           where: {
-            variant_id: variantId,
-            warehouse: 'COMPANY' // 假設公司倉
+            variant_id: variantId
           }
         })
 
-        if (currentInventory && currentInventory.quantity > 0) {
-          // 更新庫存成本為最終成本
-          await tx.inventory.update({
-            where: { id: currentInventory.id },
-            data: {
-              cost_price: finalCostPerUnit
-            }
-          })
+        for (const inv of inventories) {
+          if (inv.quantity > 0) {
+            // 更新庫存成本為最終成本
+            await tx.inventory.update({
+              where: { id: inv.id },
+              data: {
+                cost_price: finalCostPerUnit
+              }
+            })
+          }
         }
       }
 

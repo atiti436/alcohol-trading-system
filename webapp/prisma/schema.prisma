@@ -139,13 +139,11 @@ model ProductVariant {
   serial_number   String?
   condition       String  @default("Normal")
 
-  // 🏪 倉庫標記
-  warehouse Warehouse @default(COMPANY)
-
-  // 📦 庫存管理
-  stock_quantity  Int @default(0)
-  reserved_stock  Int @default(0)
-  available_stock Int @default(0)
+  // 📦 庫存管理 (移至獨立 Inventory 表)
+  // 向下相容：保留這些欄位但標記為 deprecated
+  stock_quantity  Int @default(0) // @deprecated 請使用 Inventory 表
+  reserved_stock  Int @default(0) // @deprecated 請使用 Inventory 表
+  available_stock Int @default(0) // @deprecated 請使用 Inventory 表
 
   weight_kg Float @default(0)
 
@@ -157,6 +155,7 @@ model ProductVariant {
   sku        String   @unique
 
   // 關聯
+  inventory           Inventory[]
   inventory_movements InventoryMovement[]
   product             Product             @relation(fields: [product_id], references: [id], onDelete: Cascade)
   sale_items          SaleItem[]
@@ -166,6 +165,32 @@ model ProductVariant {
   import_items        ImportItem[]
 
   @@map("product_variants")
+}
+
+// 🏭 獨立庫存表 (支援多倉庫)
+model Inventory {
+  id         String    @id @default(cuid())
+  variant_id String
+  warehouse  Warehouse // COMPANY 或 PRIVATE
+
+  // 📦 庫存數量
+  quantity        Int     @default(0) // 總庫存
+  reserved        Int     @default(0) // 已預留（訂單鎖定）
+  available       Int     @default(0) // 可售庫存 = quantity - reserved
+
+  // 💰 成本價（加權平均）
+  cost_price      Decimal @default(0) @db.Decimal(10, 2)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 關聯
+  variant ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+
+  // 唯一約束：一個變體在同一個倉庫只能有一筆庫存記錄
+  @@unique([variant_id, warehouse])
+  @@index([warehouse])
+  @@map("inventories")
 }
 
 model CustomerSpecialPrice {

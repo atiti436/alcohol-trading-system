@@ -122,11 +122,13 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
           }
         })
 
-        // 更新庫存 (個人倉)
-        const existingStock = await tx.inventory.findFirst({
+        // 更新庫存 (個人倉) - 使用新的獨立 Inventory 表
+        const existingStock = await tx.inventory.findUnique({
           where: {
-            variant_id: item.variant_id,
-            warehouse: 'PRIVATE'
+            variant_id_warehouse: {
+              variant_id: item.variant_id,
+              warehouse: 'PRIVATE'
+            }
           }
         })
 
@@ -141,6 +143,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
             where: { id: existingStock.id },
             data: {
               quantity: totalQuantity,
+              available: totalQuantity - existingStock.reserved, // 更新可售庫存
               cost_price: avgCost
             }
           })
@@ -151,6 +154,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
               variant_id: item.variant_id,
               warehouse: 'PRIVATE',
               quantity: item.quantity,
+              available: item.quantity, // 初始可售 = 總數
               cost_price: item.final_cost
             }
           })
