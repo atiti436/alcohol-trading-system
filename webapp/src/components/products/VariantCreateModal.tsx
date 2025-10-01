@@ -66,6 +66,7 @@ export default function VariantCreateModal({
           cost_price: values.cost_price,
           investor_price: values.investor_price,
           actual_price: values.actual_price,
+          current_price: values.actual_price, // 當前價格預設等於實際售價
           warehouse: values.warehouse
         })
       })
@@ -177,10 +178,10 @@ export default function VariantCreateModal({
             </Form.Item>
 
             <Form.Item
-              label="投資方期望售價"
+              label="期望售價"
               name="investor_price"
               rules={[
-                { required: true, message: '請輸入投資方期望售價' },
+                { required: true, message: '請輸入期望售價' },
                 { type: 'number', min: 0, message: '價格不能為負數' }
               ]}
               tooltip="投資方設定的期望售價（投資方可後續調整）"
@@ -232,10 +233,10 @@ export default function VariantCreateModal({
           description={
             <Space direction="vertical" size={4}>
               <Text>• 成本價：進貨成本（所有人可見）</Text>
-              <Text>• 投資方價：投資方的期望售價（投資方可調整）</Text>
+              <Text>• 期望售價：投資方的期望售價（投資方可調整）</Text>
               <Text>• 實際售價：您的實際售價（僅 SUPER_ADMIN 可見）</Text>
-              <Text strong>• 您的利潤 = 實際售價 - 投資方價</Text>
-              <Text strong>• 投資方利潤 = 投資方價 - 成本價</Text>
+              <Text strong>• 您的利潤 = 實際售價 - 期望售價</Text>
+              <Text strong>• 投資方利潤 = 期望售價 - 成本價</Text>
             </Space>
           }
           type="info"
