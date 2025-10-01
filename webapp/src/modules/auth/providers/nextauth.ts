@@ -12,6 +12,21 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 天
+  },
+  // 🔒 安全設定：HttpOnly Cookie
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true,  // 🔒 防止 JavaScript 讀取
+        sameSite: 'lax', // 🔒 CSRF 防護
+        path: '/',
+        secure: process.env.NODE_ENV === 'production', // 🔒 生產環境強制 HTTPS
+      }
+    },
   },
   pages: {
     signIn: '/auth/signin',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { maskCustomerData } from '@/lib/data-masking'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -60,10 +61,13 @@ export async function GET(
       }
     })
 
+    // 🔒 敏感資料遮罩（INVESTOR 看到遮罩後的資料）
+    const maskedCustomer = maskCustomerData(customer, session.user.role || '')
+
     return NextResponse.json({
       success: true,
       data: {
-        customer,
+        customer: maskedCustomer,
         statistics: {
           totalOrders: customer._count.sales,
           totalAmount: totalAmount._sum.total_amount || 0

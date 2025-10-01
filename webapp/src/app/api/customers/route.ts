@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { validateCustomerData } from '@/lib/validation'
+import { maskCustomerData } from '@/lib/data-masking'
 import {
   CustomerWhereCondition,
   CustomerQueryParams,
@@ -93,10 +94,15 @@ export async function GET(request: NextRequest) {
       prisma.customer.count({ where })
     ])
 
+    // 🔒 敏感資料遮罩（INVESTOR 看到遮罩後的資料）
+    const maskedCustomers = customers.map(customer =>
+      maskCustomerData(customer, session.user.role || '')
+    )
+
     return NextResponse.json({
       success: true,
       data: {
-        customers,
+        customers: maskedCustomers,
         total,
         page,
         limit,
