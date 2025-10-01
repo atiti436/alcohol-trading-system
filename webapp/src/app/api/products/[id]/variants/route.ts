@@ -189,26 +189,44 @@ export async function POST(
     const variant_code = `${product.product_code}-${nextSequence.toString().padStart(3, '0')}`
     const sku = `SKU-${variant_code}`
 
-    const variant = await prisma.productVariant.create({
-      data: {
-        product_id: params.id,
-        variant_code,
-        sku,
-        variant_type,
-        description,
-        cost_price: parseFloat(cost_price.toString()),
-        investor_price: parseFloat(investor_price.toString()),
-        actual_price: parseFloat(actual_price.toString()),
-        current_price: parseFloat(current_price.toString()),
-        stock_quantity: parseInt(stock_quantity.toString(), 10),
-        warehouse,
-        ...otherFields
-      }
+    // 使用 transaction 確保 variant 和 inventory 同時創建
+    const result = await prisma.$transaction(async (tx) => {
+      // 創建變體
+      const variant = await tx.productVariant.create({
+        data: {
+          product_id: params.id,
+          variant_code,
+          sku,
+          variant_type,
+          description,
+          cost_price: parseFloat(cost_price.toString()),
+          investor_price: parseFloat(investor_price.toString()),
+          actual_price: parseFloat(actual_price.toString()),
+          current_price: parseFloat(current_price.toString()),
+          stock_quantity: parseInt(stock_quantity.toString(), 10),
+          // 移除 warehouse 欄位
+          ...otherFields
+        }
+      })
+
+      // 創建對應的庫存記錄
+      await tx.inventory.create({
+        data: {
+          variant_id: variant.id,
+          warehouse, // 使用傳入的 warehouse 參數
+          quantity: parseInt(stock_quantity.toString(), 10),
+          reserved: 0,
+          available: parseInt(stock_quantity.toString(), 10),
+          cost_price: parseFloat(cost_price.toString())
+        }
+      })
+
+      return variant
     })
 
     return NextResponse.json({
       success: true,
-      data: variant,
+      data: result,
       message: 'Variant created successfully'
     }, { status: 201 })
 
