@@ -29,10 +29,11 @@ export async function GET(request: NextRequest) {
 
     // 建立動態搜尋條件
     let searchConditions: any[] = []
+    let searchTerms: string[] = []  // ✅ 提升到外層作用域
 
     if (!isShowAll && query.trim()) {
       // 🔍 強化的模糊搜尋邏輯
-      const searchTerms = query.trim().toLowerCase().split(/\s+/)
+      searchTerms = query.trim().toLowerCase().split(/\s+/)
 
       searchConditions = searchTerms.map(term => ({
         OR: [
