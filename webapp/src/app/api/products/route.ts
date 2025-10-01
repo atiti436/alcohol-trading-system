@@ -65,6 +65,9 @@ export async function GET(request: NextRequest) {
       where.category = category as AlcoholCategory
     }
 
+    // 🔒 根據角色決定可見欄位
+    const canViewActualPrice = session.user.role === 'SUPER_ADMIN' || session.user.role === 'EMPLOYEE'
+
     // 執行查詢
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -79,6 +82,10 @@ export async function GET(request: NextRequest) {
               variant_code: true,
               variant_type: true,
               description: true,
+              cost_price: true,
+              investor_price: true,
+              // 🔒 actual_price 只有 SUPER_ADMIN 和 EMPLOYEE 可見
+              ...(canViewActualPrice && { actual_price: true }),
               current_price: true,
               stock_quantity: true,
               available_stock: true,
@@ -96,10 +103,18 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
+    // 🔒 如果是投資人，過濾 Product 層級的 actual_price
+    const filteredProducts = session.user.role === 'INVESTOR'
+      ? products.map(p => ({
+          ...p,
+          actual_price: undefined
+        }))
+      : products
+
     return NextResponse.json({
       success: true,
       data: {
-        products,
+        products: filteredProducts,
         total,
         page,
         limit,

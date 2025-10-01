@@ -25,10 +25,32 @@ export async function GET(
       return NextResponse.json({ error: '未登入' }, { status: 401 })
     }
 
+    // 🔒 根據角色決定 variant 欄位的過濾
+    const canViewActualPrice = session.user.role === 'SUPER_ADMIN' || session.user.role === 'EMPLOYEE'
+
     const product = await prisma.product.findUnique({
       where: { id: params.id },
       include: {
         variants: {
+          select: {
+            id: true,
+            variant_code: true,
+            variant_type: true,
+            description: true,
+            sku: true,
+            condition: true,
+            stock_quantity: true,
+            reserved_stock: true,
+            available_stock: true,
+            cost_price: true,
+            investor_price: true,
+            // 🔒 actual_price 只有 SUPER_ADMIN 和 EMPLOYEE 可見
+            ...(canViewActualPrice && { actual_price: true }),
+            current_price: true,
+            is_active: true,
+            created_at: true,
+            updated_at: true
+          },
           orderBy: { variant_type: 'asc' }
         },
         sale_items: {
@@ -82,10 +104,18 @@ export async function GET(
     // 🔧 修正：計算總庫存（所有變體）- 使用統一命名規範
     const total_stock_quantity = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
 
+    // 🔒 如果是投資人，額外過濾 Product 層級的 actual_price
+    const filteredProduct = session.user.role === 'INVESTOR'
+      ? {
+          ...product,
+          actual_price: undefined  // 移除商品的 actual_price
+        }
+      : product
+
     return NextResponse.json({
       success: true,
       data: {
-        product,
+        product: filteredProduct,
         statistics: {
           totalVariants: product._count.variants,
           totalSales: product._count.sale_items,
