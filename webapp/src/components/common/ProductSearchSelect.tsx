@@ -184,6 +184,10 @@ export default function ProductSearchSelect({
         stock: variant.available_stock,
         supplier: product.supplier
       })
+
+      // ✅ 選擇後清空搜尋結果，提供視覺反饋
+      setSearchValue('')
+      setSearchResults([])
     }
   }
 
