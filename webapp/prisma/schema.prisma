@@ -78,27 +78,28 @@ enum ApCategory {
 }
 
 model Product {
-  id                  String          @id @default(cuid())
-  product_code        String          @unique
-  name                String
-  category            AlcoholCategory
-  volume_ml           Int
-  alc_percentage      Float
-  weight_kg           Float
-  package_weight_kg   Float?
-  total_weight_kg     Float?
-  has_box             Boolean         @default(false)
-  has_accessories     Boolean         @default(false)
-  accessory_weight_kg Float?
-  accessories         String[]
-  hs_code             String?
-  supplier            String?
-  manufacturing_date  String?
-  expiry_date         String?
+  id           String          @id @default(cuid())
+  product_code String          @unique
+  name         String          // 品名（例如：山崎18年）
+  category     AlcoholCategory // 分類保留在 Product 層級（整體分類）
 
-  // 🎯 三層價格架構（⚠️ DEPRECATED - 2025-10-01 起統一使用變體層級價格）
-  // @deprecated Product 層級價格已棄用，請使用 ProductVariant 的價格欄位
-  // Product 僅作為容器，實際價格管理在變體層級
+  // ⚠️ DEPRECATED - 2025-10-01 起規格資訊移至 ProductVariant
+  // Product 只是品牌/系列容器，具體規格在變體層級
+  volume_ml           Int?    // @deprecated 移至 ProductVariant
+  alc_percentage      Float?  // @deprecated 移至 ProductVariant
+  weight_kg           Float?  // @deprecated 移至 ProductVariant
+  package_weight_kg   Float?  // @deprecated 移至 ProductVariant
+  total_weight_kg     Float?  // @deprecated 移至 ProductVariant
+  has_box             Boolean @default(false) // @deprecated 移至 ProductVariant
+  has_accessories     Boolean @default(false) // @deprecated 移至 ProductVariant
+  accessory_weight_kg Float?  // @deprecated 移至 ProductVariant
+  accessories         String[] // @deprecated 移至 ProductVariant
+  hs_code             String? // @deprecated 移至 ProductVariant
+  supplier            String? // @deprecated 移至 ProductVariant
+  manufacturing_date  String? // @deprecated 移至 ProductVariant
+  expiry_date         String? // @deprecated 移至 ProductVariant
+
+  // ⚠️ DEPRECATED - 2025-10-01 起價格資訊移至 ProductVariant
   cost_price     Float @default(0) // @deprecated
   investor_price Float @default(0) // @deprecated
   actual_price   Float @default(0) // @deprecated
@@ -125,14 +126,33 @@ model ProductVariant {
   id           String @id @default(cuid())
   product_id   String
   variant_code String @unique
-  variant_type String @db.VarChar(100)
-  description  String
+  variant_type String @db.VarChar(100) // 變體類型描述（例如：700ML 43% 標準版）
+  description  String // 完整描述
+
+  // 🍷 酒類規格（從 Product 移至 Variant）
+  volume_ml      Int   // 容量（毫升）- 每個變體可能不同
+  alc_percentage Float // 酒精濃度（%）- 每個變體可能不同
+
+  // 📦 重量與包裝（從 Product 移至 Variant）
+  weight_kg           Float    // 空瓶重量（公斤）
+  package_weight_kg   Float?   // 外盒重量（公斤）
+  total_weight_kg     Float?   // 總重量（用於空瓶申報）
+  has_box             Boolean  @default(false) // 是否有外盒
+  has_accessories     Boolean  @default(false) // 是否有附件
+  accessory_weight_kg Float?   // 附件重量（公斤）
+  accessories         String[] // 附件清單（例如：["小卡", "證書", "木盒"]）
+
+  // 🏷️ 稅則與供應商（從 Product 移至 Variant）
+  hs_code            String? // 海關編碼
+  supplier           String? // 供應商
+  manufacturing_date String? // 製造日期
+  expiry_date        String? // 到期日期
 
   // 🎯 三層價格架構
-  cost_price     Float  @default(0) // 成本價（真實成本）
-  investor_price Float  @default(0) // 投資方期望售價（INVESTOR 可見可改）
-  actual_price   Float  @default(0) // 實際售價（僅 SUPER_ADMIN 可見可改）
-  current_price  Float  @default(0) // 顯示用價格（向下相容）
+  cost_price     Float @default(0) // 成本價（真實成本）
+  investor_price Float @default(0) // 投資方期望售價（INVESTOR 可見可改）
+  actual_price   Float @default(0) // 實際售價（僅 SUPER_ADMIN 可見可改）
+  current_price  Float @default(0) // 顯示用價格（向下相容）
   base_price     Float? // 向下相容（保留舊資料）
 
   discount_rate   Float?
@@ -146,8 +166,6 @@ model ProductVariant {
   stock_quantity  Int @default(0) // @deprecated 請使用 Inventory 表
   reserved_stock  Int @default(0) // @deprecated 請使用 Inventory 表
   available_stock Int @default(0) // @deprecated 請使用 Inventory 表
-
-  weight_kg Float @default(0)
 
   // ✅ 停用機制
   is_active Boolean @default(true)

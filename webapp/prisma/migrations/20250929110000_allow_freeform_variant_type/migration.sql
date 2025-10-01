@@ -1,4 +1,4 @@
-﻿-- Allow free-form text for product variant types
+-- Allow free-form text for product variant types
 ALTER TABLE "public"."product_variants"
   ALTER COLUMN "variant_type" TYPE TEXT USING "variant_type"::text;
 

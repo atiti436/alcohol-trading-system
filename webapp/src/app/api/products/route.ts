@@ -168,136 +168,41 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    // 🎯 強制要求變體資料
-    if (!body.variant || !body.variant.variant_type) {
+    // ✅ 簡化驗證：只需要品名和分類
+    const { name, category } = body
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
-        {
-          error: '缺少必要的變體資料',
-          details: '商品必須至少包含一個變體，請提供 variant.variant_type'
-        },
+        { error: '品名為必填欄位' },
         { status: 400 }
       )
     }
 
-    // 🔒 嚴格輸入驗證 - 修復安全漏洞
-    let validatedData
-    try {
-      console.log('收到的商品資料:', body) // 調試輸出
-      validatedData = validateProductData(body)
-      console.log('驗證後的商品資料:', validatedData) // 調試輸出
-    } catch (validationError) {
-      console.error('商品驗證錯誤:', validationError) // 調試輸出
+    if (!category || !Object.values(AlcoholCategory).includes(category as AlcoholCategory)) {
       return NextResponse.json(
-        {
-          error: '輸入資料驗證失敗',
-          details: validationError instanceof Error ? validationError.message : '格式錯誤',
-          originalData: body // 調試時顯示原始數據
-        },
+        { error: '請選擇有效的商品分類' },
         { status: 400 }
       )
     }
-
-    // 使用驗證過的資料
-    const {
-      name,
-      category,
-      supplier,
-      volume_ml,
-      alc_percentage,
-      weight_kg,
-      package_weight_kg,
-      has_box,
-      has_accessories,
-      accessory_weight_kg,
-      accessories,
-      hs_code,
-      manufacturing_date,
-      expiry_date
-    } = validatedData
-
-    // 🎯 提取變體資料
-    const variantData = body.variant
 
     // 生成產品編號
     const product_code = await generateProductCode()
 
-    // 計算總重量
-    const total_weight_kg = (weight_kg || 0) + (package_weight_kg || 0) + (accessory_weight_kg || 0)
-
-    // 🎯 使用 Transaction 確保 Product + Variant + Inventory 一起創建
-    const result = await prisma.$transaction(async (tx) => {
-      // 創建商品（不含價格，價格統一在變體層級）
-      const product = await tx.product.create({
-        data: {
-          product_code,
-          name,
-          category: category as AlcoholCategory,
-          volume_ml,
-          alc_percentage,
-          weight_kg: weight_kg || 0,
-          package_weight_kg,
-          total_weight_kg,
-          has_box,
-          has_accessories,
-          accessory_weight_kg,
-          accessories,
-          hs_code,
-          supplier,
-          manufacturing_date: manufacturing_date ? manufacturing_date.toISOString() : null,
-          expiry_date: expiry_date ? expiry_date.toISOString() : null,
-
-          // 🎯 Product 層級價格設為 0（已棄用，統一使用變體價格）
-          cost_price: 0,
-          investor_price: 0,
-          actual_price: 0,
-          standard_price: 0,
-          current_price: 0,
-          min_price: 0
-        }
-      })
-
-      // 🎯 創建首個變體（強制要求）
-      const variant_code = `${product_code}-001`
-      const sku = `SKU-${variant_code}`
-
-      const variant = await tx.productVariant.create({
-        data: {
-          product_id: product.id,
-          variant_code,
-          sku,
-          variant_type: variantData.variant_type,
-          description: variantData.variant_type,
-
-          // 🎯 三層價格架構（來自前端輸入）
-          cost_price: parseFloat(variantData.cost_price?.toString() || '0'),
-          investor_price: parseFloat(variantData.investor_price?.toString() || '0'),
-          actual_price: parseFloat(variantData.actual_price?.toString() || '0'),
-          current_price: parseFloat(variantData.current_price?.toString() || variantData.investor_price?.toString() || '0')
-        }
-      })
-
-      // 建立預設庫存（公司倉）
-      await tx.inventory.create({
-        data: {
-          variant_id: variant.id,
-          warehouse: 'COMPANY',
-          quantity: 0,
-          reserved: 0,
-          available: 0,
-          cost_price: parseFloat(variantData.cost_price?.toString() || '0')
-        }
-      })
-
-      return { product, variant }
+    // 🎯 只創建 Product BASE（不含規格和變體）
+    const product = await prisma.product.create({
+      data: {
+        product_code,
+        name: name.trim(),
+        category: category as AlcoholCategory
+        // ✅ 不再填充任何規格或價格欄位
+        // 規格在變體層級管理
+      }
     })
 
     return NextResponse.json({
       success: true,
-      data: {
-        product: result.product,
-        variant: result.variant
-      },
-      message: `商品創建成功（${result.product.product_code}），已自動創建首個變體（${result.variant.variant_code}）`
+      data: { product },
+      message: `商品 BASE 創建成功（${product.product_code}），請新增變體以設定完整規格`
     })
 
   } catch (error) {
