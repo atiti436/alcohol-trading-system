@@ -235,9 +235,19 @@ export async function POST(request: NextRequest) {
           cost_price: 0,
           investor_price: product.investor_price,
           actual_price: product.actual_price,
-          current_price: product.current_price,
+          current_price: product.current_price
+        }
+      })
 
-          warehouse: 'COMPANY'
+      // 建立預設庫存（公司倉）
+      await prisma.inventory.create({
+        data: {
+          variant_id: defaultVariant.id,
+          warehouse: 'COMPANY',
+          quantity: 0,
+          reserved: 0,
+          available: 0,
+          cost_price: 0
         }
       })
     }

@@ -115,8 +115,19 @@ export async function POST(request: NextRequest) {
             reserved_stock: 0,
             available_stock: 0,
             weight_kg: product.weight_kg,
-            warehouse: 'COMPANY',
             sku
+          }
+        })
+
+        // 建立預設庫存（公司倉）
+        await tx.inventory.create({
+          data: {
+            variant_id: variant.id,
+            warehouse: 'COMPANY',
+            quantity: 0,
+            reserved: 0,
+            available: 0,
+            cost_price: 0
           }
         })
       }
