@@ -37,6 +37,7 @@ import type {
 } from '@/types/room-2'
 import VariantListView from '@/components/products/VariantListView'
 import VariantCreateModal from '@/components/products/VariantCreateModal'
+import VariantEditModal from '@/components/products/VariantEditModal'
 import InvestorPriceModal from '@/components/products/InvestorPriceModal'
 
 const { Search } = Input
@@ -73,6 +74,7 @@ export default function ProductsPage() {
 
   // 新組件狀態
   const [variantCreateModalVisible, setVariantCreateModalVisible] = useState(false)
+  const [variantEditModalVisible, setVariantEditModalVisible] = useState(false)
   const [investorPriceModalVisible, setInvestorPriceModalVisible] = useState(false)
   const [selectedVariant, setSelectedVariant] = useState<any>(null)
 
@@ -422,6 +424,20 @@ export default function ProductsPage() {
     }
   }
 
+  // 處理編輯變體
+  const handleEditVariantClick = (variant: any) => {
+    setSelectedVariant(variant)
+    setVariantEditModalVisible(true)
+  }
+
+  // 編輯變體成功後
+  const handleVariantEditSuccess = () => {
+    setVariantEditModalVisible(false)
+    setSelectedVariant(null)
+    loadProducts() // 重新載入商品列表
+    message.success('變體更新成功')
+  }
+
   // 處理刪除
   const handleDelete = async (id: string) => {
     try {
@@ -691,13 +707,17 @@ export default function ProductsPage() {
                     investor_price: Number(v.investor_price || 0),
                     actual_price: Number(v.actual_price || 0),
                     stock_quantity: v.stock_quantity || 0,
-                    is_active: true
+                    is_active: true,
+                    // 傳入完整變體資料以供編輯
+                    ...v
                   }))}
                   userRole={session?.user?.role || 'EMPLOYEE'}
                   onAdjustPrice={(variant) => {
                     setSelectedVariant(variant)
                     setInvestorPriceModalVisible(true)
                   }}
+                  onEdit={handleEditVariantClick}
+                  onDelete={handleDeleteVariant}
                   loading={loading}
                 />
               ) : (
@@ -926,6 +946,18 @@ export default function ProductsPage() {
           setVariantCreateModalVisible(false)
           loadProducts()
         }}
+      />
+
+      {/* 新組件：變體編輯Modal */}
+      <VariantEditModal
+        visible={variantEditModalVisible}
+        variant={selectedVariant}
+        productId={selectedProduct?.id || ''}
+        onCancel={() => {
+          setVariantEditModalVisible(false)
+          setSelectedVariant(null)
+        }}
+        onSuccess={handleVariantEditSuccess}
       />
 
       {/* 新組件：投資方調價Modal */}

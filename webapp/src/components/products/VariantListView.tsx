@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react'
-import { Table, Tag, Space, Button, Typography, Tooltip } from 'antd'
-import { DollarOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons'
+import { Table, Tag, Space, Button, Typography, Tooltip, Popconfirm } from 'antd'
+import { DollarOutlined, EyeOutlined, EyeInvisibleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 
 const { Text } = Typography
@@ -23,6 +23,8 @@ interface VariantListViewProps {
   variants: Variant[]
   userRole: string // 'SUPER_ADMIN' | 'EMPLOYEE' | 'INVESTOR'
   onAdjustPrice?: (variant: Variant) => void
+  onEdit?: (variant: Variant) => void
+  onDelete?: (variant: Variant) => void
   loading?: boolean
 }
 
@@ -36,10 +38,13 @@ export default function VariantListView({
   variants,
   userRole,
   onAdjustPrice,
+  onEdit,
+  onDelete,
   loading = false
 }: VariantListViewProps) {
   const canViewActualPrice = userRole === 'SUPER_ADMIN' || userRole === 'EMPLOYEE'
   const canAdjustPrice = userRole === 'INVESTOR' || userRole === 'SUPER_ADMIN'
+  const canEdit = userRole === 'SUPER_ADMIN' || userRole === 'EMPLOYEE' // 只有管理員可編輯
 
   const columns: ColumnsType<Variant> = [
     {
@@ -148,22 +153,65 @@ export default function VariantListView({
         </Tag>
       )
     },
-    ...(canAdjustPrice && onAdjustPrice ? [{
+    {
       title: '操作',
       key: 'action',
-      width: 100,
+      width: 180,
       align: 'center' as const,
       render: (_: any, record: Variant) => (
-        <Button
-          type="link"
-          size="small"
-          icon={<DollarOutlined />}
-          onClick={() => onAdjustPrice(record)}
-        >
-          調價
-        </Button>
+        <Space size="small">
+          {/* 編輯按鈕 - 僅管理員 */}
+          {canEdit && onEdit && (
+            <Tooltip title="編輯變體">
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => onEdit(record)}
+              >
+                編輯
+              </Button>
+            </Tooltip>
+          )}
+
+          {/* 調價按鈕 - 投資方和管理員 */}
+          {canAdjustPrice && onAdjustPrice && (
+            <Tooltip title="調整價格">
+              <Button
+                type="link"
+                size="small"
+                icon={<DollarOutlined />}
+                onClick={() => onAdjustPrice(record)}
+              >
+                調價
+              </Button>
+            </Tooltip>
+          )}
+
+          {/* 刪除按鈕 - 僅 SUPER_ADMIN */}
+          {userRole === 'SUPER_ADMIN' && onDelete && (
+            <Popconfirm
+              title="確定要刪除此變體嗎？"
+              description="刪除後將無法恢復"
+              onConfirm={() => onDelete(record)}
+              okText="確定"
+              cancelText="取消"
+            >
+              <Tooltip title="刪除變體">
+                <Button
+                  type="link"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                >
+                  刪除
+                </Button>
+              </Tooltip>
+            </Popconfirm>
+          )}
+        </Space>
       )
-    }] : [])
+    }
   ]
 
   return (
