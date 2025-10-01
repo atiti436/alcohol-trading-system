@@ -222,6 +222,12 @@ export default function ProductSearchSelect({
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {product.variants.map(variant => {
                   const hasStock = variant.available_stock > 0
+                  // 優先顯示 description，其次 variant_type，最後只顯示 variant_code
+                  const variantLabel = variant.description
+                    ? `${variant.variant_code} - ${variant.description}`
+                    : variant.variant_type
+                    ? `${variant.variant_code} - ${variant.variant_type}`
+                    : variant.variant_code
 
                   return (
                     <Button
@@ -232,8 +238,7 @@ export default function ProductSearchSelect({
                       onClick={() => handleProductSelect(product.id, variant.id)}
                       style={{ fontSize: 11 }}
                     >
-                      {variant.variant_code}
-                      {variant.variant_type && ` - ${variant.variant_type}`}
+                      {variantLabel}
                       {/* 只在啟用庫存顯示時才顯示庫存資訊 */}
                       {showStock && (
                         hasStock ? (
