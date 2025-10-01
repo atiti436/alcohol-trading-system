@@ -261,33 +261,33 @@ export default function ProductSearchSelect({
 
   return (
     <div style={style}>
-      {/* 🔽 下拉選單 + 搜尋框 */}
-      <AutoComplete
+      {/* 🔽 搜尋框 + 下拉功能 */}
+      <Input.Search
+        placeholder={placeholder}
         value={searchValue}
-        onChange={handleSearch}
-        options={[]}
-        style={{ width: '100%', marginBottom: 8 }}
+        onChange={(e) => handleSearch(e.target.value)}
         onFocus={() => {
-          // 點擊時自動觸發一次搜尋（顯示常用商品）
-          if (!searchValue) {
-            handleSearch('')
+          // 點擊時自動顯示所有商品
+          if (!searchValue && searchResults.length === 0) {
+            performSearch('*')
           }
         }}
-      >
-        <Input.Search
-          placeholder={placeholder}
-          loading={searchLoading}
-          enterButton={<SearchOutlined />}
-          size="large"
-          allowClear
-        />
-      </AutoComplete>
+        loading={searchLoading}
+        enterButton={<SearchOutlined />}
+        size="large"
+        allowClear
+        onClear={() => {
+          setSearchValue('')
+          setSearchResults([])
+        }}
+        style={{ marginBottom: 8 }}
+      />
 
-      {/* 搜尋結果區域 - 也支援空搜尋顯示常用商品 */}
-      {(searchValue || searchResults.length > 0) && (
+      {/* 搜尋結果區域 - 顯示條件：正在搜尋、有結果、或有輸入值 */}
+      {(searchLoading || searchResults.length > 0 || searchValue) && (
         <div
           style={{
-            maxHeight: '300px',
+            maxHeight: '400px',
             overflowY: 'auto',
             border: '1px solid #d9d9d9',
             borderRadius: 6,
@@ -306,12 +306,12 @@ export default function ProductSearchSelect({
               <div style={{ padding: '8px 12px', backgroundColor: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   <FireOutlined style={{ marginRight: 4 }} />
-                  找到 {searchResults.length} 個商品，點擊變體代碼選擇
+                  找到 {searchResults.length} 個商品，點擊變體選擇
                 </Text>
               </div>
               {renderSearchOptions()}
             </div>
-          ) : searchValue.length >= 2 ? (
+          ) : searchValue ? (
             <div style={{ padding: '20px', textAlign: 'center' }}>
               <Text type="secondary">
                 📭 未找到符合 &quot;{searchValue}&quot; 的商品
@@ -331,13 +331,7 @@ export default function ProductSearchSelect({
                 </div>
               )}
             </div>
-          ) : (
-            <div style={{ padding: '20px', textAlign: 'center' }}>
-              <Text type="secondary">
-                💡 輸入至少2個字元開始搜尋
-              </Text>
-            </div>
-          )}
+          ) : null}
         </div>
       )}
 
