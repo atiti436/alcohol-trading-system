@@ -491,14 +491,39 @@ export default function ProductsPage() {
   }
 
   // 處理表單提交
-  const handleSubmit = async (values: ProductFormData & { accessories?: string }) => {
+  const handleSubmit = async (values: ProductFormData & {
+    accessories?: string
+    variant_type?: string
+    cost_price?: number
+    investor_price?: number
+    actual_price?: number
+  }) => {
     try {
       // 處理accessories欄位
-      const formData = {
+      const formData: any = {
         ...values,
         accessories: values.accessories
           ? values.accessories.split(',').map(item => item.trim()).filter(Boolean)
           : []
+      }
+
+      // 🎯 新增商品時，提取變體資料
+      if (!editingProduct && values.variant_type) {
+        formData.variant = {
+          variant_type: values.variant_type,
+          cost_price: values.cost_price || 0,
+          investor_price: values.investor_price || 0,
+          actual_price: values.actual_price || 0,
+          current_price: values.investor_price || 0 // current_price 預設為 investor_price
+        }
+        // 移除 Product 層級的舊價格欄位
+        delete formData.standard_price
+        delete formData.current_price
+        delete formData.min_price
+        delete formData.variant_type
+        delete formData.cost_price
+        delete formData.investor_price
+        delete formData.actual_price
       }
 
       // 調試輸出
@@ -690,42 +715,60 @@ export default function ProductsPage() {
             </Form.Item>
           </div>
 
-          <div style={{ marginBottom: '8px' }}>
-            <Text strong>價格設定</Text>
-            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-              <span style={{ color: '#666' }}>標準價格</span> (市場基準) ≥
-              <span style={{ color: '#1890ff' }}> 目前價格</span> (實際售價) ≥
-              <span style={{ color: '#999' }}> 最低價格</span> (保本底線)
+          {/* 首個變體設定（強制） */}
+          <div style={{ background: '#e6f7ff', padding: '16px', borderRadius: '6px', marginBottom: '16px' }}>
+            <div style={{ marginBottom: '12px' }}>
+              <Text strong>首個變體設定</Text>
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                商品必須至少有一個變體，變體編號將自動生成為 P0001-001
+              </div>
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
+
             <Form.Item
-              name="standard_price"
-              label="標準價格"
-              rules={[{ required: true, message: '請輸入標準價格' }]}
-              style={{ flex: 1 }}
-              tooltip="市場基準價或官方建議售價"
+              name="variant_type"
+              label="變體描述"
+              rules={[{ required: true, message: '請輸入變體描述' }]}
+              tooltip="例如：亮面新版(日版)、木盒禮盒版、標準款等"
             >
-              <InputNumber placeholder="21000" style={{ width: '100%' }} />
+              <Input placeholder="請輸入變體描述，例如：標準款、日版、禮盒版" />
             </Form.Item>
-            <Form.Item
-              name="current_price"
-              label="目前價格"
-              rules={[{ required: true, message: '請輸入目前價格' }]}
-              style={{ flex: 1 }}
-              tooltip="當前實際銷售價格，可因市場調整"
-            >
-              <InputNumber placeholder="21000" style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item
-              name="min_price"
-              label="最低價格"
-              rules={[{ required: true, message: '請輸入最低價格' }]}
-              style={{ flex: 1 }}
-              tooltip="最低可接受售價，確保不虧本"
-            >
-              <InputNumber placeholder="18000" style={{ width: '100%' }} />
-            </Form.Item>
+
+            <div style={{ marginBottom: '8px', fontSize: '12px', color: '#666' }}>
+              <strong>三層價格架構：</strong>
+              <span style={{ color: '#ff4d4f' }}> 成本價</span> ≤
+              <span style={{ color: '#52c41a' }}> 期望售價</span> ≤
+              <span style={{ color: '#1890ff' }}> 實際售價</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <Form.Item
+                name="cost_price"
+                label="成本價"
+                rules={[{ required: true, message: '請輸入成本價' }]}
+                style={{ flex: 1 }}
+                tooltip="進貨成本（可在進貨後自動更新）"
+              >
+                <InputNumber placeholder="15000" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item
+                name="investor_price"
+                label="期望售價"
+                rules={[{ required: true, message: '請輸入期望售價' }]}
+                style={{ flex: 1 }}
+                tooltip="投資方期望的售價（投資方可見並調整）"
+              >
+                <InputNumber placeholder="18000" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item
+                name="actual_price"
+                label="實際售價"
+                rules={[{ required: true, message: '請輸入實際售價' }]}
+                style={{ flex: 1 }}
+                tooltip="市場實際售價（僅管理員可見）"
+              >
+                <InputNumber placeholder="21000" min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '16px' }}>

@@ -153,6 +153,17 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
+    // 🎯 強制要求變體資料
+    if (!body.variant || !body.variant.variant_type) {
+      return NextResponse.json(
+        {
+          error: '缺少必要的變體資料',
+          details: '商品必須至少包含一個變體，請提供 variant.variant_type'
+        },
+        { status: 400 }
+      )
+    }
+
     // 🔒 嚴格輸入驗證 - 修復安全漏洞
     let validatedData
     try {
@@ -186,13 +197,11 @@ export async function POST(request: NextRequest) {
       accessories,
       hs_code,
       manufacturing_date,
-      expiry_date,
-      standard_price,
-      current_price,
-      min_price
+      expiry_date
     } = validatedData
 
-    const create_default_variant = body.create_default_variant !== false // 預設為 true
+    // 🎯 提取變體資料
+    const variantData = body.variant
 
     // 生成產品編號
     const product_code = await generateProductCode()
@@ -200,80 +209,80 @@ export async function POST(request: NextRequest) {
     // 計算總重量
     const total_weight_kg = (weight_kg || 0) + (package_weight_kg || 0) + (accessory_weight_kg || 0)
 
-    // 創建商品
-    const product = await prisma.product.create({
-      data: {
-        product_code,
-        name,
-        category: category as AlcoholCategory,
-        volume_ml,
-        alc_percentage,
-        weight_kg: weight_kg || 0,
-        package_weight_kg,
-        total_weight_kg,
-        has_box,
-        has_accessories,
-        accessory_weight_kg,
-        accessories,
-        hs_code,
-        supplier,
-        manufacturing_date: manufacturing_date ? manufacturing_date.toISOString() : null,
-        expiry_date: expiry_date ? expiry_date.toISOString() : null,
+    // 🎯 使用 Transaction 確保 Product + Variant + Inventory 一起創建
+    const result = await prisma.$transaction(async (tx) => {
+      // 創建商品（不含價格，價格統一在變體層級）
+      const product = await tx.product.create({
+        data: {
+          product_code,
+          name,
+          category: category as AlcoholCategory,
+          volume_ml,
+          alc_percentage,
+          weight_kg: weight_kg || 0,
+          package_weight_kg,
+          total_weight_kg,
+          has_box,
+          has_accessories,
+          accessory_weight_kg,
+          accessories,
+          hs_code,
+          supplier,
+          manufacturing_date: manufacturing_date ? manufacturing_date.toISOString() : null,
+          expiry_date: expiry_date ? expiry_date.toISOString() : null,
 
-        // 🎯 三層價格架構
-        cost_price: 0,                              // 初始成本為0，等進貨後更新
-        investor_price: standard_price * 0.9,       // 預設為標準價的90%
-        actual_price: standard_price,               // 實際售價
-        standard_price,                             // 標準價
-        current_price,                              // 當前價
-        min_price                                   // 最低價
-      }
-    })
+          // 🎯 Product 層級價格設為 0（已棄用，統一使用變體價格）
+          cost_price: 0,
+          investor_price: 0,
+          actual_price: 0,
+          standard_price: 0,
+          current_price: 0,
+          min_price: 0
+        }
+      })
 
-    // 自動創建預設變體（一般版）
-    let defaultVariant = null
-    if (create_default_variant) {
-      const defaultVariantType = DEFAULT_VARIANT_TYPE
-      // 🎯 使用流水號（P0001-001）
+      // 🎯 創建首個變體（強制要求）
       const variant_code = `${product_code}-001`
       const sku = `SKU-${variant_code}`
 
-      defaultVariant = await prisma.productVariant.create({
+      const variant = await tx.productVariant.create({
         data: {
           product_id: product.id,
           variant_code,
           sku,
-          variant_type: defaultVariantType,
-          description: defaultVariantType,
+          variant_type: variantData.variant_type,
+          description: variantData.variant_type,
 
-          // 🎯 三層價格架構（繼承 Product）
-          cost_price: 0,
-          investor_price: product.investor_price,
-          actual_price: product.actual_price,
-          current_price: product.current_price
+          // 🎯 三層價格架構（來自前端輸入）
+          cost_price: parseFloat(variantData.cost_price?.toString() || '0'),
+          investor_price: parseFloat(variantData.investor_price?.toString() || '0'),
+          actual_price: parseFloat(variantData.actual_price?.toString() || '0'),
+          current_price: parseFloat(variantData.current_price?.toString() || variantData.investor_price?.toString() || '0')
         }
       })
 
       // 建立預設庫存（公司倉）
-      await prisma.inventory.create({
+      await tx.inventory.create({
         data: {
-          variant_id: defaultVariant.id,
+          variant_id: variant.id,
           warehouse: 'COMPANY',
           quantity: 0,
           reserved: 0,
           available: 0,
-          cost_price: 0
+          cost_price: parseFloat(variantData.cost_price?.toString() || '0')
         }
       })
-    }
+
+      return { product, variant }
+    })
 
     return NextResponse.json({
       success: true,
       data: {
-        product,
-        defaultVariant
+        product: result.product,
+        variant: result.variant
       },
-      message: '商品創建成功'
+      message: `商品創建成功（${result.product.product_code}），已自動創建首個變體（${result.variant.variant_code}）`
     })
 
   } catch (error) {

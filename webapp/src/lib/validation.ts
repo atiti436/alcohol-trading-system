@@ -152,10 +152,10 @@ export function validateProductData(data: Record<string, unknown>) {
     // 🏷️ 稅則和法規
     hs_code: data.hs_code ? validateString(data.hs_code, 'HS Code', 0, 20) : null,
 
-    // 💰 價格設定
-    standard_price: validateNumber(data.standard_price, '標準價格', 0, 999999),
-    current_price: validateNumber(data.current_price, '目前價格', 0, 999999),
-    min_price: validateNumber(data.min_price, '最低價格', 0, 999999),
+    // 💰 價格設定（已棄用，現統一在變體層級管理，這裡改為可選）
+    standard_price: data.standard_price ? validateNumber(data.standard_price, '標準價格', 0, 999999) : 0,
+    current_price: data.current_price ? validateNumber(data.current_price, '目前價格', 0, 999999) : 0,
+    min_price: data.min_price ? validateNumber(data.min_price, '最低價格', 0, 999999) : 0,
     cost_price: data.cost_price ? validateNumber(data.cost_price, '成本價', 0, 999999) : 0,
 
     // 📅 日期驗證
