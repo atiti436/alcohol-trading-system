@@ -199,7 +199,7 @@ export default function StockTransfersPage() {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
+    <div>
       <Card
         title={
           <Space>

@@ -125,15 +125,28 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
-    // 計算庫存統計資訊
+    // 計算庫存統計資訊（從 Inventory 表匯總）
     const inventoryData = products.map(product => {
       const stats: DashboardStatsAccumulator = product.variants.reduce(
-        (acc: DashboardStatsAccumulator, variant) => ({
-          total_stock_quantity: acc.total_stock_quantity + variant.stock_quantity,
-          total_reserved_stock: acc.total_reserved_stock + variant.reserved_stock,
-          total_available_stock: acc.total_available_stock + variant.available_stock,
-          total_value: acc.total_value + (variant.stock_quantity * (variant.cost_price || 0))
-        }),
+        (acc: DashboardStatsAccumulator, variant) => {
+          // 從 inventory 數組中匯總所有倉庫的庫存
+          const variantInventoryStats = variant.inventory.reduce(
+            (invAcc, inv) => ({
+              quantity: invAcc.quantity + inv.quantity,
+              reserved: invAcc.reserved + inv.reserved,
+              available: invAcc.available + inv.available,
+              value: invAcc.value + (inv.quantity * (inv.cost_price || 0))
+            }),
+            { quantity: 0, reserved: 0, available: 0, value: 0 }
+          )
+
+          return {
+            total_stock_quantity: acc.total_stock_quantity + variantInventoryStats.quantity,
+            total_reserved_stock: acc.total_reserved_stock + variantInventoryStats.reserved,
+            total_available_stock: acc.total_available_stock + variantInventoryStats.available,
+            total_value: acc.total_value + variantInventoryStats.value
+          }
+        },
         { total_stock_quantity: 0, total_reserved_stock: 0, total_available_stock: 0, total_value: 0 }
       )
 

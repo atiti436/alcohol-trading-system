@@ -188,13 +188,8 @@ export default function ProductsPage() {
       title: '商品資訊',
       key: 'info',
       render: (record: ProductWithVariants) => (
-        <div>
-          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-            {record.name}
-          </div>
-          <div style={{ fontSize: '12px', color: '#999' }}>
-            BASE 商品 - 規格於變體層級設定
-          </div>
+        <div style={{ fontWeight: 'bold' }}>
+          {record.name}
         </div>
       )
     },

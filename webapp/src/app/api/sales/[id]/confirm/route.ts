@@ -64,7 +64,7 @@ export async function POST(
       )
     }
 
-    // 檢查庫存是否足夠（若未指定變體，嘗試自動選擇一個可用變體，如 A 版）
+    // 檢查庫存是否足夠（從 Inventory 表查詢，匯總所有倉庫）
     const chosenVariants: Record<string, string> = {} // sale_item_id -> variant_id
     const stockCheckErrors: string[] = []
     for (const item of existingSale.items) {
@@ -75,26 +75,42 @@ export async function POST(
         // 嘗試找到該商品下可用庫存足夠的變體，優先 A 版
         const variants = await prisma.productVariant.findMany({
           where: { product_id: item.product_id },
+          include: {
+            inventory: {
+              select: {
+                available: true
+              }
+            }
+          },
           orderBy: [
-            { available_stock: 'desc' },
             { variant_type: 'asc' }
-          ],
-          select: { id: true, available_stock: true, variant_type: true }
+          ]
         })
 
+        // 計算每個變體的總可用庫存（所有倉庫）
+        const variantsWithStock = variants.map(v => ({
+          id: v.id,
+          variant_type: v.variant_type,
+          available_stock: v.inventory.reduce((sum, inv) => sum + inv.available, 0)
+        }))
+
         // 先找 A，其次任何足夠庫存者
-        const anyEnough = variants.find(v => v.available_stock >= item.quantity)
+        const anyEnough = variantsWithStock.find(v => v.available_stock >= item.quantity)
         if (anyEnough) {
           variantIdToUse = anyEnough.id
           availableStock = anyEnough.available_stock
         } else {
-          // 沒有足夠的單一變體，回報錯誤（簡化：不做跨變體分攤）
-          const totalAvailable = variants.reduce((s, v) => s + v.available_stock, 0)
+          // 沒有足夠的單一變體，回報錯誤
+          const totalAvailable = variantsWithStock.reduce((s, v) => s + v.available_stock, 0)
           availableStock = totalAvailable
         }
       } else {
-        const variant = await prisma.productVariant.findUnique({ where: { id: variantIdToUse }, select: { available_stock: true } })
-        availableStock = variant?.available_stock || 0
+        // 查詢指定變體的庫存（匯總所有倉庫）
+        const inventories = await prisma.inventory.findMany({
+          where: { variant_id: variantIdToUse },
+          select: { available: true }
+        })
+        availableStock = inventories.reduce((sum, inv) => sum + inv.available, 0)
       }
 
       if (availableStock < item.quantity) {
@@ -124,20 +140,43 @@ export async function POST(
         }
       })
 
-      // 2. 預留庫存（若有自動選變體，同步寫回 sale items 的 variant_id）
+      // 2. 預留庫存（從 Inventory 表，優先從公司倉扣除）
       for (const item of existingSale.items) {
         const variantId = item.variant_id || chosenVariants[item.id]
         if (!variantId) {
           throw new Error(`銷售項目 ${item.product?.name || item.product_id} 缺少可用變體`)
         }
-        await tx.productVariant.update({
-          where: { id: variantId },
-          data: {
-            available_stock: { decrement: item.quantity },
-            reserved_stock: { increment: item.quantity }
-          }
+
+        // 查詢該變體的所有倉庫庫存，優先從公司倉扣
+        const inventories = await tx.inventory.findMany({
+          where: { variant_id: variantId },
+          orderBy: [
+            { warehouse: 'asc' } // COMPANY 排在 PRIVATE 前面
+          ]
         })
 
+        let remainingQty = item.quantity
+        for (const inv of inventories) {
+          if (remainingQty <= 0) break
+
+          const toReserve = Math.min(remainingQty, inv.available)
+          if (toReserve > 0) {
+            await tx.inventory.update({
+              where: { id: inv.id },
+              data: {
+                available: { decrement: toReserve },
+                reserved: { increment: toReserve }
+              }
+            })
+            remainingQty -= toReserve
+          }
+        }
+
+        if (remainingQty > 0) {
+          throw new Error(`變體 ${variantId} 庫存不足，無法預留`)
+        }
+
+        // 更新 sale item 的 variant_id（如果是自動選擇的）
         if (!item.variant_id) {
           await tx.saleItem.update({
             where: { id: item.id },
