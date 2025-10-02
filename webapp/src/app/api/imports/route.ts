@@ -82,10 +82,20 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
       notes
     } = body
 
-    // 查詢採購單
+    // 查詢採購單（包含商品變體資訊）
     const purchase = await prisma.purchase.findUnique({
       where: { id: purchaseId },
-      include: { items: true }
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                variants: true
+              }
+            }
+          }
+        }
+      }
     })
 
     if (!purchase) {
@@ -137,16 +147,22 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
         total_taxes: 0,
         notes,
         items: {
-          create: purchase.items.map(item => ({
-            product_name: item.product_name,
-            quantity: item.quantity,
-            alcohol_percentage: 40, // 預設值，待報單識別更新
-            volume: 700, // 預設值
-            dutiable_value: item.total_price * purchase.exchange_rate,
-            alcohol_tax: 0,
-            business_tax: 0,
-            tariff_code: item.tariff_code
-          }))
+          create: purchase.items.map(item => {
+            // 從採購單明細讀取實際的酒精度和容量
+            const alcoholPercentage = item.alc_percentage || 40
+            const volume = item.volume_ml || 700
+
+            return {
+              product_name: item.product_name,
+              quantity: item.quantity,
+              alcohol_percentage: alcoholPercentage,
+              volume: volume,
+              dutiable_value: item.total_price * purchase.exchange_rate,
+              alcohol_tax: 0,
+              business_tax: 0,
+              tariff_code: item.tariff_code
+            }
+          })
         }
       },
       include: {

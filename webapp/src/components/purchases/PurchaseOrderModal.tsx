@@ -265,8 +265,8 @@ export function PurchaseOrderModal({
           product_code: selection.productCode,
           supplier: selection.supplier || '',
           category: AlcoholCategory.WHISKY, // 預設值
-          volume_ml: 750,
-          alc_percentage: 40,
+          volume_ml: selection.volume_ml || 750,
+          alc_percentage: selection.alc_percentage || 40,
           weight_kg: 1.5,
           package_weight_kg: 0.3, // 外盒重量預設值
           total_weight_kg: 1.8, // 總重量預設值
@@ -470,7 +470,10 @@ export function PurchaseOrderModal({
           variant_id: item.variant_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          total_price: item.total_price
+          total_price: item.total_price,
+          // ✅ 加入酒精度和容量資訊
+          alc_percentage: item.product?.alc_percentage,
+          volume_ml: item.product?.volume_ml
         }))
       }
 

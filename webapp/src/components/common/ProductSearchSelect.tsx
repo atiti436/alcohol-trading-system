@@ -186,7 +186,10 @@ export default function ProductSearchSelect({
         description: variant.description,
         price: variant.current_price,
         stock: variant.available_stock,
-        supplier: product.supplier
+        supplier: product.supplier,
+        // ✅ 傳遞酒精度和容量
+        alc_percentage: variant.alc_percentage,
+        volume_ml: variant.volume_ml
       })
 
       // ✅ 選擇後清空搜尋結果，提供視覺反饋
