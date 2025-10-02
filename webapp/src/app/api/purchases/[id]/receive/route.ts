@@ -210,21 +210,54 @@ export async function POST(
             })
           }
 
+          // 🏭 更新或創建 Inventory 記錄（公司倉）
+          let inventory = await tx.inventory.findFirst({
+            where: {
+              variant_id: variant?.id,
+              warehouse: 'COMPANY'
+            }
+          })
+
+          if (!inventory) {
+            // 創建公司倉庫存記錄
+            inventory = await tx.inventory.create({
+              data: {
+                variant_id: variant?.id || '',
+                warehouse: 'COMPANY',
+                quantity: actualStockIncrease,
+                reserved: 0,
+                available: actualStockIncrease,
+                cost_price: finalUnitCost
+              }
+            })
+          } else {
+            // 更新公司倉庫存
+            await tx.inventory.update({
+              where: { id: inventory.id },
+              data: {
+                quantity: { increment: actualStockIncrease },
+                available: { increment: actualStockIncrease },
+                cost_price: finalUnitCost
+              }
+            })
+          }
+
           // 建立庫存異動記錄
           await tx.inventoryMovement.create({
             data: {
               variant_id: variant?.id || '',
               movement_type: 'PURCHASE',
               adjustment_type: 'ADD',
-              quantity_before: variant?.stock_quantity || 0,
+              quantity_before: inventory.quantity - actualStockIncrease,
               quantity_change: actualStockIncrease,
-              quantity_after: (variant?.stock_quantity || 0) + actualStockIncrease,
+              quantity_after: inventory.quantity,
               unit_cost: finalUnitCost,
               total_cost: finalUnitCost * actualStockIncrease,
               reason: `採購進貨 - ${purchase.purchase_number}`,
               reference_type: 'PURCHASE',
               reference_id: purchaseId,
               notes: loss_quantity > 0 ? `損耗 ${itemLoss} 件 (${loss_type})` : '正常進貨',
+              warehouse: 'COMPANY',
               created_by: session.user.id
             }
           })

@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/inventory - 手動庫存調整
+// POST /api/inventory - 手動庫存調整（支援多倉庫）
 export async function POST(request: NextRequest) {
   try {
     // 權限檢查 - 只有SUPER_ADMIN和EMPLOYEE可以調整庫存
@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       variant_id,
+      warehouse, // 'COMPANY' | 'PRIVATE'
       adjustment_type, // 'ADD' | 'SUBTRACT' | 'SET'
       quantity,
       reason,
@@ -204,9 +205,15 @@ export async function POST(request: NextRequest) {
     } = body
 
     // 基本驗證
-    if (!variant_id || !adjustment_type || quantity === undefined) {
+    if (!variant_id || !warehouse || !adjustment_type || quantity === undefined) {
       return NextResponse.json({
-        error: '變體ID、調整類型和數量為必填'
+        error: '變體ID、倉庫、調整類型和數量為必填'
+      }, { status: 400 })
+    }
+
+    if (!['COMPANY', 'PRIVATE'].includes(warehouse)) {
+      return NextResponse.json({
+        error: '倉庫必須是 COMPANY 或 PRIVATE'
       }, { status: 400 })
     }
 
@@ -240,68 +247,82 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '產品變體不存在' }, { status: 404 })
     }
 
-    // 計算新的庫存數量
-    let newStockQuantity: number
-
-    switch (adjustment_type) {
-      case 'ADD':
-        newStockQuantity = variant.stock_quantity + adjustmentQuantity
-        break
-      case 'SUBTRACT':
-        newStockQuantity = Math.max(0, variant.stock_quantity - adjustmentQuantity)
-        break
-      case 'SET':
-        newStockQuantity = adjustmentQuantity
-        break
-      default:
-        throw new Error('無效的調整類型')
-    }
-
-    // 檢查庫存不能小於已預留的數量
-    if (newStockQuantity < variant.reserved_stock) {
-      return NextResponse.json({
-        error: `庫存調整後 (${newStockQuantity}) 不能少於已預留數量 (${variant.reserved_stock})`
-      }, { status: 400 })
-    }
-
     // 使用 transaction 確保數據一致性
-    const result = await prisma.$transaction(async (prisma) => {
-      // 更新庫存
-      const updatedVariant = await prisma.productVariant.update({
-        where: { id: variant_id },
-        data: {
-          stock_quantity: newStockQuantity,
-          available_stock: newStockQuantity - variant.reserved_stock,
-          updated_at: new Date()
-        },
-        include: {
-          product: {
-            select: {
-              name: true,
-              product_code: true
-            }
+    const result = await prisma.$transaction(async (tx) => {
+      // 查詢或創建該倉庫的庫存記錄
+      let inventory = await tx.inventory.findFirst({
+        where: {
+          variant_id,
+          warehouse
+        }
+      })
+
+      if (!inventory) {
+        // 如果該倉庫沒有庫存記錄，創建一個
+        inventory = await tx.inventory.create({
+          data: {
+            variant_id,
+            warehouse,
+            quantity: 0,
+            reserved: 0,
+            available: 0,
+            cost_price: variant.cost_price || 0
           }
+        })
+      }
+
+      // 計算新的庫存數量
+      let newQuantity: number
+
+      switch (adjustment_type) {
+        case 'ADD':
+          newQuantity = inventory.quantity + adjustmentQuantity
+          break
+        case 'SUBTRACT':
+          newQuantity = Math.max(0, inventory.quantity - adjustmentQuantity)
+          break
+        case 'SET':
+          newQuantity = adjustmentQuantity
+          break
+        default:
+          throw new Error('無效的調整類型')
+      }
+
+      // 檢查庫存不能小於已預留的數量
+      if (newQuantity < inventory.reserved) {
+        throw new Error(`庫存調整後 (${newQuantity}) 不能少於已預留數量 (${inventory.reserved})`)
+      }
+
+      // 更新 Inventory 表
+      const updatedInventory = await tx.inventory.update({
+        where: { id: inventory.id },
+        data: {
+          quantity: newQuantity,
+          available: newQuantity - inventory.reserved,
+          updated_at: new Date()
         }
       })
 
       // 記錄庫存異動
-      await prisma.inventoryMovement.create({
+      const quantityChange = newQuantity - inventory.quantity
+      await tx.inventoryMovement.create({
         data: {
           variant_id,
           movement_type: 'ADJUSTMENT',
           adjustment_type,
-          quantity_before: variant.stock_quantity,
-          quantity_change: adjustmentQuantity - variant.stock_quantity,
-          quantity_after: newStockQuantity,
+          quantity_before: inventory.quantity,
+          quantity_change: quantityChange,
+          quantity_after: newQuantity,
           unit_cost: variant.cost_price || 0,
-          total_cost: (variant.cost_price || 0) * Math.abs(adjustmentQuantity - variant.stock_quantity),
+          total_cost: (variant.cost_price || 0) * Math.abs(quantityChange),
           reason: reason || '手動調整',
           notes,
+          warehouse,
           created_by: session.user.id
         }
       })
 
-      return updatedVariant
+      return updatedInventory
     })
 
     return NextResponse.json({
@@ -313,7 +334,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('庫存調整失敗:', error)
     return NextResponse.json(
-      { error: '調整失敗', details: error },
+      { error: error instanceof Error ? error.message : '調整失敗' },
       { status: 500 }
     )
   }

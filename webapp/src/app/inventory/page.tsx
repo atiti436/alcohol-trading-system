@@ -9,9 +9,12 @@ import {
   EditOutlined,
   WarningOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined
+  ArrowDownOutlined,
+  InboxOutlined
 } from '@ant-design/icons'
 import { InventoryAdjustmentModal } from '@/components/inventory/InventoryAdjustmentModal'
+import QuickReceiveModal from '@/components/inventory/QuickReceiveModal'
+import { useSession } from 'next-auth/react'
 
 const { Title, Text } = Typography
 const { Search } = Input
@@ -40,6 +43,7 @@ interface InventoryItem {
 }
 
 export default function InventoryPage() {
+  const { data: session } = useSession()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState('')
@@ -48,6 +52,8 @@ export default function InventoryPage() {
   const [adjustmentModalVisible, setAdjustmentModalVisible] = useState(false)
   const [selectedInventoryItem, setSelectedInventoryItem] = useState<InventoryItem | null>(null)
   const [adjustmentLoading, setAdjustmentLoading] = useState(false)
+  const [quickReceiveVisible, setQuickReceiveVisible] = useState(false)
+  const [products, setProducts] = useState([])
 
   // 🔗 連接真實API - 移除假資料
   const fetchInventory = useCallback(async () => {
@@ -106,9 +112,25 @@ export default function InventoryPage() {
     }
   }, [searchText, categoryFilter, statusFilter])
 
+  // 載入商品列表（用於快速進貨）
+  const fetchProducts = useCallback(async () => {
+    try {
+      const response = await fetch('/api/products?limit=1000')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setProducts(result.data.products)
+        }
+      }
+    } catch (error) {
+      console.error('商品列表載入失敗:', error)
+    }
+  }, [])
+
   useEffect(() => {
     fetchInventory()
-  }, [searchText, categoryFilter, statusFilter, fetchInventory])
+    fetchProducts()
+  }, [searchText, categoryFilter, statusFilter, fetchInventory, fetchProducts])
 
   // 📊 計算真實統計數據
   const statistics = {
@@ -285,11 +307,26 @@ export default function InventoryPage() {
     }
   ]
 
+  // 權限檢查
+  const canQuickReceive = session?.user?.role !== 'INVESTOR'
+
   return (
     <div style={{ padding: 0 }}>
-      <Title level={2} style={{ marginBottom: 24 }}>
-        庫存管理
-      </Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <Title level={2} style={{ margin: 0 }}>
+          庫存管理
+        </Title>
+        {canQuickReceive && (
+          <Button
+            type="primary"
+            icon={<InboxOutlined />}
+            onClick={() => setQuickReceiveVisible(true)}
+            style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
+          >
+            個人快速進貨
+          </Button>
+        )}
+      </div>
 
       {/* 統計卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -425,6 +462,17 @@ export default function InventoryPage() {
         onSubmit={handleAdjustmentSubmit}
         inventoryItem={selectedInventoryItem || undefined}
         loading={adjustmentLoading}
+      />
+
+      {/* 個人快速進貨Modal */}
+      <QuickReceiveModal
+        visible={quickReceiveVisible}
+        onCancel={() => setQuickReceiveVisible(false)}
+        onSuccess={() => {
+          setQuickReceiveVisible(false)
+          fetchInventory()
+        }}
+        products={products}
       />
     </div>
   )

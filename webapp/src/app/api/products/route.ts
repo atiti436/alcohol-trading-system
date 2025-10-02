@@ -67,6 +67,10 @@ export async function GET(request: NextRequest) {
 
     // 🔒 根據角色決定可見欄位
     const canViewActualPrice = session.user.role === 'SUPER_ADMIN' || session.user.role === 'EMPLOYEE'
+    const userRole = session.user.role
+
+    // 🏭 倉庫過濾條件：投資人只看公司倉
+    const warehouseFilter = userRole === 'INVESTOR' ? { warehouse: 'COMPANY' } : {}
 
     // 執行查詢
     const [products, total] = await Promise.all([
@@ -112,7 +116,19 @@ export async function GET(request: NextRequest) {
               current_price: true,
               stock_quantity: true,
               available_stock: true,
-              condition: true
+              condition: true,
+              // 🏭 加入倉庫庫存明細
+              inventory: {
+                where: warehouseFilter,
+                select: {
+                  id: true,
+                  warehouse: true,
+                  quantity: true,
+                  reserved: true,
+                  available: true,
+                  cost_price: true
+                }
+              }
             }
           },
           _count: {
