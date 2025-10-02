@@ -39,6 +39,7 @@ import VariantListView from '@/components/products/VariantListView'
 import VariantCreateModal from '@/components/products/VariantCreateModal'
 import VariantEditModal from '@/components/products/VariantEditModal'
 import InvestorPriceModal from '@/components/products/InvestorPriceModal'
+import StockTransferModal from '@/components/inventory/StockTransferModal'
 
 const { Search } = Input
 const { Option } = Select
@@ -77,6 +78,7 @@ export default function ProductsPage() {
   const [variantEditModalVisible, setVariantEditModalVisible] = useState(false)
   const [investorPriceModalVisible, setInvestorPriceModalVisible] = useState(false)
   const [selectedVariant, setSelectedVariant] = useState<any>(null)
+  const [stockTransferModalVisible, setStockTransferModalVisible] = useState(false)
 
   // 變體代碼/SKU 自動生成工具（簡單 slug 規則）
   const slugify = (s: string) => (s || '')
@@ -708,6 +710,7 @@ export default function ProductsPage() {
                     actual_price: Number(v.actual_price || 0),
                     stock_quantity: v.stock_quantity || 0,
                     is_active: true,
+                    inventory: v.inventory || [], // 🏭 傳入倉庫資料
                     // 傳入完整變體資料以供編輯
                     ...v
                   }))}
@@ -718,6 +721,10 @@ export default function ProductsPage() {
                   }}
                   onEdit={handleEditVariantClick}
                   onDelete={handleDeleteVariant}
+                  onTransfer={(variant) => {
+                    setSelectedVariant(variant)
+                    setStockTransferModalVisible(true)
+                  }}
                   loading={loading}
                 />
               ) : (
@@ -970,6 +977,17 @@ export default function ProductsPage() {
           setInvestorPriceModalVisible(false)
           loadProducts()
         }}
+      />
+
+      {/* 品號調撥Modal */}
+      <StockTransferModal
+        visible={stockTransferModalVisible}
+        onCancel={() => setStockTransferModalVisible(false)}
+        onSuccess={() => {
+          setStockTransferModalVisible(false)
+          loadProducts()
+        }}
+        products={products}
       />
     </div>
   )

@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (userRole === Role.SUPER_ADMIN) {
       return [
         '/dashboard','/customers','/products','/quotations',
-        '/purchases','/imports','/inventory','/sales','/shipping',
+        '/purchases','/imports','/inventory','/stock-transfers','/sales','/shipping',
         '/finance','/finance/cashflow','/finance/payables','/statements','/reports','/settings'
       ]
     }
@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
     return [
       '/dashboard','/customers','/products','/quotations',
-      '/purchases','/imports','/inventory','/sales','/shipping',
+      '/purchases','/imports','/inventory','/stock-transfers','/sales','/shipping',
       '/finance','/finance/cashflow','/statements','/reports'
     ]
   }

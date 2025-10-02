@@ -15,7 +15,8 @@ import {
   FileSearchOutlined,
   RobotOutlined,
   TeamOutlined,
-  CreditCardOutlined
+  CreditCardOutlined,
+  SwapOutlined
 } from '@ant-design/icons'
 import { Role } from '@/types/auth'
 
@@ -71,6 +72,13 @@ export const MENU_ITEMS: Record<string, MenuItemConfig> = {
     path: '/inventory',
     label: '庫存管理',
     icon: <ShoppingOutlined />,
+    roles: [Role.SUPER_ADMIN, Role.EMPLOYEE]
+  },
+  '/stock-transfers': {
+    key: '/stock-transfers',
+    path: '/stock-transfers',
+    label: '品號調撥',
+    icon: <SwapOutlined />,
     roles: [Role.SUPER_ADMIN, Role.EMPLOYEE]
   },
   '/sales': {
