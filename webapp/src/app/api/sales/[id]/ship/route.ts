@@ -89,8 +89,9 @@ export async function POST(
     // 檢查庫存是否充足
     const inventoryChecks: Array<{
       saleItem: any;
-      variant: any;
+      inventories: any[];
       shipQuantity: number;
+      variantId: string;
     }> = []
     for (const shipItem of shippingItems) {
       const saleItem = sale.items.find(item => item.id === shipItem.sale_item_id)
@@ -106,27 +107,41 @@ export async function POST(
         }, { status: 400 })
       }
 
-      // 檢查庫存
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: shipItem.variant_id }
+      // 檢查預留庫存（因為確認訂單時已經預留了）
+      // 查詢 Inventory 表中的預留庫存
+      const inventories = await prisma.inventory.findMany({
+        where: { variant_id: shipItem.variant_id },
+        select: {
+          id: true,
+          warehouse: true,
+          reserved: true,
+          quantity: true
+        },
+        orderBy: [
+          { warehouse: 'asc' } // COMPANY 優先
+        ]
       })
 
-      if (!variant) {
+      if (inventories.length === 0) {
         return NextResponse.json({
-          error: `商品變體 ${shipItem.variant_id} 不存在`
+          error: `商品變體 ${shipItem.variant_id} 不存在庫存記錄`
         }, { status: 404 })
       }
 
-      if (variant.available_stock < shipItem.ship_quantity) {
+      // 計算總預留庫存
+      const totalReserved = inventories.reduce((sum, inv) => sum + inv.reserved, 0)
+
+      if (totalReserved < shipItem.ship_quantity) {
         return NextResponse.json({
-          error: `商品 ${saleItem.product.name} 庫存不足，現有庫存：${variant.available_stock}，需要：${shipItem.ship_quantity}`
+          error: `商品 ${saleItem.product.name} 預留庫存不足，已預留：${totalReserved}，需要出貨：${shipItem.ship_quantity}。請先確認訂單以預留庫存。`
         }, { status: 400 })
       }
 
       inventoryChecks.push({
         saleItem,
-        variant,
-        shipQuantity: shipItem.ship_quantity
+        inventories,
+        shipQuantity: shipItem.ship_quantity,
+        variantId: shipItem.variant_id
       })
     }
 
@@ -147,39 +162,54 @@ export async function POST(
         }
       })
 
-      // 2. 處理每個出貨項目的庫存扣減
+      // 2. 處理每個出貨項目的庫存扣減（從 Inventory 表的預留庫存）
       const shippingItems = []
 
       for (const check of inventoryChecks) {
-        const { saleItem, variant, shipQuantity } = check
+        const { saleItem, inventories, shipQuantity, variantId } = check
 
-        // 扣減庫存
-        await tx.productVariant.update({
-          where: { id: variant.id },
-          data: {
-            stock_quantity: { decrement: shipQuantity },
-            available_stock: { decrement: shipQuantity }
-          }
-        })
+        // 從預留庫存扣除並實際扣庫存（優先從公司倉）
+        let remainingToShip = shipQuantity
+        let totalCost = 0
 
-        // 建立庫存異動記錄
-        await tx.inventoryMovement.create({
-          data: {
-            variant_id: variant.id,
-            movement_type: 'SALE',
-            adjustment_type: 'SUBTRACT',
-            quantity_before: variant.stock_quantity,
-            quantity_change: -shipQuantity,
-            quantity_after: variant.stock_quantity - shipQuantity,
-            unit_cost: variant.cost_price || 0,
-            total_cost: (variant.cost_price || 0) * shipQuantity,
-            reason: `銷售出貨 - ${sale.sale_number}`,
-            reference_type: 'SALE',
-            reference_id: saleId,
-            notes: `出貨單號：${shippingOrder.shipping_number}`,
-            created_by: session.user.id
+        for (const inv of inventories) {
+          if (remainingToShip <= 0) break
+
+          const toShip = Math.min(remainingToShip, inv.reserved)
+          if (toShip > 0) {
+            // 更新 Inventory：reserved 減少，quantity 減少
+            await tx.inventory.update({
+              where: { id: inv.id },
+              data: {
+                reserved: { decrement: toShip },
+                quantity: { decrement: toShip }
+              }
+            })
+
+            // 記錄庫存異動
+            await tx.inventoryMovement.create({
+              data: {
+                variant_id: variantId,
+                movement_type: 'SALE',
+                adjustment_type: 'SUBTRACT',
+                quantity_before: inv.quantity,
+                quantity_change: -toShip,
+                quantity_after: inv.quantity - toShip,
+                unit_cost: inv.cost_price || 0,
+                total_cost: (inv.cost_price || 0) * toShip,
+                reason: `銷售出貨 - ${sale.sale_number}`,
+                reference_type: 'SALE',
+                reference_id: saleId,
+                warehouse: inv.warehouse,
+                notes: `出貨單號：${shippingOrder.shipping_number}，倉庫：${inv.warehouse}`,
+                created_by: session.user.id
+              }
+            })
+
+            totalCost += (inv.cost_price || 0) * toShip
+            remainingToShip -= toShip
           }
-        })
+        }
 
         // 建立出貨項目記錄
         const shippingItem = await tx.shippingItem.create({
@@ -187,18 +217,30 @@ export async function POST(
             shipping_order_id: shippingOrder.id,
             sale_item_id: saleItem.id,
             product_id: saleItem.product_id,
-            variant_id: variant.id,
+            variant_id: variantId,
             quantity: shipQuantity,
             unit_price: saleItem.unit_price,
             total_price: saleItem.unit_price * shipQuantity
           }
         })
 
+        // 查詢變體信息（用於返回）
+        const variant = await tx.productVariant.findUnique({
+          where: { id: variantId },
+          select: { variant_code: true }
+        })
+
+        // 計算剩餘庫存
+        const remainingInventories = await tx.inventory.findMany({
+          where: { variant_id: variantId }
+        })
+        const remainingStock = remainingInventories.reduce((sum, inv) => sum + inv.quantity, 0)
+
         shippingItems.push({
           product_name: saleItem.product.name,
-          variant_code: variant.variant_code,
+          variant_code: variant?.variant_code || '',
           shipped_quantity: shipQuantity,
-          remaining_stock: variant.stock_quantity - shipQuantity,
+          remaining_stock: remainingStock,
           shipping_item_id: shippingItem.id
         })
       }
