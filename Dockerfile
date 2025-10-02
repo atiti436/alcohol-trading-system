@@ -11,14 +11,14 @@ RUN apt-get update -y && \
 # Copy webapp directory (which includes shared-src)
 COPY webapp .
 
-# Set npm registry to Taobao mirror for faster and more stable downloads in China
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm config set fetch-retries 5 && \
+# Configure npm for better network stability
+RUN npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-timeout 300000
 
 # Install dependencies - postinstall will copy shared-src to shared
-RUN npm install --legacy-peer-deps --verbose
+RUN npm install --legacy-peer-deps
 
 # Generate Prisma client
 RUN npx prisma generate --schema=./prisma/schema.prisma
