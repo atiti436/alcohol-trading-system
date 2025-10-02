@@ -101,7 +101,18 @@ export async function GET(request: NextRequest) {
               cost_price: true,
               base_price: true,
               current_price: true,
-              condition: true
+              condition: true,
+              inventory: {
+                select: {
+                  id: true,
+                  warehouse: true,
+                  quantity: true,
+                  reserved: true,
+                  available: true,
+                  cost_price: true,
+                  updated_at: true
+                }
+              }
             }
           },
           _count: {

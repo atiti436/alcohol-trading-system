@@ -192,22 +192,9 @@ export default function ProductsPage() {
           <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
             {record.name}
           </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            {record.volume_ml}ml • {record.alc_percentage}%
-            {record.weight_kg && ` • 空瓶: ${Number(record.weight_kg).toFixed(3)}kg`}
+          <div style={{ fontSize: '12px', color: '#999' }}>
+            BASE 商品 - 規格於變體層級設定
           </div>
-          {(record.package_weight_kg || record.accessory_weight_kg || record.total_weight_kg) && (
-            <div style={{ fontSize: '11px', color: '#999' }}>
-              {record.package_weight_kg && `包裝: ${Number(record.package_weight_kg).toFixed(3)}kg `}
-              {record.accessory_weight_kg && `附件: ${Number(record.accessory_weight_kg).toFixed(3)}kg `}
-              {record.total_weight_kg && `總重: ${Number(record.total_weight_kg).toFixed(3)}kg`}
-            </div>
-          )}
-          {record.supplier && (
-            <div style={{ fontSize: '12px', color: '#666' }}>
-              供應商: {record.supplier}
-            </div>
-          )}
         </div>
       )
     },
