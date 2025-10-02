@@ -554,16 +554,23 @@ export default function PurchasesPage() {
     const actionKey = `receive-import-${purchase.id}`
     setActionLoading(prev => ({ ...prev, [actionKey]: true }))
     try {
-      await fetch('/api/imports/from-purchase', {
+      const response = await fetch('/api/imports/from-purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ purchaseId: purchase.id })
       })
-      setReceiveModeVisible(false)
-      if (purchase.purchaseNumber) {
-        router.push(`/imports?search=${encodeURIComponent(purchase.purchaseNumber)}`)
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setReceiveModeVisible(false)
+        message.success('已轉進貨，正在跳轉...')
+        if (purchase.purchaseNumber) {
+          router.push(`/imports?search=${encodeURIComponent(purchase.purchaseNumber)}`)
+        } else {
+          router.push('/imports')
+        }
       } else {
-        router.push('/imports')
+        message.error(result.error || '轉進貨失敗')
       }
     } catch (e) {
       message.error('轉進貨失敗，請稍後重試')
@@ -575,8 +582,15 @@ export default function PurchasesPage() {
   // 國內（免報單）：直接收貨
   const handleReceiveDomesticMode = async () => {
     if (!selectedForReceive) return
-    await handleReceive(selectedForReceive)
-    setReceiveModeVisible(false)
+    const purchase = selectedForReceive
+    const actionKey = `receive-domestic-${purchase.id}`
+    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+    try {
+      await handleReceive(purchase)
+      setReceiveModeVisible(false)
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+    }
   }
 
   // 處理刪除
@@ -772,10 +786,19 @@ export default function PurchasesPage() {
             showIcon
           />
           <Space>
-            <Button type="primary" onClick={handleReceiveImportMode}>
+            <Button
+              type="primary"
+              onClick={handleReceiveImportMode}
+              loading={actionLoading[`receive-import-${selectedForReceive?.id}`]}
+              disabled={actionLoading[`receive-domestic-${selectedForReceive?.id}`]}
+            >
               進口（走報單）
             </Button>
-            <Button onClick={handleReceiveDomesticMode}>
+            <Button
+              onClick={handleReceiveDomesticMode}
+              loading={actionLoading[`receive-domestic-${selectedForReceive?.id}`]}
+              disabled={actionLoading[`receive-import-${selectedForReceive?.id}`]}
+            >
               國內（直接收貨）
             </Button>
           </Space>

@@ -154,7 +154,17 @@ export default function ImportsPage() {
           tradePromotionFee: rec.trade_promotion_fee,
           totalTaxes: rec.total_taxes,
           created_at: rec.created_at,
-          items: rec.items,
+          items: (rec.items || []).map((item: any) => ({
+            id: item.id,
+            product_name: item.product_name,
+            quantity: item.quantity,
+            alcoholPercentage: item.alcohol_percentage,
+            volume: item.volume,
+            dutiableValue: item.dutiable_value,
+            alcoholTax: item.alcohol_tax,
+            businessTax: item.business_tax,
+            tariffCode: item.tariff_code
+          })),
           _count: rec._count,
         }))
         setImports(mapped)
@@ -184,7 +194,19 @@ export default function ImportsPage() {
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
-          const mapped = (result.data.purchases || []).map((p: any) => ({
+          const purchases = result.data.purchases || []
+
+          // 查詢所有進貨記錄，過濾掉已有進貨記錄的採購單
+          const importsResponse = await fetch('/api/imports?limit=1000')
+          const importsResult = await importsResponse.json()
+          const importedPurchaseIds = new Set(
+            (importsResult.data?.imports || []).map((imp: any) => imp.purchase_id)
+          )
+
+          // 只保留沒有對應進貨記錄的採購單
+          const filtered = purchases.filter((p: any) => !importedPurchaseIds.has(p.id))
+
+          const mapped = filtered.map((p: any) => ({
             ...p,
             purchaseNumber: p.purchase_number,
             fundingSource: p.funding_source,
