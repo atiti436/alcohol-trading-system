@@ -29,7 +29,7 @@ export async function POST(
     } = body
 
     // 查詢進貨記錄
-    const importRecord = await prisma.importRecord.findUnique({
+    const importRecord = await prisma.legacyImportRecord.findUnique({
       where: { id: importId },
       include: { items: true }
     })
@@ -67,7 +67,7 @@ export async function POST(
       totalTradePromotionFee += taxResult.costs.tradePromotion
 
       // 更新商品項目
-      return prisma.importItem.update({
+      return prisma.legacyImportItem.update({
         where: { id: existingItem.id },
         data: {
           product_name: item.product_name,
@@ -86,7 +86,7 @@ export async function POST(
     const totalTaxes = totalAlcoholTax + totalBusinessTax + totalTradePromotionFee
 
     // 更新進貨記錄
-    const updatedImportRecord = await prisma.importRecord.update({
+    const updatedImportRecord = await prisma.legacyImportRecord.update({
       where: { id: importId },
       data: {
         declaration_number: declarationNumber,

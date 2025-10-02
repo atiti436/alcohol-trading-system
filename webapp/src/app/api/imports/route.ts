@@ -37,7 +37,7 @@ export const GET = withAppActiveUser(async (request: NextRequest, response: Next
 
     // 查詢進貨記錄
     const [imports, total] = await Promise.all([
-      prisma.importRecord.findMany({
+      prisma.legacyImportRecord.findMany({
         where,
         include: {
           items: true,
@@ -47,7 +47,7 @@ export const GET = withAppActiveUser(async (request: NextRequest, response: Next
         skip,
         take: limit
       }),
-      prisma.importRecord.count({ where })
+      prisma.legacyImportRecord.count({ where })
     ])
 
     return NextResponse.json({
@@ -103,7 +103,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
     }
 
     // 檢查是否已經創建過進貨記錄
-    const existingImport = await prisma.importRecord.findFirst({
+    const existingImport = await prisma.legacyImportRecord.findFirst({
       where: { purchase_id: purchaseId }
     })
 
@@ -119,7 +119,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
     const importNumber = `IMP${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(Date.now()).slice(-4)}`
 
     // 創建進貨記錄
-    const importRecord = await prisma.importRecord.create({
+    const importRecord = await prisma.legacyImportRecord.create({
       data: {
         import_number: importNumber,
         purchase_id: purchase.id,

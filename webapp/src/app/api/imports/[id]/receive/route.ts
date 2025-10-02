@@ -18,7 +18,7 @@ export async function POST(
     }
 
     const importId = params.id
-    const record = await prisma.importRecord.update({
+    const record = await prisma.legacyImportRecord.update({
       where: { id: importId },
       data: { status: 'RECEIVED' }
     })

@@ -17,7 +17,7 @@ export const GET = withAppActiveUser(async (request: NextRequest, response: Next
     const importId = params.id
 
     // 查詢進貨單
-    const importRecord = await prisma.importRecord.findUnique({
+    const importRecord = await prisma.legacyImportRecord.findUnique({
       where: { id: importId }
     })
 
@@ -97,7 +97,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
     }
 
     // 查詢進貨單
-    const importRecord = await prisma.importRecord.findUnique({
+    const importRecord = await prisma.legacyImportRecord.findUnique({
       where: { id: importId }
     })
 
@@ -160,7 +160,7 @@ export const DELETE = withAppActiveUser(async (request: NextRequest, response: N
     }
 
     // 查詢進貨單
-    const importRecord = await prisma.importRecord.findUnique({
+    const importRecord = await prisma.legacyImportRecord.findUnique({
       where: { id: importId }
     })
 

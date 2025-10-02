@@ -359,21 +359,28 @@ export function SaleOrderModal({
               allowClear
               notFoundContent="無可用版本"
             >
-              {record.product.variants.map(variant => (
-                <Option key={variant.id} value={variant.id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 'bold' }}>
-                      {variant.description}
-                    </span>
-                    <span style={{ color: '#999', fontSize: '12px' }}>
-                      {variant.variant_code} | 庫存: {variant.available_stock || variant.stock_quantity || 0}瓶
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                    {variant.condition || '狀況良好'} | NT$ {variant.current_price?.toLocaleString()}
-                  </div>
-                </Option>
-              ))}
+              {record.product.variants.map(variant => {
+                // 組合完整商品名稱
+                const variantName = variant.description || variant.variant_type || '標準款'
+                const fullProductName = `${record.product?.name || ''} - ${variantName}`
+
+                return (
+                  <Option key={variant.id} value={variant.id}>
+                    <div style={{
+                      wordWrap: 'break-word',
+                      whiteSpace: 'normal',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: 4 }}>
+                        {fullProductName}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#999' }}>
+                        {variant.variant_code} | 庫存: {variant.available_stock || variant.stock_quantity || 0}瓶 | NT$ {variant.current_price?.toLocaleString()}
+                      </div>
+                    </div>
+                  </Option>
+                )
+              })}
             </Select>
           )}
         </Space>

@@ -24,7 +24,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
     const importId = params.id
 
     // 查詢進貨單（含明細和費用）
-    const importRecord = await prisma.importRecord.findUnique({
+    const importRecord = await prisma.legacyImportRecord.findUnique({
       where: { id: importId },
       include: {
         items: true
@@ -78,7 +78,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
     // 使用 Transaction 執行所有更新
     const result = await prisma.$transaction(async (tx) => {
       // 1. 更新進貨單狀態
-      const updatedImport = await tx.importRecord.update({
+      const updatedImport = await tx.legacyImportRecord.update({
         where: { id: importId },
         data: {
           cost_status: 'FINALIZED',

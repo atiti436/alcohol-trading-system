@@ -335,7 +335,7 @@ export function PurchaseOrderModal({
     {
       title: '商品搜尋',
       key: 'product',
-      width: 300,
+      width: 250,
       render: (_: any, record: PurchaseOrderItem) => (
         <ProductSearchSelect
           placeholder="搜尋商品... (如: 山崎, 響, NIKKA)"
@@ -356,24 +356,28 @@ export function PurchaseOrderModal({
       )
     },
     {
-      title: '選擇資訊',
+      title: '商品名稱',
       key: 'variant_info',
-      width: 150,
+      width: 200,
       render: (_: any, record: PurchaseOrderItem) => {
         if (!record.variant_id || !record.variant) {
           return <Text type="secondary">請先選擇商品</Text>
         }
 
+        // 組合完整商品名稱
+        const variantName = record.variant.description || record.variant.variant_type || '標準款'
+        const fullProductName = `${record.product?.name || ''} - ${variantName}`
+
         return (
-          <div>
+          <div style={{ wordWrap: 'break-word', whiteSpace: 'normal' }}>
             <div style={{ fontWeight: 'bold', fontSize: '12px' }}>
+              {fullProductName}
+            </div>
+            <div style={{ fontSize: '10px', color: '#999', marginTop: 2 }}>
               {record.variant.variant_code}
             </div>
-            <div style={{ fontSize: '11px', color: '#666' }}>
-              {record.variant.description || record.variant.variant_type}
-            </div>
             {(record.variant.available_stock ?? 0) > 0 && (
-              <div style={{ fontSize: '10px', color: '#52c41a' }}>
+              <div style={{ fontSize: '10px', color: '#52c41a', marginTop: 2 }}>
                 庫存: {record.variant.available_stock}
               </div>
             )}

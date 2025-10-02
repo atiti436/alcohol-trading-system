@@ -37,7 +37,7 @@ export async function PATCH(
     } = body
 
     // 檢查進貨單是否存在
-    const existingImport = await prisma.importRecord.findUnique({
+    const existingImport = await prisma.legacyImportRecord.findUnique({
       where: { id: importId },
       include: { items: true }
     })
@@ -81,7 +81,7 @@ export async function PATCH(
     // 使用事務更新
     const result = await prisma.$transaction(async (tx) => {
       // 更新進貨單主記錄
-      const updatedImport = await tx.importRecord.update({
+      const updatedImport = await tx.legacyImportRecord.update({
         where: { id: importId },
         data: updatedData
       })
@@ -89,12 +89,12 @@ export async function PATCH(
       // 如果有提供商品明細，更新商品明細
       if (items && Array.isArray(items)) {
         // 刪除舊的明細
-        await tx.importItem.deleteMany({
+        await tx.legacyImportItem.deleteMany({
           where: { import_record_id: importId }
         })
 
         // 創建新的明細
-        await tx.importItem.createMany({
+        await tx.legacyImportItem.createMany({
           data: items.map((item: any) => ({
             import_record_id: importId,
             product_name: item.product_name,
@@ -110,7 +110,7 @@ export async function PATCH(
       }
 
       // 返回更新後的完整記錄
-      return await tx.importRecord.findUnique({
+      return await tx.legacyImportRecord.findUnique({
         where: { id: importId },
         include: { items: true }
       })
@@ -153,7 +153,7 @@ export async function DELETE(
     const importId = params.id
 
     // 檢查進貨單是否存在
-    const existingImport = await prisma.importRecord.findUnique({
+    const existingImport = await prisma.legacyImportRecord.findUnique({
       where: { id: importId }
     })
 
@@ -173,7 +173,7 @@ export async function DELETE(
     }
 
     // 刪除進貨單（級聯刪除明細）
-    await prisma.importRecord.delete({
+    await prisma.legacyImportRecord.delete({
       where: { id: importId }
     })
 
