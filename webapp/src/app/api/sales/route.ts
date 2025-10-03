@@ -38,6 +38,8 @@ export const GET = withAppActiveUser(async (
     const dateFrom = searchParams.get('date_from')
     const dateTo = searchParams.get('date_to')
     const funding_source = searchParams.get('funding_source')
+    const status = searchParams.get('status') // 🆕 狀態篩選（包含預購）
+    const is_preorder = searchParams.get('is_preorder') // 🆕 預購篩選
 
     // 建立基礎查詢條件
     const where: any = {}
@@ -60,6 +62,16 @@ export const GET = withAppActiveUser(async (
       where.created_at = {}
       if (dateFrom) where.created_at.gte = new Date(dateFrom)
       if (dateTo) where.created_at.lte = new Date(dateTo)
+    }
+
+    // 🆕 狀態篩選
+    if (status) {
+      where.status = status
+    }
+
+    // 🆕 預購篩選
+    if (is_preorder !== null && is_preorder !== undefined) {
+      where.is_preorder = is_preorder === 'true'
     }
 
     // 查詢銷售資料
@@ -196,7 +208,11 @@ export const POST = withAppActiveUser(async (
       actualPrices,
       payment_terms,
       notes,
-      funding_source = 'COMPANY'
+      funding_source = 'COMPANY',
+      // 🆕 預購相關欄位
+      is_preorder = false,
+      expected_arrival_date,
+      preorder_notes
     } = body
 
     // 🔧 穩定性：若 display/actualPrices 缺失或長度不符，回退使用 items 內的單價
@@ -255,6 +271,17 @@ export const POST = withAppActiveUser(async (
     // 生成銷售單號
     const sale_number = await generateSaleNumber()
 
+    // 🆕 預購單驗證
+    if (is_preorder && !expected_arrival_date) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: '預購單必須填寫預計到貨日'
+        }
+      }, { status: 400 })
+    }
+
     // 建立銷售單
     const sale = await prisma.sale.create({
       data: {
@@ -267,6 +294,11 @@ export const POST = withAppActiveUser(async (
         payment_terms,
         notes,
         created_by: context.userId,
+        // 🆕 預購相關欄位
+        is_preorder,
+        status: is_preorder ? 'PREORDER' : 'DRAFT', // 預購單自動設為 PREORDER 狀態
+        expected_arrival_date: expected_arrival_date ? new Date(expected_arrival_date) : null,
+        preorder_notes,
         items: {
           create: items.map((item: any, index: number) => ({
             product_id: item.product_id,

@@ -48,8 +48,15 @@ export async function POST(
       return NextResponse.json({ error: '銷售訂單不存在' }, { status: 404 })
     }
 
-    // 檢查訂單狀態 - 只有草稿狀態可以確認
+    // 檢查訂單狀態 - 只有草稿狀態可以確認（預購單不能直接確認，需走轉換流程）
     if (existingSale.status !== 'DRAFT') {
+      // 🆕 預購單不能直接確認
+      if (existingSale.status === 'PREORDER') {
+        return NextResponse.json(
+          { error: '預購單無法直接確認，請使用「商品已到貨」功能轉換為正式訂單' },
+          { status: 400 }
+        )
+      }
       return NextResponse.json(
         { error: `訂單狀態為 ${existingSale.status}，只有草稿狀態的訂單可以確認` },
         { status: 400 }
