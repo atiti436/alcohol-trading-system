@@ -18,7 +18,8 @@ import {
   Row,
   Col,
   Typography,
-  Transfer
+  Transfer,
+  Radio
 } from 'antd'
 import {
   TruckOutlined,
@@ -100,22 +101,23 @@ export function ShippingOrderModal({
   const [form] = Form.useForm()
 
   // 資料狀態
-  const [paidSales, setPaidSales] = useState<Sale[]>([])
+  const [confirmedSales, setConfirmedSales] = useState<Sale[]>([])
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
   const [transferData, setTransferData] = useState<TransferItem[]>([])
   const [selectedItems, setSelectedItems] = useState<string[]>([])
+  const [shippingMethod, setShippingMethod] = useState<string>('HAND_DELIVERY')
 
   // 載入狀態
   const [loadingSales, setLoadingSales] = useState(false)
 
-  // 載入已付款銷售單
-  const loadPaidSales = async () => {
+  // 載入已確認銷售單（可出貨的訂單）
+  const loadConfirmedSales = async () => {
     setLoadingSales(true)
     try {
-      const response = await fetch('/api/sales?isPaid=true&limit=50')
+      const response = await fetch('/api/sales?status=CONFIRMED&limit=50')
       const result = await response.json()
       if (result.success) {
-        setPaidSales(result.data.sales)
+        setConfirmedSales(result.data.sales)
       }
     } catch (error) {
       console.error('載入銷售單失敗:', error)
@@ -127,17 +129,21 @@ export function ShippingOrderModal({
 
   useEffect(() => {
     if (visible) {
-      loadPaidSales()
+      loadConfirmedSales()
       form.resetFields()
+      form.setFieldsValue({
+        shippingMethod: 'HAND_DELIVERY'
+      })
       setSelectedSale(null)
       setTransferData([])
       setSelectedItems([])
+      setShippingMethod('HAND_DELIVERY')
     }
   }, [visible, form])
 
   // 銷售單選擇處理
   const handleSaleChange = (saleId: string) => {
-    const sale = paidSales.find(s => s.id === saleId)
+    const sale = confirmedSales.find(s => s.id === saleId)
     setSelectedSale(sale || null)
 
     if (sale) {
@@ -245,19 +251,19 @@ export function ShippingOrderModal({
               label={
                 <Space>
                   <ShoppingCartOutlined />
-                  選擇已付款銷售單
+                  選擇已確認銷售單
                 </Space>
               }
               rules={[{ required: true, message: '請選擇銷售單' }]}
             >
               <Select
-                placeholder="選擇已付款的銷售單"
+                placeholder="選擇已確認的銷售單"
                 loading={loadingSales}
                 onChange={handleSaleChange}
                 showSearch
                 optionFilterProp="children"
               >
-                {paidSales.map(sale => (
+                {confirmedSales.map(sale => (
                   <Option key={sale.id} value={sale.id}>
                     <div>
                       <div style={{ fontWeight: 'bold' }}>
@@ -323,12 +329,48 @@ export function ShippingOrderModal({
             </Row>
 
             <Form.Item
-              name="shippingAddress"
-              label="送貨地址"
-              rules={[{ required: true, message: '請輸入送貨地址' }]}
+              name="shippingMethod"
+              label="出貨方式"
+              rules={[{ required: true, message: '請選擇出貨方式' }]}
             >
-              <TextArea rows={2} placeholder="請輸入詳細送貨地址" />
+              <Radio.Group onChange={(e) => setShippingMethod(e.target.value)}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Radio value="HAND_DELIVERY" style={{ whiteSpace: 'normal', display: 'flex', alignItems: 'flex-start' }}>
+                    親送
+                  </Radio>
+                  <Radio value="COURIER" style={{ whiteSpace: 'normal', display: 'flex', alignItems: 'flex-start' }}>
+                    貨運
+                  </Radio>
+                  <Radio value="PICKUP" style={{ whiteSpace: 'normal', display: 'flex', alignItems: 'flex-start' }}>
+                    自取
+                  </Radio>
+                </Space>
+              </Radio.Group>
             </Form.Item>
+
+            {(shippingMethod === 'HAND_DELIVERY' || shippingMethod === 'COURIER') && (
+              <Form.Item
+                name="shippingAddress"
+                label="送貨地址"
+                rules={[
+                  {
+                    required: shippingMethod === 'COURIER',
+                    message: '貨運方式需要填寫送貨地址'
+                  }
+                ]}
+              >
+                <TextArea rows={2} placeholder={shippingMethod === 'COURIER' ? '請輸入詳細送貨地址' : '請輸入送貨地址（親送可選填）'} />
+              </Form.Item>
+            )}
+
+            {shippingMethod === 'COURIER' && (
+              <Form.Item
+                name="trackingNumber"
+                label="貨運單號"
+              >
+                <Input placeholder="請輸入貨運單號（可選）" />
+              </Form.Item>
+            )}
 
             <Divider />
 
