@@ -180,8 +180,8 @@ DRAFT (草稿)
 
 **優先級：P0 - 核心功能**
 
-#### 2.1 預購統計 API
-- [ ] `GET /api/sales/preorder-summary` - 統計彙總 API
+#### 2.1 預購統計 API ✅
+- [x] `GET /api/sales/preorder-summary` - 統計彙總 API
   - 按商品彙總（總需求、訂單數、客戶數）
   - 按客戶彙總（展開客戶的所有預購單）
   - 按時間軸彙總（預計到貨日分組）
@@ -190,6 +190,7 @@ DRAFT (草稿)
 - `webapp/src/app/api/sales/preorder-summary/route.ts`
 
 **預計時間**：1 天
+**實際完成**：2025-10-03
 
 ---
 
