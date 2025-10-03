@@ -20,6 +20,7 @@ import { Role } from '@/types/auth'
 import SimpleLineChart from '@/components/charts/SimpleLineChart'
 import SimplePieChart from '@/components/charts/SimplePieChart'
 import PendingApprovalDashboard from '@/components/dashboard/PendingApprovalDashboard'
+import PreorderWidget from '@/components/dashboard/PreorderWidget'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -214,6 +215,11 @@ function SuperAdminDashboard({ data }: { data: any }) {
             data={customerChart}
             height={200}
           />
+        </Col>
+
+        {/* 預購提醒 */}
+        <Col xs={24} lg={8}>
+          <PreorderWidget />
         </Col>
 
         {/* 快速操作 */}

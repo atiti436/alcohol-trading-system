@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Statistic, Row, Col, Space, Tag, Typography, Tabs, Empty, Spin, Timeline, message, Button, Modal } from 'antd'
-import { ShoppingCartOutlined, AppstoreOutlined, UserOutlined, DollarOutlined, CalendarOutlined, ThunderboltOutlined } from '@ant-design/icons'
+import { ShoppingCartOutlined, AppstoreOutlined, UserOutlined, DollarOutlined, CalendarOutlined, ThunderboltOutlined, DownloadOutlined } from '@ant-design/icons'
 import type { ColumnType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { HideFromInvestor } from '@/components/auth/RoleGuard'
+import { exportPreorderSummaryToExcel } from '@/lib/export/preorder-summary'
 
 const { Title, Text } = Typography
 
@@ -325,6 +326,18 @@ export default function PreorderSummaryPage() {
           <CalendarOutlined /> 預購訂單統計彙總
         </Title>
         <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => {
+              if (data) {
+                exportPreorderSummaryToExcel(data)
+                message.success('Excel 匯出成功')
+              }
+            }}
+            disabled={!data}
+          >
+            匯出 Excel
+          </Button>
           <Button
             type="primary"
             icon={<ThunderboltOutlined />}
