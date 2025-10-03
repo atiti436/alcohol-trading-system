@@ -474,7 +474,7 @@ model AccountsReceivable {
   updated_at       DateTime        @updatedAt
   creator          User            @relation(fields: [created_by], references: [id])
   customer         Customer        @relation(fields: [customer_id], references: [id])
-  sale             Sale            @relation(fields: [sale_id], references: [id])
+  sale             Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
   payments         PaymentRecord[]
 
   @@map("accounts_receivable")
