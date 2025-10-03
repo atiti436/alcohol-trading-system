@@ -595,7 +595,7 @@ model ShippingItem {
   total_price       Float
   created_at        DateTime        @default(now())
   product           Product         @relation(fields: [product_id], references: [id])
-  sale_item         SaleItem        @relation(fields: [sale_item_id], references: [id])
+  sale_item         SaleItem        @relation(fields: [sale_item_id], references: [id], onDelete: Cascade)
   shipping_order    ShippingOrder   @relation(fields: [shipping_order_id], references: [id], onDelete: Cascade)
   variant           ProductVariant? @relation(fields: [variant_id], references: [id])
 
