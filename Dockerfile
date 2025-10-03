@@ -29,6 +29,8 @@ RUN npm run build
 FROM node:20-slim AS runner
 WORKDIR /app/webapp
 ENV NODE_ENV=production
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+ENV OPENSSL_CONF=/dev/null
 
 # Install OpenSSL and required libraries for Prisma
 RUN apt-get update -y && \
