@@ -95,6 +95,7 @@ export default function SalesPage() {
   const [editingSale, setEditingSale] = useState<Sale | null>(null)
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [isPreorderMode, setIsPreorderMode] = useState(false)
 
   // 出貨列印相關狀態
   const [shippingPrintVisible, setShippingPrintVisible] = useState(false)
@@ -155,7 +156,10 @@ export default function SalesPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'DRAFT': return 'default'
+      case 'PREORDER': return 'purple'
       case 'CONFIRMED': return 'blue'
+      case 'PARTIALLY_CONFIRMED': return 'cyan'
+      case 'BACKORDER': return 'orange'
       case 'SHIPPED': return 'orange'
       case 'DELIVERED': return 'green'
       case 'CANCELLED': return 'red'
@@ -167,7 +171,10 @@ export default function SalesPage() {
   const getStatusName = (status: string) => {
     const statusNames = {
       DRAFT: '草稿',
+      PREORDER: '預購中',
       CONFIRMED: '已確認',
+      PARTIALLY_CONFIRMED: '部分確認',
+      BACKORDER: '缺貨補單',
       SHIPPED: '已出貨',
       DELIVERED: '已送達',
       CANCELLED: '已取消'
@@ -197,13 +204,23 @@ export default function SalesPage() {
       title: '銷售單號',
       dataIndex: 'sale_number',
       key: 'saleNumber',
-      width: 150,
+      width: 180,
       render: (text: string, record: Sale) => (
         <div>
-          <div style={{ fontWeight: 'bold' }}>{record.sale_number}</div>
+          <div style={{ fontWeight: 'bold' }}>
+            {record.sale_number}
+            {record.is_preorder && (
+              <Tag color="purple" style={{ marginLeft: 8 }}>預購</Tag>
+            )}
+          </div>
           <div style={{ fontSize: '12px', color: '#666' }}>
             {dayjs(record.created_at).format('YYYY/MM/DD')}
           </div>
+          {record.is_preorder && record.expected_arrival_date && (
+            <div style={{ fontSize: '11px', color: '#722ed1' }}>
+              預計到貨: {dayjs(record.expected_arrival_date).format('MM/DD')}
+            </div>
+          )}
         </div>
       )
     },
@@ -234,11 +251,7 @@ export default function SalesPage() {
         <Tag color={fundingSource === 'COMPANY' ? 'blue' : 'orange'}>
           {getFundingSourceName(fundingSource)}
         </Tag>
-      ),
-      filters: [
-        { text: '公司資金', value: 'COMPANY' },
-        { text: '個人調貨', value: 'PERSONAL' }
-      ]
+      )
     },
     {
       title: '金額',
@@ -524,8 +537,9 @@ export default function SalesPage() {
   }
 
   // 處理新增/編輯
-  const handleEdit = (sale?: Sale) => {
+  const handleEdit = (sale?: Sale, preorder = false) => {
     setEditingSale(sale || null)
+    setIsPreorderMode(preorder)
     setModalVisible(true)
   }
 
@@ -817,18 +831,35 @@ export default function SalesPage() {
               alignItems: 'center',
               justifyContent: 'space-between'
             }}>
-              <Search
-                placeholder="搜尋銷售單號、客戶..."
-                allowClear
-                style={{
-                  flex: '1 1 auto',
-                  minWidth: '200px',
-                  maxWidth: '300px'
-                }}
-                loading={loading}
-                onSearch={(value) => setFilters(prev => ({ ...prev, search: value, page: 1 }))}
-                enterButton
-              />
+              <Space wrap>
+                <Search
+                  placeholder="搜尋銷售單號、客戶..."
+                  allowClear
+                  style={{
+                    minWidth: '200px',
+                    maxWidth: '300px'
+                  }}
+                  loading={loading}
+                  onSearch={(value) => setFilters(prev => ({ ...prev, search: value, page: 1 }))}
+                  enterButton
+                />
+                <Select
+                  placeholder="篩選狀態"
+                  allowClear
+                  style={{ minWidth: 120 }}
+                  value={filters.status}
+                  onChange={(value) => setFilters(prev => ({ ...prev, status: value, page: 1 }))}
+                >
+                  <Option value="DRAFT">草稿</Option>
+                  <Option value="PREORDER">預購中</Option>
+                  <Option value="CONFIRMED">已確認</Option>
+                  <Option value="PARTIALLY_CONFIRMED">部分確認</Option>
+                  <Option value="BACKORDER">缺貨補單</Option>
+                  <Option value="SHIPPED">已出貨</Option>
+                  <Option value="DELIVERED">已送達</Option>
+                  <Option value="CANCELLED">已取消</Option>
+                </Select>
+              </Space>
               <Button
                 icon={<SearchOutlined />}
                 onClick={() => {
@@ -841,14 +872,33 @@ export default function SalesPage() {
                 刷新
               </Button>
               <HideFromInvestor>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => handleEdit()}
-                  style={{ flexShrink: 0 }}
+                <Dropdown
+                  menu={{
+                    items: [
+                      {
+                        key: 'normal',
+                        label: '一般銷售',
+                        icon: <ShoppingCartOutlined />,
+                        onClick: () => handleEdit(undefined, false)
+                      },
+                      {
+                        key: 'preorder',
+                        label: '預購單（未到貨）',
+                        icon: <CalendarOutlined />,
+                        onClick: () => handleEdit(undefined, true)
+                      }
+                    ]
+                  }}
+                  trigger={['click']}
                 >
-                  新增銷售訂單
-                </Button>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    style={{ flexShrink: 0 }}
+                  >
+                    新增銷售訂單 <DownOutlined />
+                  </Button>
+                </Dropdown>
               </HideFromInvestor>
             </div>
           }
@@ -921,10 +971,12 @@ export default function SalesPage() {
         onCancel={() => {
           setModalVisible(false)
           setEditingSale(null)
+          setIsPreorderMode(false)
         }}
         onSubmit={handleSubmit}
         editingSale={editingSale || undefined}
         loading={submitting}
+        isPreorder={isPreorderMode}
       />
 
       {/* 查看詳情Modal - 將在下一步實作 */}

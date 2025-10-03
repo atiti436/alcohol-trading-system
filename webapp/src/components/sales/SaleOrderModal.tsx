@@ -17,7 +17,8 @@ import {
   Alert,
   Row,
   Col,
-  Typography
+  Typography,
+  Switch
 } from 'antd'
 import {
   PlusOutlined,
@@ -64,6 +65,7 @@ interface SaleOrderModalProps {
   onSubmit: (data: CreateSaleRequest) => void
   editingSale?: Sale
   loading?: boolean
+  isPreorder?: boolean  // 是否為預購模式
 }
 
 /**
@@ -75,7 +77,8 @@ export function SaleOrderModal({
   onCancel,
   onSubmit,
   editingSale,
-  loading = false
+  loading = false,
+  isPreorder = false
 }: SaleOrderModalProps) {
   const { data: session } = useSession()
   const [form] = Form.useForm()
@@ -85,6 +88,7 @@ export function SaleOrderModal({
   const [products, setProducts] = useState<ProductWithVariants[]>([])
   const [orderItems, setOrderItems] = useState<SaleOrderItem[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [isPreorderMode, setIsPreorderMode] = useState(isPreorder)
 
   // 載入狀態
   const [loadingCustomers, setLoadingCustomers] = useState(false)
@@ -139,8 +143,12 @@ export function SaleOrderModal({
         fundingSource: editingSale.funding_source,
         paymentTerms: editingSale.payment_terms,
         dueDate: editingSale.due_date ? dayjs(editingSale.due_date) : null,
-        notes: editingSale.notes
+        notes: editingSale.notes,
+        is_preorder: editingSale.is_preorder || false,
+        expected_arrival_date: editingSale.expected_arrival_date ? dayjs(editingSale.expected_arrival_date) : null
       })
+
+      setIsPreorderMode(editingSale.is_preorder || false)
 
       // 設定已選客戶
       const customer = customers.find(c => c.id === editingSale.customer_id)
@@ -166,8 +174,9 @@ export function SaleOrderModal({
       form.resetFields()
       setOrderItems([])
       setSelectedCustomer(null)
+      setIsPreorderMode(isPreorder)
     }
-  }, [editingSale, visible, customers, form])
+  }, [editingSale, visible, customers, form, isPreorder])
 
   // 客戶選擇處理
   const handleCustomerChange = (customer_id: string) => {
@@ -305,6 +314,8 @@ export function SaleOrderModal({
         payment_terms: values.paymentTerms,
         due_date: values.dueDate?.toISOString(),
         notes: values.notes,
+        is_preorder: isPreorderMode,
+        expected_arrival_date: isPreorderMode && values.expected_arrival_date ? values.expected_arrival_date.toISOString() : undefined,
         items: orderItems.map(item => ({
           product_id: item.product_id,
           variant_id: item.variantId,
@@ -522,6 +533,24 @@ export function SaleOrderModal({
       cancelText="取消"
     >
       <Form form={form} layout="vertical">
+        {/* 預購模式切換 */}
+        <Alert
+          message={
+            <Space>
+              <Text>訂單類型：</Text>
+              <Switch
+                checked={isPreorderMode}
+                onChange={setIsPreorderMode}
+                checkedChildren="預購單"
+                unCheckedChildren="一般銷售"
+              />
+              {isPreorderMode && <Text type="warning">⚠️ 預購單不會檢查庫存</Text>}
+            </Space>
+          }
+          type={isPreorderMode ? 'warning' : 'info'}
+          style={{ marginBottom: 16 }}
+        />
+
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item
@@ -595,6 +624,26 @@ export function SaleOrderModal({
             </Form.Item>
           </Col>
         </Row>
+
+        {/* 預購單專屬欄位：預計到貨日期 */}
+        {isPreorderMode && (
+          <Form.Item
+            name="expected_arrival_date"
+            label={
+              <Space>
+                <CalendarOutlined />
+                預計到貨日期
+              </Space>
+            }
+            rules={[{ required: true, message: '預購單必須填寫預計到貨日期' }]}
+          >
+            <DatePicker
+              style={{ width: '100%' }}
+              placeholder="選擇預計到貨日期"
+              disabledDate={(current) => current && current < dayjs().startOf('day')}
+            />
+          </Form.Item>
+        )}
 
         <Form.Item name="notes" label="備註">
           <TextArea rows={2} placeholder="訂單備註" />
