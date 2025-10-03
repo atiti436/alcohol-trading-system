@@ -153,9 +153,9 @@ export async function POST(
           shipping_number: await generateShippingNumber(),
           sale_id: saleId,
           customer_id: sale.customer_id,
-          shipping_address: shipping_address || sale.customer.shipping_address || '',
+          shipping_address: shipping_address || sale.customer.shipping_address || '親送/自取',
           shipping_method,
-          tracking_number: tracking_number || '',
+          tracking_number: tracking_number || null,
           status: 'SHIPPED',
           shipped_at: new Date(),
           notes

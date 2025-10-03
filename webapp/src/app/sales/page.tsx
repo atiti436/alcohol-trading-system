@@ -47,6 +47,7 @@ import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components
 import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
 import { PrintableDocument } from '@/components/common/PrintableDocument'
 import { SaleOrderModal } from '@/components/sales/SaleOrderModal'
+import { ShipModal, ShipFormData } from '@/components/sales/ShipModal'
 import { Sale, SaleItem } from '@/types/room-2'
 import { DOCUMENT_TYPES } from '@/config/company'
 
@@ -101,6 +102,9 @@ export default function SalesPage() {
   const [isPreorderMode, setIsPreorderMode] = useState(false)
   const [convertModalVisible, setConvertModalVisible] = useState(false)
   const [converting, setConverting] = useState(false)
+  const [shipModalVisible, setShipModalVisible] = useState(false)
+  const [shippingSale, setShippingSale] = useState<Sale | null>(null)
+  const [shipping, setShipping] = useState(false)
 
   // 出貨列印相關狀態
   const [shippingPrintVisible, setShippingPrintVisible] = useState(false)
@@ -700,23 +704,35 @@ export default function SalesPage() {
   }
 
   // 處理僅出貨
-  const handleShipOnly = async (sale: Sale) => {
-    const actionKey = `ship-only-${sale.id}`
-    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
+  // 打開出貨對話框
+  const handleShipOnly = (sale: Sale) => {
+    setShippingSale(sale)
+    setShipModalVisible(true)
+  }
 
+  // 出貨提交處理
+  const handleShipSubmit = async (data: ShipFormData) => {
+    if (!shippingSale) return
+
+    setShipping(true)
     try {
-      const response = await fetch(`/api/sales/${sale.id}/ship`, {
+      const response = await fetch(`/api/sales/${shippingSale.id}/ship`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ print: false })
+        body: JSON.stringify({
+          ...data,
+          print: false
+        })
       })
 
       const result = await response.json()
 
       if (response.ok && result.success) {
         message.success('出貨完成')
+        setShipModalVisible(false)
+        setShippingSale(null)
         await loadSales(false)
       } else {
         message.error(result.error || '出貨失敗')
@@ -725,7 +741,7 @@ export default function SalesPage() {
       console.error('出貨操作失敗:', error)
       message.error('出貨失敗，請檢查網路連線')
     } finally {
-      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
+      setShipping(false)
     }
   }
 
@@ -1402,6 +1418,18 @@ export default function SalesPage() {
           )}
         </PrintableDocument>
       )}
+
+      {/* 出貨對話框 */}
+      <ShipModal
+        visible={shipModalVisible}
+        onCancel={() => {
+          setShipModalVisible(false)
+          setShippingSale(null)
+        }}
+        onSubmit={handleShipSubmit}
+        loading={shipping}
+        saleNumber={shippingSale?.sale_number}
+      />
 
       {/* 預購單轉換確認對話框 */}
       <Modal
