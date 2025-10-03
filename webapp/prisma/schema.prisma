@@ -579,7 +579,7 @@ model ShippingOrder {
   updated_at       DateTime       @updatedAt
   items            ShippingItem[]
   customer         Customer       @relation(fields: [customer_id], references: [id])
-  sale             Sale           @relation(fields: [sale_id], references: [id])
+  sale             Sale           @relation(fields: [sale_id], references: [id], onDelete: Cascade)
 
   @@map("shipping_orders")
 }
