@@ -98,6 +98,8 @@ export default function SalesPage() {
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [isPreorderMode, setIsPreorderMode] = useState(false)
+  const [convertModalVisible, setConvertModalVisible] = useState(false)
+  const [converting, setConverting] = useState(false)
 
   // 出貨列印相關狀態
   const [shippingPrintVisible, setShippingPrintVisible] = useState(false)
@@ -808,6 +810,43 @@ export default function SalesPage() {
     }
   }
 
+  // 處理預購單轉換
+  const handleConvertToConfirmed = async () => {
+    if (!editingSale) return
+
+    setConverting(true)
+    try {
+      const response = await fetch(`/api/sales/${editingSale.id}/convert-to-confirmed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        message.success(result.message || '預購單已成功轉換為正式訂單')
+        if (result.warnings && result.warnings.length > 0) {
+          result.warnings.forEach((warning: string) => message.warning(warning))
+        }
+        setConvertModalVisible(false)
+        setViewModalVisible(false)
+        await loadSales(false)
+      } else {
+        message.error(result.error || '轉換失敗')
+        if (result.details && Array.isArray(result.details)) {
+          result.details.forEach((detail: string) => message.error(detail, 5))
+        }
+      }
+    } catch (error) {
+      console.error('預購單轉換失敗:', error)
+      message.error('轉換失敗，請檢查網路連線')
+    } finally {
+      setConverting(false)
+    }
+  }
+
   return (
     <div style={{
       padding: '24px',
@@ -981,7 +1020,7 @@ export default function SalesPage() {
         isPreorder={isPreorderMode}
       />
 
-      {/* 查看詳情Modal - 將在下一步實作 */}
+      {/* 查看詳情Modal */}
       <Modal
         title="銷售訂單詳情"
         open={viewModalVisible}
@@ -989,7 +1028,27 @@ export default function SalesPage() {
           setViewModalVisible(false)
           setEditingSale(null)
         }}
-        footer={null}
+        footer={
+          editingSale?.status === 'PREORDER' ? (
+            <HideFromInvestor>
+              <Space>
+                <Button onClick={() => {
+                  setViewModalVisible(false)
+                  setEditingSale(null)
+                }}>
+                  關閉
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<CalendarOutlined />}
+                  onClick={() => setConvertModalVisible(true)}
+                >
+                  商品已到貨
+                </Button>
+              </Space>
+            </HideFromInvestor>
+          ) : null
+        }
         width="90%"
         style={{
           maxWidth: '800px',
@@ -998,16 +1057,31 @@ export default function SalesPage() {
       >
         {editingSale && (
           <div>
+            {/* 預購單提示 */}
+            {editingSale.is_preorder && editingSale.status === 'PREORDER' && (
+              <Alert
+                message="預購訂單"
+                description={
+                  <div>
+                    <div>此訂單為預購單，商品尚未到貨。</div>
+                    {editingSale.expected_arrival_date && (
+                      <div>預計到貨日期：{dayjs(editingSale.expected_arrival_date).format('YYYY年MM月DD日')}</div>
+                    )}
+                  </div>
+                }
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+
             <div style={{ marginBottom: '24px' }}>
               <h3>基本資訊</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div><strong>銷售單號：</strong>{editingSale.sale_number}</div>
                 <div><strong>狀態：</strong>
-                  <Tag color={editingSale.status === 'CONFIRMED' ? 'blue' : editingSale.status === 'SHIPPED' ? 'green' : 'default'}>
-                    {editingSale.status === 'DRAFT' ? '草稿' :
-                     editingSale.status === 'CONFIRMED' ? '已確認' :
-                     editingSale.status === 'SHIPPED' ? '已出貨' :
-                     editingSale.status === 'DELIVERED' ? '已交付' : '已取消'}
+                  <Tag color={getStatusColor(editingSale.status)}>
+                    {getStatusName(editingSale.status)}
                   </Tag>
                 </div>
                 <div><strong>客戶：</strong>{editingSale.customer?.name}</div>
@@ -1327,6 +1401,61 @@ export default function SalesPage() {
           )}
         </PrintableDocument>
       )}
+
+      {/* 預購單轉換確認對話框 */}
+      <Modal
+        title="確認商品已到貨"
+        open={convertModalVisible}
+        onCancel={() => setConvertModalVisible(false)}
+        onOk={handleConvertToConfirmed}
+        confirmLoading={converting}
+        okText="確認轉換"
+        cancelText="取消"
+        width={600}
+      >
+        {editingSale && (
+          <div>
+            <Alert
+              message="預購單轉換說明"
+              description={
+                <div>
+                  <p>將預購訂單轉換為正式訂單後：</p>
+                  <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
+                    <li>系統會檢查庫存是否足夠</li>
+                    <li>庫存充足時，訂單狀態將變更為「已確認」</li>
+                    <li>系統會自動預留對應的庫存</li>
+                    <li>如果庫存不足，將顯示錯誤訊息</li>
+                  </ul>
+                </div>
+              }
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+
+            <Card size="small" title="訂單資訊">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div><strong>銷售單號：</strong>{editingSale.sale_number}</div>
+                <div><strong>客戶：</strong>{editingSale.customer?.name}</div>
+                <div><strong>商品數量：</strong>{editingSale.items?.length || 0} 項</div>
+                <div><strong>訂單金額：</strong>NT$ {editingSale.total_amount.toLocaleString()}</div>
+                {editingSale.expected_arrival_date && (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <strong>預計到貨日：</strong>
+                    {dayjs(editingSale.expected_arrival_date).format('YYYY年MM月DD日')}
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            <div style={{ marginTop: 16 }}>
+              <Text type="secondary">
+                請確認商品已實際到貨後再執行轉換操作。
+              </Text>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

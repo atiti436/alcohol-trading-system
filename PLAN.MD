@@ -112,61 +112,67 @@ DRAFT (草稿)
 
 **優先級：P0 - 核心功能**
 
-#### 1.1 數據庫 Schema 修改
-- [ ] 擴充 `SaleStatus` enum（加入 PREORDER, PARTIALLY_CONFIRMED, BACKORDER）
-- [ ] `Sale` 表新增預購相關欄位
-- [ ] 建立 `BackorderTracking` 表
-- [ ] 執行 migration
+#### 1.1 數據庫 Schema 修改 ✅
+- [x] 擴充 `SaleStatus` enum（加入 PREORDER, PARTIALLY_CONFIRMED, BACKORDER）
+- [x] `Sale` 表新增預購相關欄位
+- [x] 建立 `BackorderTracking` 表
+- [x] 執行 migration
 
 **檔案**：
 - `webapp/prisma/schema.prisma`
 
 **預計時間**：0.5 天
+**實際完成**：2025-10-03
 
 ---
 
-#### 1.2 預購訂單基礎 API
-- [ ] `POST /api/sales` - 修改支援預購模式（`is_preorder: true`）
-- [ ] `POST /api/sales/[id]/confirm` - 修改邏輯：預購單跳過庫存檢查
-- [ ] `GET /api/sales` - 修改支援預購篩選
+#### 1.2 預購訂單基礎 API ✅
+- [x] `POST /api/sales` - 修改支援預購模式（`is_preorder: true`）
+- [x] `POST /api/sales/[id]/confirm` - 修改邏輯：預購單跳過庫存檢查
+- [x] `GET /api/sales` - 修改支援預購篩選
 
 **檔案**：
 - `webapp/src/app/api/sales/route.ts`
 - `webapp/src/app/api/sales/[id]/confirm/route.ts`
 
 **預計時間**：1 天
+**實際完成**：2025-10-03
 
 ---
 
-#### 1.3 銷售管理 UI 擴充
-- [ ] 新增按鈕：下拉選擇「一般銷售」/「預購單」
-- [ ] 新增表單：預購模式切換 + 預計到貨日期欄位
-- [ ] 列表顯示：預購標籤 + 預計到貨日
-- [ ] 篩選器：加入「預購中」狀態
+#### 1.3 銷售管理 UI 擴充 ✅
+- [x] 新增按鈕：下拉選擇「一般銷售」/「預購單」
+- [x] 新增表單：預購模式切換 + 預計到貨日期欄位
+- [x] 列表顯示：預購標籤 + 預計到貨日
+- [x] 篩選器：加入「預購中」狀態
 
 **檔案**：
 - `webapp/src/app/sales/page.tsx`
 - `webapp/src/components/sales/SaleOrderModal.tsx`
 
 **預計時間**：1 天
+**實際完成**：2025-10-03
 
 ---
 
-#### 1.4 手動轉換功能
-- [ ] `POST /api/sales/[id]/convert-to-confirmed` - 預購轉正式訂單
-- [ ] 訂單詳情頁：「商品已到貨」按鈕
-- [ ] 轉換確認對話框（顯示庫存狀況）
+#### 1.4 手動轉換功能 ✅
+- [x] `POST /api/sales/[id]/convert-to-confirmed` - 預購轉正式訂單
+- [x] 訂單詳情頁：「商品已到貨」按鈕
+- [x] 轉換確認對話框（顯示庫存狀況）
 
 **檔案**：
 - `webapp/src/app/api/sales/[id]/convert-to-confirmed/route.ts`
-- `webapp/src/app/sales/[id]/page.tsx`
+- `webapp/src/app/sales/page.tsx`（使用查看詳情 Modal）
 
 **預計時間**：0.5 天
+**實際完成**：2025-10-03
 
 **✅ Phase 1 完成標準**：
-- 可以建立預購單
-- 預購單不檢查庫存
-- 商品到貨後可手動轉為正式訂單
+- ✅ 可以建立預購單
+- ✅ 預購單不檢查庫存
+- ✅ 商品到貨後可手動轉為正式訂單
+
+**🎉 Phase 1 已於 2025-10-03 完成！**
 
 ---
 
