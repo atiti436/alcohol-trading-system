@@ -183,6 +183,7 @@ model ProductVariant {
   source_transfers    StockTransfer[]     @relation("SourceVariant")
   target_transfers    StockTransfer[]     @relation("TargetVariant")
   import_items        ImportItem[]
+  backorder_trackings BackorderTracking[] // 🆕 缺貨追蹤
 
   @@map("product_variants")
 }
@@ -359,12 +360,38 @@ model Sale {
   confirmed_at         DateTime?
   confirmed_by         String?
   status               SaleStatus           @default(DRAFT)
+
+  // 🆕 預購相關欄位
+  is_preorder              Boolean   @default(false)
+  expected_arrival_date    DateTime? // 預計到貨日
+  preorder_notes           String?   // 預購備註
+
+  // 🆕 分配相關欄位
+  allocated_quantity       Int?      // 已分配數量
+  shortage_quantity        Int?      // 缺貨數量
+  allocation_priority      Float?    // 分配優先級分數
+  allocation_notes         String?   // 分配備註/說明
+
+  // 🆕 轉換追蹤
+  converted_at            DateTime? // 預購轉正式訂單時間
+  converted_by            String?   // 轉換操作人
+
+  // 🆕 訂單拆分（用於部分滿足）
+  parent_sale_id          String?   // 父訂單ID
+  child_sales             Sale[]    @relation("SaleSplit")
+  parent_sale             Sale?     @relation("SaleSplit", fields: [parent_sale_id], references: [id], onDelete: SetNull)
+
   accounts_receivables AccountsReceivable[]
   items                SaleItem[]
   creator              User                 @relation(fields: [created_by], references: [id])
   customer             Customer             @relation(fields: [customer_id], references: [id])
   shipping_orders      ShippingOrder[]
+  backorder_trackings  BackorderTracking[]  // 🆕 缺貨追蹤
 
+  @@index([parent_sale_id])
+  @@index([is_preorder])
+  @@index([status])
+  @@index([expected_arrival_date])
   @@map("sales")
 }
 
@@ -647,7 +674,10 @@ enum PaymentTerms {
 
 enum SaleStatus {
   DRAFT
+  PREORDER              // 🆕 預購中（不檢查庫存）
   CONFIRMED
+  PARTIALLY_CONFIRMED   // 🆕 部分確認（庫存不足部分滿足）
+  BACKORDER            // 🆕 缺貨補單（等待補貨）
   SHIPPED
   DELIVERED
   CANCELLED
@@ -1074,4 +1104,66 @@ model Notification {
   @@index([created_at])
   @@index([type])
   @@map("notifications")
+}
+
+// ========== 🆕 預購系統模型 (2025-10-03) ==========
+
+// 🎯 缺貨追蹤表
+model BackorderTracking {
+  id                String   @id @default(cuid())
+  sale_id           String
+  variant_id        String
+  shortage_quantity Int      // 缺貨數量
+  priority          Float    @default(50.0) // 優先級（用於補貨排序，預設 50）
+
+  // 狀態追蹤
+  status      String    @default("PENDING") // PENDING, RESOLVED, CANCELLED
+  resolved_at DateTime? // 解決時間
+  resolved_by String?   // 解決人
+
+  // 備註
+  notes String?
+
+  // 時間戳
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 關聯
+  sale    Sale           @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variant_id], references: [id])
+
+  @@index([sale_id])
+  @@index([variant_id])
+  @@index([status])
+  @@index([priority])
+  @@map("backorder_tracking")
+}
+
+// 📬 通知記錄表（用於追蹤預購到貨通知等）
+model NotificationLog {
+  id          String  @id @default(cuid())
+  sale_id     String?
+  customer_id String?
+  type        String  // ARRIVAL, PARTIAL_ARRIVAL, BACKORDER_RESOLVED
+
+  // 通知管道
+  channel String // LINE, EMAIL, SMS
+
+  // 內容
+  subject String?
+  message String
+
+  // 狀態
+  status        String    @default("PENDING") // PENDING, SENT, FAILED
+  sent_at       DateTime?
+  error_message String?
+
+  // 時間戳
+  created_at DateTime @default(now())
+
+  @@index([sale_id])
+  @@index([customer_id])
+  @@index([status])
+  @@index([type])
+  @@map("notification_logs")
 }
