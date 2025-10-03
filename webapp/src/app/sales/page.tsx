@@ -665,7 +665,6 @@ export default function SalesPage() {
 
       // 構建出貨數據
       const shipmentData = {
-        shipping_address: '客戶自取', // 預設出貨地址，後續可從客戶詳情API獲取
         shipping_method: 'DELIVERY',
         notes: '自動出貨',
         items: saleDetails.data.items?.map((item: any) => ({

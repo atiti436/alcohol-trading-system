@@ -5,7 +5,7 @@ WORKDIR /app/webapp
 
 # Install OpenSSL and required libraries for Prisma
 RUN apt-get update -y && \
-    apt-get install -y openssl libssl-dev ca-certificates && \
+    apt-get install -y openssl libssl3 ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy webapp directory (which includes shared-src)
@@ -20,7 +20,7 @@ RUN npm config set fetch-retries 5 && \
 # Install dependencies - postinstall will copy shared-src to shared
 RUN npm install --legacy-peer-deps
 
-# Generate Prisma client
+# Generate Prisma client with specific binary target
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build the application
@@ -34,7 +34,7 @@ ENV OPENSSL_CONF=/dev/null
 
 # Install OpenSSL and required libraries for Prisma
 RUN apt-get update -y && \
-    apt-get install -y openssl libssl-dev ca-certificates && \
+    apt-get install -y openssl libssl3 ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy all necessary files from builder stage (no subdirectory needed)

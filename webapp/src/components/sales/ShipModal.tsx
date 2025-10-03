@@ -80,10 +80,16 @@ export function ShipModal({
           rules={[{ required: true, message: '請選擇出貨方式' }]}
         >
           <Radio.Group onChange={(e) => setShippingMethod(e.target.value)}>
-            <Space direction="vertical">
-              <Radio value="HAND_DELIVERY">親送</Radio>
-              <Radio value="COURIER">貨運</Radio>
-              <Radio value="PICKUP">自取</Radio>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Radio value="HAND_DELIVERY" style={{ whiteSpace: 'normal', display: 'flex', alignItems: 'flex-start' }}>
+                親送
+              </Radio>
+              <Radio value="COURIER" style={{ whiteSpace: 'normal', display: 'flex', alignItems: 'flex-start' }}>
+                貨運
+              </Radio>
+              <Radio value="PICKUP" style={{ whiteSpace: 'normal', display: 'flex', alignItems: 'flex-start' }}>
+                自取
+              </Radio>
             </Space>
           </Radio.Group>
         </Form.Item>
