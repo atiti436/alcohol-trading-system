@@ -17,7 +17,8 @@ import {
   InputNumber,
   Switch,
   Badge,
-  Typography
+  Typography,
+  Alert
 } from 'antd'
 import {
   PlusOutlined,
@@ -835,29 +836,16 @@ export default function ProductsPage() {
             </Form.Item>
           </div>
 
+          {/* 🔧 庫存欄位已移除 - 請使用庫存管理頁面進行庫存調整 */}
+          <Alert
+            type="info"
+            message="庫存管理提示"
+            description="商品庫存請前往「庫存管理」頁面進行調整，支援多倉庫管理和庫存調撥。"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+
           <div style={{ display: 'flex', gap: '16px' }}>
-            <Form.Item
-              name="stock_quantity"
-              label="庫存數量"
-              style={{ flex: 1 }}
-            >
-              <InputNumber
-                placeholder="0"
-                style={{ width: '100%' }}
-                min={0}
-              />
-            </Form.Item>
-            <Form.Item
-              name="available_stock"
-              label="可用庫存"
-              style={{ flex: 1 }}
-            >
-              <InputNumber
-                placeholder="0"
-                style={{ width: '100%' }}
-                min={0}
-              />
-            </Form.Item>
             <Form.Item
               name="weight_kg"
               label="重量 (kg)"
