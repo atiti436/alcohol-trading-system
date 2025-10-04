@@ -299,12 +299,156 @@ export async function POST(
         }
       }
 
-      // 4. 🎯 自動轉換預購單（Phase 7.1）
-      // 收貨完成後，自動檢查並轉換相關的預購單
+      // 4. 🔄 優先處理缺貨補單（Phase 5.2）
+      // 收貨完成後，優先檢查並補足 BACKORDER
       const productIds = purchase.items
         .map(item => item.product_id)
         .filter((id): id is string => id !== null)
 
+      let backorderResolveResult: any = null
+      if (productIds.length > 0) {
+        try {
+          const variantIds = await getVariantIdsByProductIds(tx, productIds)
+
+          // 查詢待補貨的 BACKORDER
+          const pendingBackorders = await tx.backorderTracking.findMany({
+            where: {
+              variant_id: { in: variantIds },
+              status: 'PENDING'
+            },
+            include: {
+              sale: {
+                include: {
+                  customer: true
+                }
+              },
+              variant: true
+            },
+            orderBy: [
+              { priority: 'desc' }, // 優先級高的優先
+              { created_at: 'asc' } // 時間早的優先
+            ]
+          })
+
+          const resolved: any[] = []
+          const partiallyResolved: any[] = []
+
+          for (const backorder of pendingBackorders) {
+            // 檢查該變體的可用庫存
+            const inventories = await tx.inventory.findMany({
+              where: {
+                variant_id: backorder.variant_id,
+                available: { gt: 0 }
+              },
+              orderBy: { created_at: 'asc' }
+            })
+
+            const availableStock = inventories.reduce((sum, inv) => sum + inv.available, 0)
+
+            if (availableStock >= backorder.shortage_quantity) {
+              // 庫存充足，預留並解決缺貨
+              let remainingToReserve = backorder.shortage_quantity
+
+              for (const inv of inventories) {
+                if (remainingToReserve <= 0) break
+
+                const toReserve = Math.min(inv.available, remainingToReserve)
+
+                await tx.inventory.update({
+                  where: { id: inv.id },
+                  data: {
+                    available: inv.available - toReserve,
+                    reserved: inv.reserved + toReserve
+                  }
+                })
+
+                remainingToReserve -= toReserve
+              }
+
+              // 標記缺貨已解決
+              await tx.backorderTracking.update({
+                where: { id: backorder.id },
+                data: {
+                  status: 'RESOLVED',
+                  resolved_at: new Date(),
+                  resolved_by: session.user.id,
+                  notes: `${backorder.notes}\n自動補貨完成 - 進貨單 ${purchase.purchase_number}`
+                }
+              })
+
+              // 如果訂單是部分確認，更新為完全確認
+              if (backorder.sale.status === 'PARTIALLY_CONFIRMED') {
+                await tx.sale.update({
+                  where: { id: backorder.sale_id },
+                  data: {
+                    status: 'CONFIRMED',
+                    shortage_quantity: 0,
+                    allocation_notes: `${backorder.sale.allocation_notes}\n補貨完成`
+                  }
+                })
+              }
+
+              resolved.push({
+                backorderId: backorder.id,
+                saleNumber: backorder.sale.sale_number,
+                customerName: backorder.sale.customer.name,
+                quantity: backorder.shortage_quantity,
+                variantCode: backorder.variant.variant_code
+              })
+            } else if (availableStock > 0) {
+              // 部分補貨
+              let remainingToReserve = availableStock
+
+              for (const inv of inventories) {
+                if (remainingToReserve <= 0) break
+
+                const toReserve = Math.min(inv.available, remainingToReserve)
+
+                await tx.inventory.update({
+                  where: { id: inv.id },
+                  data: {
+                    available: inv.available - toReserve,
+                    reserved: inv.reserved + toReserve
+                  }
+                })
+
+                remainingToReserve -= toReserve
+              }
+
+              // 更新缺貨數量
+              await tx.backorderTracking.update({
+                where: { id: backorder.id },
+                data: {
+                  shortage_quantity: backorder.shortage_quantity - availableStock,
+                  notes: `${backorder.notes}\n部分補貨 ${availableStock} 個 - 進貨單 ${purchase.purchase_number}`
+                }
+              })
+
+              partiallyResolved.push({
+                backorderId: backorder.id,
+                saleNumber: backorder.sale.sale_number,
+                customerName: backorder.sale.customer.name,
+                resolvedQuantity: availableStock,
+                remainingShortage: backorder.shortage_quantity - availableStock,
+                variantCode: backorder.variant.variant_code
+              })
+            }
+          }
+
+          if (resolved.length > 0 || partiallyResolved.length > 0) {
+            backorderResolveResult = {
+              resolved,
+              partiallyResolved
+            }
+          }
+        } catch (error) {
+          console.error('補貨處理失敗:', error)
+          // 不阻擋收貨流程
+        }
+      }
+
+      // 5. 🎯 自動轉換預購單（Phase 7.1）
+      // 補貨完成後，檢查並轉換剩餘的預購單
       let preorderConvertResult = null
       if (productIds.length > 0) {
         try {
@@ -322,6 +466,7 @@ export async function POST(
       return {
         goodsReceipt,
         inventoryUpdates,
+        backorderResolveResult,
         preorderConvertResult,
         purchase: await tx.purchase.findUnique({
           where: { id: purchaseId },
@@ -338,6 +483,19 @@ export async function POST(
 
     // 組合訊息
     let message = '收貨完成，庫存已更新'
+
+    // 補貨訊息
+    if (result.backorderResolveResult) {
+      const { resolved, partiallyResolved } = result.backorderResolveResult
+      if (resolved && resolved.length > 0) {
+        message += `，並自動補足了 ${resolved.length} 筆缺貨`
+      }
+      if (partiallyResolved && partiallyResolved.length > 0) {
+        message += `，部分補足了 ${partiallyResolved.length} 筆缺貨`
+      }
+    }
+
+    // 預購轉換訊息
     if (result.preorderConvertResult) {
       const { success, warnings, failed } = result.preorderConvertResult
       const totalConverted = success.length + warnings.length
@@ -358,6 +516,7 @@ export async function POST(
         inventory_updates: result.inventoryUpdates,
         total_cost: result.goodsReceipt.total_cost,
         received_date: result.purchase?.received_date,
+        backorder_resolve_result: result.backorderResolveResult,
         preorder_convert_result: result.preorderConvertResult
       }
     })
