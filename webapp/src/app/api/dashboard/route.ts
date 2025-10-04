@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { PermissionContext, Role } from '@/types/auth'
 import { SaleItem, Product, DashboardData } from '@/types/business'
 import { MonthlySalesAccumulator } from '@/types/api'
+import { getProductInventorySummary } from '@/lib/inventory-helpers'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
