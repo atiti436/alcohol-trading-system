@@ -114,10 +114,8 @@ export async function GET(request: NextRequest) {
               // 🔒 actual_price 只有 SUPER_ADMIN 和 EMPLOYEE 可見
               ...(canViewActualPrice && { actual_price: true }),
               current_price: true,
-              stock_quantity: true,
-              available_stock: true,
               condition: true,
-              // 🏭 加入倉庫庫存明細
+              // 🏭 從 Inventory 表查詢庫存
               inventory: {
                 where: warehouseFilter,
                 select: {
@@ -142,10 +140,21 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
+    // 🔧 為前端計算每個變體的庫存匯總
+    const productsWithStock = products.map(product => ({
+      ...product,
+      variants: product.variants.map(v => ({
+        ...v,
+        stock_quantity: v.inventory.reduce((sum, inv) => sum + inv.quantity, 0),
+        available_stock: v.inventory.reduce((sum, inv) => sum + inv.available, 0),
+        reserved_stock: v.inventory.reduce((sum, inv) => sum + inv.reserved, 0)
+      }))
+    }))
+
     return NextResponse.json({
       success: true,
       data: {
-        products,
+        products: productsWithStock,
         total,
         page,
         limit,

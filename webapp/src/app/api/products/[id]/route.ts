@@ -61,9 +61,6 @@ export async function GET(
             description: true,
             sku: true,
             condition: true,
-            stock_quantity: true,
-            reserved_stock: true,
-            available_stock: true,
             cost_price: true,
             investor_price: true,
             // 🔒 actual_price 只有 SUPER_ADMIN 和 EMPLOYEE 可見
@@ -71,7 +68,17 @@ export async function GET(
             current_price: true,
             is_active: true,
             created_at: true,
-            updated_at: true
+            updated_at: true,
+            // 🔧 從 Inventory 表查詢庫存
+            inventory: {
+              where: userRole === 'INVESTOR' ? { warehouse: 'COMPANY' } : undefined,
+              select: {
+                quantity: true,
+                available: true,
+                reserved: true,
+                warehouse: true
+              }
+            }
           },
           orderBy: { variant_type: 'asc' }
         },
@@ -123,13 +130,27 @@ export async function GET(
       }
     })
 
-    // 🔧 修正：計算總庫存（所有變體）- 使用統一命名規範
-    const total_stock_quantity = product.variants.reduce((sum, variant) => sum + variant.stock_quantity, 0)
+    // 🔧 修正：從 Inventory 表計算總庫存（所有變體的所有倉庫）
+    const total_stock_quantity = product.variants.reduce((sum, variant) => {
+      const variantStock = variant.inventory.reduce((invSum, inv) => invSum + inv.quantity, 0)
+      return sum + variantStock
+    }, 0)
+
+    // 🔧 為前端計算每個變體的庫存匯總
+    const variantsWithStock = product.variants.map(v => ({
+      ...v,
+      stock_quantity: v.inventory.reduce((sum, inv) => sum + inv.quantity, 0),
+      available_stock: v.inventory.reduce((sum, inv) => sum + inv.available, 0),
+      reserved_stock: v.inventory.reduce((sum, inv) => sum + inv.reserved, 0)
+    }))
 
     return NextResponse.json({
       success: true,
       data: {
-        product, // ✅ 已在 select 階段排除 deprecated 價格欄位
+        product: {
+          ...product,
+          variants: variantsWithStock
+        },
         statistics: {
           totalVariants: product._count.variants,
           totalSales: product._count.sale_items,

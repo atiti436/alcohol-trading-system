@@ -95,13 +95,11 @@ export async function GET(request: NextRequest) {
               variant_type: true,
               description: true,
               sku: true,
-              stock_quantity: true,
-              reserved_stock: true,
-              available_stock: true,
               cost_price: true,
               base_price: true,
               current_price: true,
               condition: true,
+              // 🔧 從 Inventory 表查詢庫存
               inventory: {
                 select: {
                   id: true,
