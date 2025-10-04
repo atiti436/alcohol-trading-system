@@ -85,7 +85,8 @@ export const ReceiveGoodsModal: React.FC<ReceiveGoodsModalProps> = ({
         loss_type: 'NONE',
         loss_quantity: 0,
         inspection_fee: 0,
-        allocation_method: 'BY_AMOUNT'
+        allocation_method: 'BY_AMOUNT',
+        preorder_mode: 'MANUAL' // 預設為手動分配模式
       })
 
       // 初始化商品毀損列表
@@ -290,6 +291,18 @@ export const ReceiveGoodsModal: React.FC<ReceiveGoodsModalProps> = ({
                 <Option value="BY_AMOUNT">按金額分攤</Option>
                 <Option value="BY_QUANTITY">按數量分攤</Option>
                 <Option value="BY_WEIGHT">按重量分攤</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="預購單處理"
+              name="preorder_mode"
+              tooltip="收貨後如何處理等待的預購單"
+            >
+              <Select>
+                <Option value="MANUAL">🎯 手動分配（可選客戶優先順序）</Option>
+                <Option value="AUTO">⚡ 自動分配（先到先得）</Option>
+                <Option value="SKIP">⏸️ 暫不處理（稍後手動）</Option>
               </Select>
             </Form.Item>
           </div>

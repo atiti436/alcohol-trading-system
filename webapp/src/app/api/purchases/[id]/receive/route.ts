@@ -38,7 +38,8 @@ export async function POST(
       loss_quantity = 0, // 損耗數量
       inspection_fee = 0, // 檢驗費
       allocation_method = 'BY_AMOUNT', // 分攤方式：BY_AMOUNT, BY_QUANTITY, BY_WEIGHT
-      additional_costs = [] // 額外費用：[{type: 'SHIPPING', amount: 1000, description: '運費'}]
+      additional_costs = [], // 額外費用：[{type: 'SHIPPING', amount: 1000, description: '運費'}]
+      preorder_mode = 'AUTO' // 預購單處理模式：AUTO(自動轉換), MANUAL(手動分配), SKIP(跳過)
     } = body
 
     // 檢查採購單是否存在且已確認
@@ -447,18 +448,82 @@ export async function POST(
         }
       }
 
-      // 5. 🎯 自動轉換預購單（Phase 7.1）
-      // 補貨完成後，檢查並轉換剩餘的預購單
+      // 5. 🎯 預購單處理（Phase 7.1）
+      // 根據 preorder_mode 決定處理方式
       let preorderConvertResult = null
-      if (productIds.length > 0) {
+      let variantsWithPreorders: any[] = []
+
+      if (productIds.length > 0 && preorder_mode !== 'SKIP') {
         try {
           // 根據產品 ID 查找相關變體
           const variantIds = await getVariantIdsByProductIds(tx, productIds)
 
-          // 自動轉換預購單
-          preorderConvertResult = await autoConvertPreorders(tx, session.user.id, variantIds)
+          if (preorder_mode === 'AUTO') {
+            // 自動模式：直接轉換預購單
+            preorderConvertResult = await autoConvertPreorders(tx, session.user.id, variantIds)
+          } else if (preorder_mode === 'MANUAL') {
+            // 手動模式：查詢有預購單的變體，返回給前端手動分配
+            const variantsData = await tx.productVariant.findMany({
+              where: {
+                id: { in: variantIds }
+              },
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                },
+                inventory: {
+                  select: {
+                    available: true
+                  }
+                }
+              }
+            })
+
+            // 查詢每個變體的預購單情況
+            for (const variant of variantsData) {
+              const preorders = await tx.sale.findMany({
+                where: {
+                  status: 'PREORDER',
+                  items: {
+                    some: {
+                      variant_id: variant.id
+                    }
+                  }
+                },
+                include: {
+                  items: {
+                    where: {
+                      variant_id: variant.id
+                    },
+                    select: {
+                      quantity: true
+                    }
+                  }
+                }
+              })
+
+              if (preorders.length > 0) {
+                const totalAvailable = variant.inventory.reduce((sum, inv) => sum + inv.available, 0)
+                const totalRequested = preorders.reduce((sum, sale) =>
+                  sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
+                )
+
+                variantsWithPreorders.push({
+                  variant_id: variant.id,
+                  variant_code: variant.variant_code,
+                  variant_name: `${variant.product.name} - ${variant.variant_type}`,
+                  available_stock: totalAvailable,
+                  preorder_count: preorders.length,
+                  total_requested: totalRequested
+                })
+              }
+            }
+          }
         } catch (error) {
-          console.error('自動轉換預購單失敗:', error)
+          console.error('預購單處理失敗:', error)
           // 不阻擋收貨流程，只記錄錯誤
         }
       }
@@ -468,6 +533,7 @@ export async function POST(
         inventoryUpdates,
         backorderResolveResult,
         preorderConvertResult,
+        variantsWithPreorders, // 手動模式時返回待分配變體列表
         purchase: await tx.purchase.findUnique({
           where: { id: purchaseId },
           include: {
@@ -517,7 +583,9 @@ export async function POST(
         total_cost: result.goodsReceipt.total_cost,
         received_date: result.purchase?.received_date,
         backorder_resolve_result: result.backorderResolveResult,
-        preorder_convert_result: result.preorderConvertResult
+        preorder_convert_result: result.preorderConvertResult,
+        variants_with_preorders: result.variantsWithPreorders, // 手動模式時有值
+        preorder_mode // 返回模式，前端判斷是否需要彈出分配對話框
       }
     })
 

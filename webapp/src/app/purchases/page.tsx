@@ -43,6 +43,7 @@ import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/Sec
 import { CreatePurchaseRequest } from '@/types/room-2'
 import { PurchaseOrderModal } from '@/components/purchases/PurchaseOrderModal'
 import { ReceiveGoodsModal } from '@/components/purchases/ReceiveGoodsModal'
+import { AllocationModal } from '@/components/sales/AllocationModal'
 
 const { Search } = Input
 const { Option } = Select
@@ -113,6 +114,12 @@ export default function PurchasesPage() {
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [receiveModeVisible, setReceiveModeVisible] = useState(false)
+
+  // AllocationModal 狀態
+  const [allocationModalVisible, setAllocationModalVisible] = useState(false)
+  const [currentVariantForAllocation, setCurrentVariantForAllocation] = useState<any>(null)
+  const [pendingAllocations, setPendingAllocations] = useState<any[]>([]) // 待分配的變體列表
+  const [currentAllocationIndex, setCurrentAllocationIndex] = useState(0) // 當前正在分配第幾個變體
   const [receiveGoodsVisible, setReceiveGoodsVisible] = useState(false)
   const [selectedForReceive, setSelectedForReceive] = useState<Purchase | null>(null)
 
@@ -506,9 +513,9 @@ export default function PurchasesPage() {
 
         message.success(successMsg)
 
-        // 關閉對話框
+        // 關閉收貨對話框
+        setReceiveGoodsVisible(false)
         setReceiveModeVisible(false)
-        setSelectedForReceive(null)
 
         // 確保同步建立/更新進貨記錄
         try {
@@ -519,7 +526,22 @@ export default function PurchasesPage() {
           })
         } catch {}
 
-        await loadPurchases(false) // 重新載入列表
+        // 檢查是否需要手動分配預購單
+        const variantsWithPreorders = result.data?.variants_with_preorders || []
+        const preorderMode = result.data?.preorder_mode
+
+        if (preorderMode === 'MANUAL' && variantsWithPreorders.length > 0) {
+          // 手動模式且有待分配變體，彈出分配對話框
+          message.info(`發現 ${variantsWithPreorders.length} 個變體有預購單等待，請逐一分配`)
+          setPendingAllocations(variantsWithPreorders)
+          setCurrentAllocationIndex(0)
+          setCurrentVariantForAllocation(variantsWithPreorders[0])
+          setAllocationModalVisible(true)
+        } else {
+          // 沒有待分配或自動模式，直接關閉
+          setSelectedForReceive(null)
+          await loadPurchases(false) // 重新載入列表
+        }
       } else {
         console.error('收貨失敗:', result.error)
         message.error(result.error?.message || result.error || '收貨失敗')
@@ -530,6 +552,67 @@ export default function PurchasesPage() {
     } finally {
       setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }
+  }
+
+  // 處理分配執行
+  const handleExecuteAllocation = async (allocations: any[]) => {
+    if (!currentVariantForAllocation) return
+
+    try {
+      const response = await fetch('/api/sales/preorders/execute-allocation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          variantId: currentVariantForAllocation.variant_id,
+          allocations
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        message.success(result.message || '分配執行成功')
+
+        // 檢查是否還有下一個變體要分配
+        const nextIndex = currentAllocationIndex + 1
+        if (nextIndex < pendingAllocations.length) {
+          // 還有下一個，繼續分配
+          setCurrentAllocationIndex(nextIndex)
+          setCurrentVariantForAllocation(pendingAllocations[nextIndex])
+          message.info(`還有 ${pendingAllocations.length - nextIndex} 個變體待分配`)
+        } else {
+          // 全部分配完成
+          message.success('所有變體分配完成！')
+          setAllocationModalVisible(false)
+          setSelectedForReceive(null)
+          setPendingAllocations([])
+          setCurrentAllocationIndex(0)
+          setCurrentVariantForAllocation(null)
+          await loadPurchases(false)
+        }
+      } else {
+        message.error(result.error || '分配執行失敗')
+      }
+    } catch (error) {
+      console.error('分配執行失敗:', error)
+      message.error('分配執行失敗，請檢查網路連線')
+    }
+  }
+
+  // 處理分配取消
+  const handleCancelAllocation = () => {
+    Modal.confirm({
+      title: '確定要取消分配嗎？',
+      content: '未分配的預購單將保持預購狀態，可稍後手動分配',
+      onOk: async () => {
+        setAllocationModalVisible(false)
+        setSelectedForReceive(null)
+        setPendingAllocations([])
+        setCurrentAllocationIndex(0)
+        setCurrentVariantForAllocation(null)
+        await loadPurchases(false)
+      }
+    })
   }
 
   // 處理撤銷收貨
@@ -967,6 +1050,16 @@ export default function PurchasesPage() {
           </div>
         )}
       </Modal>
+
+      {/* 預購單分配對話框 */}
+      <AllocationModal
+        visible={allocationModalVisible}
+        variantId={currentVariantForAllocation?.variant_id || null}
+        variantName={currentVariantForAllocation?.variant_name || ''}
+        availableStock={currentVariantForAllocation?.available_stock || 0}
+        onCancel={handleCancelAllocation}
+        onExecute={handleExecuteAllocation}
+      />
     </div>
   )
 }
