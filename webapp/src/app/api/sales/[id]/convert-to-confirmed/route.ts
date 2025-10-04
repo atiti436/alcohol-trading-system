@@ -97,16 +97,16 @@ export async function POST(
           available_stock: v.inventory.reduce((sum, inv) => sum + inv.available, 0)
         }))
 
-        // 先找 A，其次任何足夠庫存者
-        const anyEnough = variantsWithStock.find(v => v.available_stock >= item.quantity)
+        // 優先選擇正常變體（非盒損），且庫存充足
+        const normalVariants = variantsWithStock.filter(v => !v.variant_code.endsWith('-D'))
+        const anyEnough = normalVariants.find(v => v.available_stock >= item.quantity)
+
         if (anyEnough) {
           variantIdToUse = anyEnough.id
           availableStock = anyEnough.available_stock
-          if (anyEnough.variant_type !== 'A') {
-            stockCheckWarnings.push(
-              `商品 ${item.product?.name || '未知商品'} 自動選擇變體 ${anyEnough.variant_code || anyEnough.variant_type}`
-            )
-          }
+          stockCheckWarnings.push(
+            `商品 ${item.product?.name || '未知商品'} 自動選擇變體 ${anyEnough.variant_code} (${anyEnough.variant_type})`
+          )
         } else {
           // 沒有足夠的單一變體，回報錯誤
           const totalAvailable = variantsWithStock.reduce((s, v) => s + v.available_stock, 0)

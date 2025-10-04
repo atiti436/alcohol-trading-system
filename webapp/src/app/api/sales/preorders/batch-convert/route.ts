@@ -109,23 +109,30 @@ async function autoConvertPreordersBySaleIds(
       for (const item of sale.items) {
         let variantIdToUse = item.variant_id
 
-        // 如果沒有指定變體，自動選擇 A 版
+        // 如果沒有指定變體，自動選擇優先變體（非盒損）
         if (!variantIdToUse) {
-          const aVariant = await tx.productVariant.findFirst({
+          const availableVariants = await tx.productVariant.findMany({
             where: {
               product_id: item.product_id,
-              variant_type: 'A'
+              is_active: true
+            },
+            orderBy: {
+              variant_code: 'asc'
             }
           })
 
-          if (!aVariant) {
-            stockCheckErrors.push(`商品 ${item.product.name} 沒有可用的 A 版變體`)
+          // 過濾掉盒損變體
+          const normalVariants = availableVariants.filter(v => !v.variant_code.endsWith('-D'))
+
+          if (normalVariants.length === 0) {
+            stockCheckErrors.push(`商品 ${item.product.name} 沒有可用的正常變體`)
             continue
           }
 
-          variantIdToUse = aVariant.id
+          const selectedVariant = normalVariants[0]
+          variantIdToUse = selectedVariant.id
           stockCheckWarnings.push(
-            `商品 ${item.product.name} 自動選擇 A 版變體（${aVariant.variant_code}）`
+            `商品 ${item.product.name} 自動選擇變體（${selectedVariant.variant_code} - ${selectedVariant.variant_type}）`
           )
         }
 
@@ -172,15 +179,17 @@ async function autoConvertPreordersBySaleIds(
       for (const item of sale.items) {
         let variantIdToUse = item.variant_id
 
-        // 如果沒有變體，使用 A 版
+        // 如果沒有變體，使用優先變體（已在前面檢查過，這裡一定有）
         if (!variantIdToUse) {
-          const aVariant = await tx.productVariant.findFirst({
+          const availableVariants = await tx.productVariant.findMany({
             where: {
               product_id: item.product_id,
-              variant_type: 'A'
-            }
+              is_active: true
+            },
+            orderBy: { variant_code: 'asc' }
           })
-          variantIdToUse = aVariant!.id
+          const normalVariants = availableVariants.filter(v => !v.variant_code.endsWith('-D'))
+          variantIdToUse = normalVariants[0]!.id
 
           // 更新 SaleItem 的 variant_id
           await tx.saleItem.update({

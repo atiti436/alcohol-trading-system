@@ -90,23 +90,31 @@ export async function autoConvertPreorders(
       for (const item of sale.items) {
         let variantIdToUse = item.variant_id
 
-        // 如果沒有指定變體，自動選擇 A 版
+        // 如果沒有指定變體，自動選擇優先變體（非盒損）
         if (!variantIdToUse) {
-          const aVariant = await tx.productVariant.findFirst({
+          const availableVariants = await tx.productVariant.findMany({
             where: {
               product_id: item.product_id,
-              variant_type: 'A'
+              is_active: true
+            },
+            orderBy: {
+              variant_code: 'asc' // 按 variant_code 排序，優先選擇編號小的
             }
           })
 
-          if (!aVariant) {
-            stockCheckErrors.push(`商品 ${item.product.name} 沒有可用的 A 版變體`)
+          // 過濾掉盒損變體（variant_code 結尾為 -D）
+          const normalVariants = availableVariants.filter(v => !v.variant_code.endsWith('-D'))
+
+          if (normalVariants.length === 0) {
+            stockCheckErrors.push(`商品 ${item.product.name} 沒有可用的正常變體`)
             continue
           }
 
-          variantIdToUse = aVariant.id
+          // 選擇第一個正常變體
+          const selectedVariant = normalVariants[0]
+          variantIdToUse = selectedVariant.id
           stockCheckWarnings.push(
-            `商品 ${item.product.name} 自動選擇 A 版變體（${aVariant.variant_code}）`
+            `商品 ${item.product.name} 自動選擇變體（${selectedVariant.variant_code} - ${selectedVariant.variant_type}）`
           )
         }
 

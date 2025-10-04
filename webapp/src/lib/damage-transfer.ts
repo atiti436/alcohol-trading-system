@@ -1,24 +1,48 @@
 import { PrismaClient } from '@prisma/client'
-import { generateVariantCode } from './variant-utils'
 
 /**
  * 毀損商品調撥工具
- * 處理進貨時的毀損商品，自動調撥到盒損變體（00X）
+ * 處理進貨時的毀損商品，自動調撥到盒損變體（variant_code 後綴 -D）
+ *
+ * 範例：
+ * - 來源變體：P0001-001 "700ML 43% 標準版" → 盒損變體：P0001-001-D "盒損-700ML 43% 標準版"
+ * - 來源變體：P0001-002 "限量版" → 盒損變體：P0001-002-D "盒損-限量版"
  */
 
-const DAMAGED_VARIANT_TYPE = '00X' // 盒損變體類型
+export const DAMAGE_SUFFIX = '-D' // 盒損變體後綴
+export const DAMAGE_PREFIX = '盒損-' // 盒損變體類型前綴
+export const DEFAULT_DAMAGE_RATIO = 0.8 // 預設折扣 80%（建議價，可手動調整）
+
+/**
+ * 檢查變體是否為盒損變體
+ */
+export function isDamagedVariant(variantCode: string): boolean {
+  return variantCode.endsWith(DAMAGE_SUFFIX)
+}
+
+/**
+ * 從盒損變體取得來源變體代碼
+ */
+export function getSourceVariantCode(damagedVariantCode: string): string | null {
+  if (!isDamagedVariant(damagedVariantCode)) {
+    return null
+  }
+  return damagedVariantCode.slice(0, -DAMAGE_SUFFIX.length)
+}
 
 /**
  * 查找或創建盒損變體
  * @param tx Prisma transaction
  * @param sourceVariantId 來源變體 ID
  * @param userId 操作用戶 ID
+ * @param customPriceRatio 自訂價格折扣比例（可選，預設 0.8）
  * @returns 盒損變體
  */
 export async function findOrCreateDamagedVariant(
   tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>,
   sourceVariantId: string,
-  userId: string
+  userId: string,
+  customPriceRatio?: number
 ) {
   // 查找來源變體
   const sourceVariant = await tx.productVariant.findUnique({
@@ -32,47 +56,71 @@ export async function findOrCreateDamagedVariant(
     throw new Error(`找不到來源變體: ${sourceVariantId}`)
   }
 
-  // 查找是否已存在相同商品的盒損變體
-  let damagedVariant = await tx.productVariant.findFirst({
-    where: {
-      product_id: sourceVariant.product_id,
-      variant_type: DAMAGED_VARIANT_TYPE
-    }
+  // 🎯 重點：variant_code 直接從來源變體衍生
+  const damagedVariantCode = `${sourceVariant.variant_code}${DAMAGE_SUFFIX}`
+
+  // 查找是否已存在該盒損變體
+  let damagedVariant = await tx.productVariant.findUnique({
+    where: { variant_code: damagedVariantCode }
   })
 
   // 如果不存在，創建新的盒損變體
   if (!damagedVariant) {
-    const productCode = sourceVariant.product?.product_code || 'P001'
-    const variantCode = await generateVariantCode(
-      tx,
-      sourceVariant.product_id,
-      productCode,
-      DAMAGED_VARIANT_TYPE
-    )
-    const sku = `SKU-${variantCode}`
+    const sku = `SKU-${damagedVariantCode}`
 
-    // 盒損變體價格通常是原價的 80-85%
-    const damagedPriceRatio = 0.8
-    const basePrice = sourceVariant.base_price * damagedPriceRatio
-    const currentPrice = sourceVariant.current_price * damagedPriceRatio
-    const costPrice = sourceVariant.cost_price * damagedPriceRatio
+    // 價格折扣比例（可自訂，預設 80%）
+    const priceRatio = customPriceRatio ?? DEFAULT_DAMAGE_RATIO
+
+    // 計算盒損價格
+    const basePrice = (sourceVariant.base_price || 0) * priceRatio
+    const currentPrice = sourceVariant.current_price * priceRatio
+    const costPrice = sourceVariant.cost_price * priceRatio
+    const investorPrice = sourceVariant.investor_price * priceRatio
+    const actualPrice = sourceVariant.actual_price * priceRatio
+
+    // 🎯 variant_type 加上「盒損」前綴
+    const damagedVariantType = sourceVariant.variant_type
+      ? `${DAMAGE_PREFIX}${sourceVariant.variant_type}`
+      : '盒損'
 
     damagedVariant = await tx.productVariant.create({
       data: {
         product_id: sourceVariant.product_id,
-        variant_code: variantCode,
+        variant_code: damagedVariantCode,
         sku,
-        variant_type: DAMAGED_VARIANT_TYPE,
-        description: `${sourceVariant.product?.name || '商品'} - 盒損版`,
+        variant_type: damagedVariantType,
+        description: `${sourceVariant.description} (盒損)`,
+
+        // 價格（建議價，可後續手動調整）
         base_price: basePrice,
         current_price: currentPrice,
         cost_price: costPrice,
+        investor_price: investorPrice,
+        actual_price: actualPrice,
+
+        // 庫存初始為 0
         stock_quantity: 0,
         reserved_stock: 0,
         available_stock: 0,
+
+        // 規格完全相同
         volume_ml: sourceVariant.volume_ml,
-        alcohol_percentage: sourceVariant.alcohol_percentage,
-        weight_kg: sourceVariant.weight_kg
+        alc_percentage: sourceVariant.alc_percentage,
+        weight_kg: sourceVariant.weight_kg,
+        package_weight_kg: sourceVariant.package_weight_kg,
+        total_weight_kg: sourceVariant.total_weight_kg,
+        has_box: sourceVariant.has_box,
+        has_accessories: sourceVariant.has_accessories,
+        accessory_weight_kg: sourceVariant.accessory_weight_kg,
+        accessories: sourceVariant.accessories,
+        hs_code: sourceVariant.hs_code,
+        supplier: sourceVariant.supplier,
+        manufacturing_date: sourceVariant.manufacturing_date,
+        expiry_date: sourceVariant.expiry_date,
+        discount_rate: sourceVariant.discount_rate,
+        limited_edition: sourceVariant.limited_edition,
+        production_year: sourceVariant.production_year,
+        condition: 'Damaged' // 狀態標記為損壞
       }
     })
   }

@@ -36,6 +36,7 @@ interface VariantListViewProps {
   onEdit?: (variant: Variant) => void
   onDelete?: (variant: Variant) => void
   onTransfer?: (variant: Variant) => void // 品號調撥
+  onCreateDamaged?: (variant: Variant) => void // 建立盒損變體
   loading?: boolean
 }
 
@@ -52,6 +53,7 @@ export default function VariantListView({
   onEdit,
   onDelete,
   onTransfer,
+  onCreateDamaged,
   loading = false
 }: VariantListViewProps) {
   const canViewActualPrice = userRole === 'SUPER_ADMIN' || userRole === 'EMPLOYEE'
@@ -233,9 +235,24 @@ export default function VariantListView({
             </Tooltip>
           )}
 
+          {/* 建立盒損變體按鈕 - 僅管理員，且非盒損變體 */}
+          {canEdit && onCreateDamaged && !record.variant_code.endsWith('-D') && (
+            <Tooltip title="建立此變體的盒損版本">
+              <Button
+                type="link"
+                size="small"
+                icon={<SwapOutlined />}
+                onClick={() => onCreateDamaged(record)}
+                style={{ color: '#fa8c16' }}
+              >
+                建立盒損
+              </Button>
+            </Tooltip>
+          )}
+
           {/* 調撥按鈕 - 僅管理員 */}
           {canTransfer && onTransfer && (
-            <Tooltip title="品號調撥（如：轉為盒損品）">
+            <Tooltip title="庫存調撥">
               <Button
                 type="link"
                 size="small"
