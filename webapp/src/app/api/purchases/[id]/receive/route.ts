@@ -39,7 +39,8 @@ export async function POST(
       inspection_fee = 0, // 檢驗費
       allocation_method = 'BY_AMOUNT', // 分攤方式：BY_AMOUNT, BY_QUANTITY, BY_WEIGHT
       additional_costs = [], // 額外費用：[{type: 'SHIPPING', amount: 1000, description: '運費'}]
-      preorder_mode = 'AUTO' // 預購單處理模式：AUTO(自動轉換), MANUAL(手動分配), SKIP(跳過)
+      preorder_mode = 'AUTO', // 預購單處理模式：AUTO(自動轉換), MANUAL(手動分配), SKIP(跳過)
+      item_damages = [] // 逐商品毀損明細：[{product_id: '...', damaged_quantity: 2}]
     } = body
 
     // 檢查採購單是否存在且已確認
@@ -117,6 +118,14 @@ export async function POST(
         }
       })
 
+      // 3. 建立商品毀損數量對照表
+      const damageMap = new Map<string, number>()
+      for (const damage of item_damages) {
+        if (damage.product_id && damage.damaged_quantity > 0) {
+          damageMap.set(damage.product_id, damage.damaged_quantity)
+        }
+      }
+
       // 3. 處理每個採購項目的庫存更新
       const inventoryUpdates = []
 
@@ -152,8 +161,17 @@ export async function POST(
         const finalUnitCost = itemCost + (itemAdditionalCost / item.quantity)
 
         // 計算實際入庫數量（扣除損耗）
-        const itemLossRatio = loss_quantity > 0 ? loss_quantity / actual_quantity : 0
-        const itemLoss = Math.floor(item.quantity * itemLossRatio)
+        // 優先使用逐商品毀損明細，否則按比例分攤總損耗
+        let itemLoss = 0
+        if (item.product_id && damageMap.has(item.product_id)) {
+          // 使用精確的商品毀損數量
+          itemLoss = damageMap.get(item.product_id) || 0
+        } else {
+          // 按比例分攤總損耗（向下取整）
+          const itemLossRatio = loss_quantity > 0 ? loss_quantity / actual_quantity : 0
+          itemLoss = Math.floor(item.quantity * itemLossRatio)
+        }
+
         const actualStockIncrease = item.quantity - itemLoss
 
         if (actualStockIncrease > 0) {

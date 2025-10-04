@@ -172,6 +172,20 @@ export interface InventoryMovement {
   variant?: ProductVariant
 }
 
+// 缺貨追蹤狀態
+export enum BackorderStatus {
+  PENDING = 'PENDING',
+  RESOLVED = 'RESOLVED',
+  CANCELLED = 'CANCELLED'
+}
+
+// 庫存分配策略
+export enum AllocationStrategy {
+  PROPORTIONAL = 'PROPORTIONAL', // 按比例分配
+  PRIORITY = 'PRIORITY',          // 按優先級分配
+  FCFS = 'FCFS'                   // 先到先得 (First Come First Served)
+}
+
 // ========== 報表相關型別 ==========
 
 export interface SalesReportSummary {
