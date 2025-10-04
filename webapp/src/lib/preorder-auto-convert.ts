@@ -1,93 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/modules/auth/providers/nextauth'
-import { autoConvertPreorders } from '@/lib/preorder-auto-convert'
-
-export const dynamic = 'force-dynamic'
+import { PrismaClient } from '@prisma/client'
 
 /**
- * 批次轉換預購單為正式訂單
- * POST /api/sales/preorders/batch-convert
+ * 自動轉換預購單為已確認訂單
+ * 當進貨收貨完成時，自動檢查並轉換相關的預購單
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json({ error: '未登入' }, { status: 401 })
-    }
 
-    const { saleIds } = await request.json()
-
-    if (!saleIds || !Array.isArray(saleIds) || saleIds.length === 0) {
-      return NextResponse.json({ error: '請選擇要轉換的預購單' }, { status: 400 })
-    }
-
-    // 使用 transaction 確保一致性
-    const results = await prisma.$transaction(async (tx) => {
-      // 先驗證選中的訂單都是預購單
-      const sales = await tx.sale.findMany({
-        where: {
-          id: { in: saleIds },
-          status: 'PREORDER'
-        }
-      })
-
-      if (sales.length === 0) {
-        throw new Error('找不到可轉換的預購單')
-      }
-
-      if (sales.length < saleIds.length) {
-        console.warn(`部分訂單不是預購狀態：要求 ${saleIds.length} 筆，找到 ${sales.length} 筆`)
-      }
-
-      // 調用共用的自動轉換函數
-      // 注意：這裡不傳 variantIds，因為要轉換用戶選擇的特定訂單
-      // 所以我們需要稍微修改邏輯：直接傳入 saleIds
-      return await autoConvertPreordersBySaleIds(tx, session.user.id, saleIds)
-    })
-
-    return NextResponse.json({
-      success: true,
-      data: results,
-      summary: {
-        total: saleIds.length,
-        success: results.success.length + results.warnings.length,
-        failed: results.failed.length
-      }
-    })
-
-  } catch (error) {
-    console.error('批次轉換失敗:', error)
-    return NextResponse.json(
-      {
-        error: '批次轉換失敗',
-        details: error instanceof Error ? error.message : '未知錯誤'
-      },
-      { status: 500 }
-    )
-  }
+interface ConvertResult {
+  success: Array<{
+    saleId: string
+    saleNumber: string
+    customer: string
+    itemCount: number
+    warnings?: string[]
+  }>
+  failed: Array<{
+    saleId: string
+    saleNumber: string
+    customer: string
+    errors: string[]
+  }>
+  warnings: Array<{
+    saleId: string
+    saleNumber: string
+    customer: string
+    itemCount: number
+    warnings: string[]
+  }>
 }
 
 /**
- * 根據 Sale IDs 轉換預購單（用於批次轉換）
+ * 自動轉換預購單
+ * @param tx Prisma transaction 實例
+ * @param userId 執行轉換的用戶 ID
+ * @param variantIds 可選：僅轉換包含這些變體的預購單（用於進貨時的精準轉換）
+ * @returns 轉換結果統計
  */
-async function autoConvertPreordersBySaleIds(
-  tx: any,
+export async function autoConvertPreorders(
+  tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>,
   userId: string,
-  saleIds: string[]
-) {
-  const results = {
-    success: [] as any[],
-    failed: [] as any[],
-    warnings: [] as any[]
+  variantIds?: string[]
+): Promise<ConvertResult> {
+
+  const results: ConvertResult = {
+    success: [],
+    failed: [],
+    warnings: []
+  }
+
+  // 查詢所有預購單
+  const whereClause: any = {
+    status: 'PREORDER'
+  }
+
+  // 如果指定了變體 ID，只查找包含這些變體的預購單
+  if (variantIds && variantIds.length > 0) {
+    whereClause.items = {
+      some: {
+        product: {
+          variants: {
+            some: {
+              id: { in: variantIds }
+            }
+          }
+        }
+      }
+    }
   }
 
   const sales = await tx.sale.findMany({
-    where: {
-      id: { in: saleIds },
-      status: 'PREORDER'
-    },
+    where: whereClause,
     include: {
       customer: true,
       items: {
@@ -135,7 +116,7 @@ async function autoConvertPreordersBySaleIds(
           select: { available: true }
         })
 
-        const availableStock = inventories.reduce((sum: number, inv: any) => sum + inv.available, 0)
+        const availableStock = inventories.reduce((sum, inv) => sum + inv.available, 0)
 
         if (availableStock < item.quantity) {
           stockCheckErrors.push(
@@ -246,4 +227,23 @@ async function autoConvertPreordersBySaleIds(
   }
 
   return results
+}
+
+/**
+ * 根據產品 ID 查找相關的變體 ID
+ */
+export async function getVariantIdsByProductIds(
+  tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>,
+  productIds: string[]
+): Promise<string[]> {
+  const variants = await tx.productVariant.findMany({
+    where: {
+      product_id: { in: productIds }
+    },
+    select: {
+      id: true
+    }
+  })
+
+  return variants.map(v => v.id)
 }

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 
 import { DEFAULT_VARIANT_TYPE, generateVariantCode } from '@/lib/variant-utils'
+import { autoConvertPreorders, getVariantIdsByProductIds } from '@/lib/preorder-auto-convert'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -274,9 +275,30 @@ export async function POST(
         }
       }
 
+      // 4. 🎯 自動轉換預購單（Phase 7.1）
+      // 收貨完成後，自動檢查並轉換相關的預購單
+      const productIds = purchase.items
+        .map(item => item.product_id)
+        .filter((id): id is string => id !== null)
+
+      let preorderConvertResult = null
+      if (productIds.length > 0) {
+        try {
+          // 根據產品 ID 查找相關變體
+          const variantIds = await getVariantIdsByProductIds(tx, productIds)
+
+          // 自動轉換預購單
+          preorderConvertResult = await autoConvertPreorders(tx, session.user.id, variantIds)
+        } catch (error) {
+          console.error('自動轉換預購單失敗:', error)
+          // 不阻擋收貨流程，只記錄錯誤
+        }
+      }
+
       return {
         goodsReceipt,
         inventoryUpdates,
+        preorderConvertResult,
         purchase: await tx.purchase.findUnique({
           where: { id: purchaseId },
           include: {
@@ -290,15 +312,29 @@ export async function POST(
       }
     })
 
+    // 組合訊息
+    let message = '收貨完成，庫存已更新'
+    if (result.preorderConvertResult) {
+      const { success, warnings, failed } = result.preorderConvertResult
+      const totalConverted = success.length + warnings.length
+      if (totalConverted > 0) {
+        message += `，並自動轉換了 ${totalConverted} 筆預購單`
+      }
+      if (failed.length > 0) {
+        message += `（${failed.length} 筆因庫存不足未轉換）`
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: '收貨完成，庫存已更新',
+      message,
       data: {
         goods_receipt_id: result.goodsReceipt.id,
         purchase_status: result.purchase?.status,
         inventory_updates: result.inventoryUpdates,
         total_cost: result.goodsReceipt.total_cost,
-        received_date: result.purchase?.received_date
+        received_date: result.purchase?.received_date,
+        preorder_convert_result: result.preorderConvertResult
       }
     })
 

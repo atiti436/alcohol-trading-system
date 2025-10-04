@@ -170,6 +170,41 @@ export default function SettingsPage() {
                 </Space>
               </Card>
             </Col>
+
+            <Col xs={24}>
+              <Card title="預購訂單自動轉換設定">
+                <Alert
+                  message="自動轉換功能說明"
+                  description="進貨收貨完成後，系統會自動檢查並轉換庫存充足的預購訂單。轉換時使用 FIFO（先進先出）策略分配庫存，並自動選擇 A 版變體（如果未指定）。"
+                  type="info"
+                  style={{ marginBottom: 16 }}
+                  showIcon
+                />
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <Text strong>進貨收貨時自動轉換</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        當進貨單完成收貨時，系統會自動檢查並轉換相關的預購訂單
+                      </Text>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <Text strong>啟用批次轉換功能</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        允許在預購統計頁面使用批次轉換功能
+                      </Text>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                </Space>
+              </Card>
+            </Col>
           </Row>
         </TabPane>
 

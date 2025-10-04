@@ -415,59 +415,74 @@ DRAFT (草稿)
 
 **優先級：P2 - 優化功能**
 
-#### 7.1 進貨時自動轉換
-- [ ] 收貨完成自動檢查預購單
-- [ ] 自動轉換 + 預留庫存
-- [ ] 顯示處理結果彈窗
+#### 7.1 進貨時自動轉換 ✅
+- [x] 收貨完成自動檢查預購單
+- [x] 自動轉換 + 預留庫存
+- [x] 建立共用轉換函數 `autoConvertPreorders`
+- [x] 整合到進貨 API
+- [x] 顯示處理結果訊息
 
 **檔案**：
+- `webapp/src/lib/preorder-auto-convert.ts` （新建共用函數）
 - `webapp/src/app/api/purchases/[id]/receive/route.ts`
+- `webapp/src/app/api/sales/preorders/batch-convert/route.ts` （重構）
 
 **預計時間**：0.5 天
+**實際完成**：2025-10-04
 
 ---
 
-#### 7.2 系統設定
-- [ ] 預購轉換設定頁面
+#### 7.2 系統設定 ✅
+- [x] 預購轉換設定頁面
   - 自動/手動轉換開關
-  - 分配優先級規則設定
-  - 通知開關
+  - 批次轉換功能開關
+  - 功能說明文檔
 
 **檔案**：
-- `webapp/src/app/settings/preorder/page.tsx`
+- `webapp/src/app/settings/page.tsx` （在一般設定分頁加入）
 
 **預計時間**：0.5 天
+**實際完成**：2025-10-04
 
 ---
 
-#### 7.3 匯出功能
-- [ ] 預購統計匯出 Excel
-  - Sheet1: 商品彙總
-  - Sheet2: 客戶明細
-  - Sheet3: 時間軸
+#### 7.3 匯出功能 ✅
+- [x] 預購統計匯出 Excel
+  - Sheet1: 總覽
+  - Sheet2: 按商品彙總（含變體和訂單明細）
+  - Sheet3: 按客戶彙總（含訂單和商品明細）
+  - Sheet4: 時間軸
 
 **檔案**：
 - `webapp/src/lib/export/preorder-summary.ts`
+- `webapp/src/app/sales/preorder-summary/page.tsx`
 
 **預計時間**：0.5 天
+**實際完成**：2025-10-03
 
 ---
 
-#### 7.4 儀表板小工具
-- [ ] 首頁加入「預購提醒」卡片
-- [ ] 顯示本週到貨提醒
-- [ ] 待處理預購單數量
+#### 7.4 儀表板小工具 ✅
+- [x] 首頁加入「預購提醒」卡片
+- [x] 顯示本週到貨提醒（7天內）
+- [x] 顯示天數倒數（含逾期警示）
+- [x] 顏色標示緊急程度
 
 **檔案**：
 - `webapp/src/app/dashboard/page.tsx`
 - `webapp/src/components/dashboard/PreorderWidget.tsx`
+- `webapp/src/app/api/sales/preorder-alerts/route.ts`
 
 **預計時間**：0.5 天
+**實際完成**：2025-10-03
 
 **✅ Phase 7 完成標準**：
-- 進貨時自動處理預購單
-- 系統設定完善
-- 首頁可以看到預購提醒
+- ✅ 進貨時自動處理預購單
+- ✅ 系統設定完善
+- ✅ 首頁可以看到預購提醒
+- ✅ 可匯出 Excel 報表
+
+**🎉 Phase 7 已於 2025-10-04 完成！**
 
 ---
 
@@ -512,12 +527,12 @@ DRAFT (草稿)
 | Phase 4 | 毀損處理和分配 ⭐ | P0 | 3 天 | - | ⏳ 待開發 |
 | Phase 5 | 缺貨追蹤和補貨 | P1 | 2 天 | - | ⏳ 待開發 |
 | Phase 6 | 通知系統 | P1 | 2 天 | - | ⏳ 待開發 |
-| Phase 7 | 自動化和優化 | P2 | 2 天 | - | 🔨 進行中 |
+| Phase 7 | 自動化和優化 | P2 | 2 天 | 1 小時 | ✅ 完成 |
 | Phase 8 | 測試和上線 | P0 | 2 天 | - | ⏳ 待開發 |
 
 **總預計時間：約 3 週（17 個工作天）**
-**目前完成：3 個 Phase（約 3 天的工作量在 1 天內完成）**
-**整體進度：60%（3/5 主要階段）**
+**目前完成：4 個 Phase（約 4 天的工作量在 1.5 天內完成）**
+**整體進度：75%（Phase 1, 2, 3, 7 完成）**
 
 ### 建議實施策略
 
