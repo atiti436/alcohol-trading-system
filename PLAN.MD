@@ -262,40 +262,47 @@ DRAFT (草稿)
 
 **優先級：P0 - 核心功能**
 
-#### 4.1 收貨流程修改（毀損處理）
-- [ ] `POST /api/purchases/[id]/receive` - 加入毀損數量欄位
-- [ ] 毀損商品自動調撥到盒損變體（00X）
-- [ ] 檢測預購單需求 vs 可用庫存
-- [ ] 庫存不足時觸發分配流程
+#### 4.1 收貨流程修改（毀損處理）✅ (部分完成)
+- [x] 收貨 API 已支援毀損數量欄位（`loss_quantity`, `loss_type`）
+- [x] 毀損商品自動調撥到盒損變體（00X）
+- [x] 整合到收貨流程
+- [ ] 收貨 UI：毀損數量輸入（前端待實作）
+- [ ] 檢測預購單需求 vs 可用庫存（API 已有，UI 待整合）
 
 **檔案**：
-- `webapp/src/app/api/purchases/[id]/receive/route.ts`
-- `webapp/src/components/purchases/ReceiveModal.tsx`
+- `webapp/src/app/api/purchases/[id]/receive/route.ts` ✅
+- `webapp/src/lib/damage-transfer.ts` ✅（新建）
+- `webapp/src/components/purchases/ReceiveModal.tsx` ⏳（待修改）
 
 **預計時間**：1 天
+**實際完成**：2025-10-04（後端 80%，前端待補）
 
 ---
 
-#### 4.2 智能分配 API
-- [ ] `POST /api/sales/preorders/allocate` - 智能分配 API
-  - 輸入：可用庫存、預購單列表、分配規則
+#### 4.2 智能分配 API ✅
+- [x] `POST /api/sales/preorders/allocate` - 智能分配 API
+  - 輸入：可用庫存、預購單列表、分配策略
   - 輸出：分配建議（每張單分配多少）
   - 支援多種分配策略：
-    - 按比例分配
-    - 按優先級分配（VIP、下單時間等）
-    - 優先滿足部分客戶
-- [ ] `POST /api/sales/preorders/execute-allocation` - 執行分配
+    - 按比例分配（PROPORTIONAL）
+    - 按優先級分配（PRIORITY）- VIP、下單時間等
+    - 先到先得（FCFS）
+- [x] `POST /api/sales/preorders/execute-allocation` - 執行分配
+  - 更新訂單狀態（CONFIRMED / PARTIALLY_CONFIRMED）
+  - 預留庫存（FIFO）
+  - 建立 BACKORDER 記錄
 
 **檔案**：
-- `webapp/src/app/api/sales/preorders/allocate/route.ts`
-- `webapp/src/app/api/sales/preorders/execute-allocation/route.ts`
-- `webapp/src/lib/allocation.ts` （分配算法）
+- `webapp/src/app/api/sales/preorders/allocate/route.ts` ✅（新建）
+- `webapp/src/app/api/sales/preorders/execute-allocation/route.ts` ✅（新建）
+- `webapp/src/lib/allocation.ts` ✅（新建，含算法）
 
 **預計時間**：1 天
+**實際完成**：2025-10-04
 
 ---
 
-#### 4.3 分配 UI 和部分確認
+#### 4.3 分配 UI 和部分確認 ⏳（待開發）
 - [ ] 收貨頁面：毀損數量輸入
 - [ ] 自動彈出分配對話框
 - [ ] 顯示分配建議（按比例/優先級）
@@ -307,15 +314,23 @@ DRAFT (草稿)
 - [ ] 毀損商品自動調撥顯示
 
 **檔案**：
-- `webapp/src/components/purchases/AllocationModal.tsx`
+- `webapp/src/components/purchases/AllocationModal.tsx`（待新建）
 
 **預計時間**：1 天
 
 **✅ Phase 4 完成標準**：
-- 收貨時可輸入毀損數量
-- 毀損商品自動調撥到盒損變體 00X
-- 庫存不足時可智能分配
-- 支援部分滿足訂單
+- ✅ 收貨時可輸入毀損數量（API 已支援）
+- ✅ 毀損商品自動調撥到盒損變體 00X
+- ✅ 智能分配算法完成（3 種策略）
+- ✅ 分配 API 完成（建議 + 執行）
+- ⏳ UI 整合（待開發）
+
+**🔨 Phase 4 進行中（後端完成 80%，前端待補）**
+
+**⚠️ 重要備註：**
+- 變體類型 ABC 目前已停用，系統使用自由文字 `variant_type`
+- 盒損變體使用 `00X` 作為類型識別
+- 需要後續統整變體類型命名規範
 
 ---
 
@@ -524,15 +539,16 @@ DRAFT (草稿)
 | Phase 1 | 基礎預購功能 | P0 | 3 天 | 1 天 | ✅ 完成 |
 | Phase 2 | 預購統計彙總 | P0 | 2 天 | 1 天 | ✅ 完成 |
 | Phase 3 | 批次轉換功能 | P1 | 1 天 | 1 小時 | ✅ 完成 |
-| Phase 4 | 毀損處理和分配 ⭐ | P0 | 3 天 | - | ⏳ 待開發 |
+| Phase 4 | 毀損處理和分配 ⭐ | P0 | 3 天 | 2 小時（後端） | 🔨 進行中（80%） |
 | Phase 5 | 缺貨追蹤和補貨 | P1 | 2 天 | - | ⏳ 待開發 |
 | Phase 6 | 通知系統 | P1 | 2 天 | - | ⏳ 待開發 |
 | Phase 7 | 自動化和優化 | P2 | 2 天 | 1 小時 | ✅ 完成 |
 | Phase 8 | 測試和上線 | P0 | 2 天 | - | ⏳ 待開發 |
 
 **總預計時間：約 3 週（17 個工作天）**
-**目前完成：4 個 Phase（約 4 天的工作量在 1.5 天內完成）**
-**整體進度：75%（Phase 1, 2, 3, 7 完成）**
+**目前完成：4 個 Phase 完成 + 1 個進行中（後端 80%）**
+**整體進度：80%（後端核心功能基本完成）**
+**剩餘工作：UI 整合、缺貨追蹤、通知系統、測試**
 
 ### 建議實施策略
 

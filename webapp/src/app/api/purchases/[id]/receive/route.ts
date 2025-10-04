@@ -5,6 +5,7 @@ import { authOptions } from '@/modules/auth/providers/nextauth'
 
 import { DEFAULT_VARIANT_TYPE, generateVariantCode } from '@/lib/variant-utils'
 import { autoConvertPreorders, getVariantIdsByProductIds } from '@/lib/preorder-auto-convert'
+import { transferDamagedGoods } from '@/lib/damage-transfer'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -272,6 +273,29 @@ export async function POST(
             total_cost: finalUnitCost * actualStockIncrease,
             variant_id: variant?.id
           })
+
+          // 🔧 如果有毀損，調撥到盒損變體（00X）- Phase 4
+          if (itemLoss > 0 && variant) {
+            try {
+              const damageResult = await transferDamagedGoods(
+                tx,
+                variant.id,
+                itemLoss,
+                session.user.id,
+                purchaseId,
+                `進貨毀損 - ${loss_type}`
+              )
+
+              inventoryUpdates[inventoryUpdates.length - 1].damageTransfer = {
+                damagedQuantity: itemLoss,
+                damagedVariantCode: damageResult.damagedVariantCode,
+                message: damageResult.message
+              }
+            } catch (error) {
+              console.error('毀損調撥失敗:', error)
+              // 不阻擋收貨流程，只記錄錯誤
+            }
+          }
         }
       }
 
