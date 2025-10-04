@@ -46,6 +46,7 @@ export async function POST(
       if (sale.status === 'CONFIRMED') {
         for (const item of sale.items) {
           if (item.variant_id) {
+            // 1. 更新 ProductVariant（保持兼容性，未來可移除）
             await tx.productVariant.update({
               where: { id: item.variant_id },
               data: {
@@ -53,6 +54,31 @@ export async function POST(
                 available_stock: { increment: item.quantity }
               }
             })
+
+            // 2. 更新 Inventory 表（主要庫存來源）- FIFO 回滾
+            let remainingToRelease = item.quantity
+            const inventories = await tx.inventory.findMany({
+              where: {
+                variant_id: item.variant_id,
+                reserved: { gt: 0 }
+              },
+              orderBy: { created_at: 'asc' } // FIFO
+            })
+
+            for (const inv of inventories) {
+              if (remainingToRelease <= 0) break
+
+              const toRelease = Math.min(inv.reserved, remainingToRelease)
+              await tx.inventory.update({
+                where: { id: inv.id },
+                data: {
+                  reserved: { decrement: toRelease },
+                  available: { increment: toRelease }
+                }
+              })
+
+              remainingToRelease -= toRelease
+            }
           }
         }
       }

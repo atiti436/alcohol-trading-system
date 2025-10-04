@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
                 id: true,
                 name: true,
                 customer_code: true,
-                customer_level: true
+                tier: true
               }
             }
           }
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
             customer_id: customerId,
             customer_name: backorder.sale.customer.name,
             customer_code: backorder.sale.customer.customer_code,
-            customer_level: backorder.sale.customer.customer_level,
+            customer_tier: backorder.sale.customer.tier,
             total_shortage: 0,
             backorder_count: 0,
             product_count: 0,

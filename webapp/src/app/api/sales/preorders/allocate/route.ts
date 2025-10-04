@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            customer_level: true
+            tier: true
           }
         },
         items: {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     // 準備分配輸入數據
     const allocationInput = preorders.map(sale => {
       const quantity = sale.items.reduce((sum, item) => sum + item.quantity, 0)
-      const isVIP = sale.customer.customer_level === 'VIP'
+      const isVIP = sale.customer.tier === 'VIP'
 
       return {
         saleId: sale.id,
