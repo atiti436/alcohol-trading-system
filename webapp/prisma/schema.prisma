@@ -162,10 +162,27 @@ model ProductVariant {
   condition       String  @default("Normal")
 
   // 📦 庫存管理 (移至獨立 Inventory 表)
-  // 向下相容：保留這些欄位但標記為 deprecated
-  stock_quantity  Int @default(0) // @deprecated 請使用 Inventory 表
-  reserved_stock  Int @default(0) // @deprecated 請使用 Inventory 表
-  available_stock Int @default(0) // @deprecated 請使用 Inventory 表
+  // ⚠️ DEPRECATED - 2025-10-04 起庫存資訊統一使用 Inventory 表
+  //
+  // 背景：
+  // - 舊架構：庫存數據直接存在 ProductVariant
+  // - 新架構：庫存數據統一存在 Inventory 表（支援多倉庫）
+  // - 這些欄位保留以維持向後兼容，但不應再更新
+  //
+  // 使用方式：
+  // - 讀取：使用 getVariantInventorySummary() 從 Inventory 表計算
+  // - 寫入：直接操作 Inventory 表，不更新這些欄位
+  //
+  // 未來計劃：
+  // - Phase 1 (已完成): 停止寫入這些欄位
+  // - Phase 2 (未來): 考慮移除或設為 nullable
+  //
+  // @deprecated since 2025-10-04 (Issue #1)
+  // @see Inventory model
+  // @see getVariantInventorySummary in inventory-helpers.ts
+  stock_quantity  Int @default(0)
+  reserved_stock  Int @default(0)
+  available_stock Int @default(0)
 
   // ✅ 停用機制
   is_active Boolean @default(true)

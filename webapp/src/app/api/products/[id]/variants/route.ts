@@ -191,7 +191,7 @@ export async function POST(
 
     // 使用 transaction 確保 variant 和 inventory 同時創建
     const result = await prisma.$transaction(async (tx) => {
-      // 創建變體
+      // 創建變體（不再維護 stock_quantity，改用 Inventory 表）
       const variant = await tx.productVariant.create({
         data: {
           product_id: params.id,
@@ -203,8 +203,7 @@ export async function POST(
           investor_price: parseFloat(investor_price.toString()),
           actual_price: parseFloat(actual_price.toString()),
           current_price: parseFloat(current_price.toString()),
-          stock_quantity: parseInt(stock_quantity.toString(), 10),
-          // 移除 warehouse 欄位
+          // 🔧 移除 stock_quantity - 改用 Inventory 表管理
           ...otherFields
         }
       })
