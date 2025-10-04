@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Modal,
   Form,
@@ -81,19 +81,8 @@ export const AllocationModal: React.FC<AllocationModalProps> = ({
   const [editedAllocations, setEditedAllocations] = useState<PreorderItem[]>([])
   const [currentStats, setCurrentStats] = useState<AllocationStats | null>(null)
 
-  useEffect(() => {
-    if (visible && variantId) {
-      form.setFieldsValue({
-        strategy: 'PROPORTIONAL',
-        availableStock: availableStock
-      })
-      // 自動計算初始分配建議
-      handleCalculate('PROPORTIONAL')
-    }
-  }, [visible, variantId, availableStock, form])
-
   // 計算分配建議
-  const handleCalculate = async (strategy?: string) => {
+  const handleCalculate = useCallback(async (strategy?: string) => {
     if (!variantId) return
 
     setCalculating(true)
