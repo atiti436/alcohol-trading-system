@@ -115,7 +115,18 @@ export const AllocationModal: React.FC<AllocationModalProps> = ({
     } finally {
       setCalculating(false)
     }
-  }
+  }, [variantId, availableStock, form])
+
+  // 自動初始化
+  useEffect(() => {
+    if (visible && variantId) {
+      form.setFieldsValue({
+        strategy: 'PROPORTIONAL',
+        availableStock: availableStock
+      })
+      handleCalculate('PROPORTIONAL')
+    }
+  }, [visible, variantId, availableStock, form, handleCalculate])
 
   // 手動調整單筆分配數量
   const handleManualAdjust = (saleId: string, newAllocated: number) => {
