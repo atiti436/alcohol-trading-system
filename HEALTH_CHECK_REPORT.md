@@ -420,6 +420,24 @@ model BackorderTracking {
 
 ---
 
+### 額外加強（選項 1 + 2）✨
+
+**選項 1: 關鍵邊緣 API 修復**
+- [x] `products/[id]/variants/route.ts` - 新增變體時不再寫入 stock_quantity
+
+**選項 2: 文件與標記完善**
+- [x] `inventory-helpers.ts` - 添加完整 JSDoc 文件
+- [x] `schema.prisma` - 增強 deprecated 欄位註解
+- [x] 定義 TypeScript interface（VariantInventorySummary, ProductInventorySummary）
+- [x] 說明使用場景和範例代碼
+
+**成果**:
+- ✅ 新增變體時完全使用 Inventory 表
+- ✅ 開發者可透過 JSDoc 快速了解用途
+- ✅ schema.prisma 清楚標示 deprecated 欄位
+
+---
+
 ### 方案 A（完整，2週）- 第二階段
 
 #### 目標
@@ -603,9 +621,13 @@ export async function getProductInventorySummary(
 - **2025-10-04**: Issue #1 Day 1-3 完成（Claude 接手）
 - **2025-10-04**: Issue #1 Day 2-4 完成 - 核心 API 全部修復（Dashboard, Products, Inventory）
 - **2025-10-04**: Issue #1 Day 5 完成 - 前端組件更新完成 ✨
+- **2025-10-04**: 選項 1+2 完成 - 邊緣 API 修復 + 文件完善
 
 **報告完成時間**: 2025-10-04
 **修復進度**: 12/13 (92%)
-**Issue #1 進度**: ✅ 完成（100%）- 方案 C（務實 1週）全部完成
-**下次檢查建議**: 執行方案 A（完整 2週）處理邊緣 API
-**最新 Git Commit**: `3df4def`
+**Issue #1 進度**: ✅ 完成（100%）+ 加強版完成
+  - 方案 C（務實 1週）✅
+  - 選項 1: 關鍵邊緣 API ✅
+  - 選項 2: 文件與標記 ✅
+**下次檢查建議**: 系統已穩定，可選擇性執行方案 A 剩餘工作
+**最新 Git Commit**: `32d4b2d`
