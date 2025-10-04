@@ -1,0 +1,195 @@
+  ---
+  🤖 給 GPT-5 Codex 的完整指示
+
+  📝 任務描述
+
+  請執行「酒類貿易 ERP 系統」的雙重庫存統一重構（方案 C - 務實版）
+
+  專案位置: D:\claude-project\alcohol-trading-system
+
+  目標: 將所有庫存查詢從 ProductVariant.stock_quantity 改為從 Inventory 表匯總計算
+
+  詳細計劃: 請先閱讀 HEALTH_CHECK_REPORT.md 第 257-430 行的「問題 #1 詳細修復計劃」
+
+  ---
+  ⚠️ 重要原則
+
+  1. 保守執行：每次只修改 1-2 個檔案，修改後等待我確認
+  2. 不刪除舊欄位：保留 ProductVariant.stock_quantity，只改讀取邏輯
+  3. 雙寫維持：收貨/出貨仍要同時更新兩邊（向後兼容）
+  4. 測試優先：改完立即測試編譯是否通過
+
+  ---
+  📋 執行步驟（共 5 天）
+
+  Day 1（0.5 天）- 建立 Helper 函數
+
+  任務: 建立 webapp/src/lib/inventory-helpers.ts
+
+  內容:
+  import { PrismaClient } from '@prisma/client'
+
+  type PrismaTransaction = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>
+
+  /**
+   * 匯總變體在所有倉庫的庫存
+   * @param tx Prisma transaction 或 client
+   * @param variantId 變體 ID
+   * @returns 總庫存、可用、預留、分倉統計
+   */
+  export async function getVariantInventorySummary(
+    tx: PrismaTransaction,
+    variantId: string
+  ) {
+    const inventories = await tx.inventory.findMany({
+      where: { variant_id: variantId }
+    })
+
+    return {
+      total_quantity: inventories.reduce((sum, inv) => sum + inv.quantity, 0),
+      available: inventories.reduce((sum, inv) => sum + inv.available, 0),
+      reserved: inventories.reduce((sum, inv) => sum + inv.reserved, 0),
+      by_warehouse: {
+        COMPANY: inventories
+          .filter(inv => inv.warehouse === 'COMPANY')
+          .reduce((sum, inv) => sum + inv.quantity, 0),
+        PRIVATE: inventories
+          .filter(inv => inv.warehouse === 'PRIVATE')
+          .reduce((sum, inv) => sum + inv.quantity, 0)
+      }
+    }
+  }
+
+  /**
+   * 匯總產品（所有變體）的庫存
+   * @param tx Prisma transaction 或 client
+   * @param productId 產品 ID
+   * @returns 總庫存、可用、預留、變體數
+   */
+  export async function getProductInventorySummary(
+    tx: PrismaTransaction,
+    productId: string
+  ) {
+    const variants = await tx.productVariant.findMany({
+      where: { product_id: productId },
+      include: { inventory: true }
+    })
+
+    const allInventories = variants.flatMap(v => v.inventory)
+
+    return {
+      total_quantity: allInventories.reduce((sum, inv) => sum + inv.quantity, 0),
+      available: allInventories.reduce((sum, inv) => sum + inv.available, 0),
+      reserved: allInventories.reduce((sum, inv) => sum + inv.reserved, 0),
+      variant_count: variants.length
+    }
+  }
+
+  驗證: 執行 npm run build 確認無錯誤
+
+  ---
+  Day 2-3（2 天）- 核心 API 重構
+
+  修改順序（逐一進行，每改一個等我確認）:
+
+  1. webapp/src/app/api/products/route.ts
+
+  找到: 查詢產品的地方，使用 stock_quantity改為:
+  // 舊的（註解但保留）
+  // select: { stock_quantity: true }
+
+  // 新的
+  include: {
+    inventory: { select: { quantity: true, available: true } }
+  }
+
+  // 在返回前計算
+  const productsWithStock = products.map(p => ({
+    ...p,
+    total_stock: p.inventory?.reduce((sum, inv) => sum + inv.quantity, 0) || 0,
+    available_stock: p.inventory?.reduce((sum, inv) => sum + inv.available, 0) || 0
+  }))
+
+  2. webapp/src/app/api/products/search/route.ts
+
+  同上述邏輯
+
+  3. webapp/src/app/api/dashboard/route.ts
+
+  找到: 低庫存警報、庫存統計改為: 使用 getVariantInventorySummary 或 getProductInventorySummary
+
+  4. webapp/src/app/api/products/low-stock/route.ts
+
+  找到: where: { stock_quantity: { lt: minStock } }改為:
+  const variants = await prisma.productVariant.findMany({
+    include: { inventory: true, product: true }
+  })
+
+  // 在記憶體中過濾
+  const lowStockVariants = variants.filter(v => {
+    const totalStock = v.inventory.reduce((sum, inv) => sum + inv.quantity, 0)
+    return totalStock < (v.min_stock || 10)
+  })
+
+  ---
+  Day 4（1 天）- 前端組件更新
+
+  1. webapp/src/components/products/ProductSearchSelect.tsx
+
+  找到: 顯示 stock_quantity 的地方改為: 顯示 API 返回的 total_stock 或 available_stock
+
+  2. webapp/src/app/products/page.tsx
+
+  同上
+
+  3. webapp/src/components/inventory/VariantListView.tsx
+
+  同上
+
+  ---
+  Day 5（0.5 天）- 測試驗證
+
+  測試清單:
+  # 1. 編譯測試
+  npm run build
+
+  # 2. 啟動測試
+  npm run dev
+
+  # 3. 手動測試流程
+  - [ ] 開啟產品列表頁 /products - 庫存數字正確
+  - [ ] 開啟 Dashboard - 低庫存警報正確
+  - [ ] 搜尋產品 - 庫存顯示正確
+  - [ ] 進貨收貨 - 庫存增加（兩邊都要增加）
+  - [ ] 銷售出貨 - 庫存減少（兩邊都要減少）
+
+  如果測試失敗: 回報錯誤訊息，我會協助 debug
+
+  ---
+  🎯 成功標準
+
+  1. ✅ 所有 API 返回的庫存數字來自 Inventory 表
+  2. ✅ ProductVariant.stock_quantity 仍存在（不刪除）
+  3. ✅ 進貨/出貨仍雙寫兩邊（保持一致性）
+  4. ✅ 編譯無錯誤
+  5. ✅ 手動測試通過
+
+  ---
+  ❓ 問題處理
+
+  遇到以下情況請停下來問我:
+  1. 不確定某個檔案是否要改
+  2. 發現有其他檔案也用了 stock_quantity
+  3. 編譯出現錯誤不知道怎麼修
+  4. 測試失敗
+
+  ---
+  📊 進度回報格式
+
+  請每完成一個檔案就回報：
+  ✅ 已完成：webapp/src/lib/inventory-helpers.ts
+  - 建立 getVariantInventorySummary 函數
+  - 建立 getProductInventorySummary 函數
+  - 編譯測試：通過
+
+  ⏳ 下一步：修改 webapp/src/app/api/products/route.ts

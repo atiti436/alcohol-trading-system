@@ -148,6 +148,9 @@ export default function BackordersPage() {
 
       if (response.ok && result.success) {
         message.success('已標記為已解決')
+
+        // 短暫延遲確保資料庫事務完成
+        await new Promise(resolve => setTimeout(resolve, 300))
         await loadBackorders()
       } else {
         message.error(result.error || '操作失敗')
@@ -174,6 +177,9 @@ export default function BackordersPage() {
 
       if (response.ok && result.success) {
         message.success('已取消缺貨記錄')
+
+        // 短暫延遲確保資料庫事務完成
+        await new Promise(resolve => setTimeout(resolve, 300))
         await loadBackorders()
       } else {
         message.error(result.error || '操作失敗')
