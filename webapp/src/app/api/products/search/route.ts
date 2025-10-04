@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { getProductInventorySummary } from '@/lib/inventory-helpers'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -64,22 +65,29 @@ export async function GET(request: NextRequest) {
       ],
       include: {
         variants: {
-          // ✅ 移除庫存限制，報價單/採購單不需要庫存即可選擇
           select: {
             id: true,
             variant_code: true,
             variant_type: true,
             description: true,
             current_price: true,
-            stock_quantity: true,
-            available_stock: true,
             condition: true,
-            // 新增欄位以支援完整顯示
             volume_ml: true,
             alc_percentage: true,
             cost_price: true,
             investor_price: true,
-            actual_price: true
+            actual_price: true,
+            // 改用 Inventory 表查詢庫存
+            inventory: {
+              where: session.user.role === 'INVESTOR'
+                ? { warehouse: 'COMPANY' }
+                : undefined,
+              select: {
+                quantity: true,
+                available: true,
+                reserved: true
+              }
+            }
           },
           orderBy: { variant_code: 'asc' }
         },
@@ -91,8 +99,35 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // 計算每個產品的庫存（從 Inventory 表匯總）
+    const productsWithStock = products.map(product => {
+      const variantsWithStock = product.variants.map(v => {
+        const totalStock = v.inventory.reduce((sum, inv) => sum + inv.quantity, 0)
+        const availableStock = v.inventory.reduce((sum, inv) => sum + inv.available, 0)
+        const reservedStock = v.inventory.reduce((sum, inv) => sum + inv.reserved, 0)
+
+        return {
+          ...v,
+          total_stock: totalStock,
+          available_stock: availableStock,
+          reserved_stock: reservedStock
+        }
+      })
+
+      const productTotalStock = variantsWithStock.reduce((sum, v) => sum + v.total_stock, 0)
+      const productAvailableStock = variantsWithStock.reduce((sum, v) => sum + v.available_stock, 0)
+
+      return {
+        ...product,
+        variants: variantsWithStock,
+        total_stock: productTotalStock,
+        available_stock: productAvailableStock,
+        has_stock: productAvailableStock > 0
+      }
+    })
+
     // 🎯 智能排序：越匹配的越前面
-    const scoredProducts = products.map(product => {
+    const scoredProducts = productsWithStock.map(product => {
       let score = 0
 
       if (!isShowAll && query.trim()) {
@@ -140,7 +175,9 @@ export async function GET(request: NextRequest) {
         current_price: product.current_price,
         variants: product.variants,
         variant_count: product._count.variants,
-        has_stock: product.variants.length > 0,
+        total_stock: product.total_stock,
+        available_stock: product.available_stock,
+        has_stock: product.has_stock,
         // 🔍 搜尋匹配資訊
         match_info: {
           score: product.searchScore,
