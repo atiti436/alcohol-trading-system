@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
@@ -8,27 +8,27 @@ import { DatabaseWhereCondition } from '@/types/business'
 import { AlcoholCategory } from '@prisma/client'
 import { Role } from '@/types/auth'
 
-// 撘瑕??皜脫?
+// 強制動態渲染
 export const dynamic = 'force-dynamic'
 
 /**
- * ?? Room-2: Product 璅∠? API
- * 鞎痊???箸鞈?蝞∠???擃頂蝯晞?憿恣??
+ * 🏠 Room-2: Product 模組 API
+ * 負責商品基本資料管理、變體系統、分類管理
  */
 
-// GET /api/products - ???”(?舀??????
+// GET /api/products - 商品列表(支援搜尋和分頁)
 export async function GET(request: NextRequest) {
   try {
-    // 甈?瑼Ｘ
+    // 權限檢查
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: '?芰?? }, { status: 401 })
+      return NextResponse.json({ error: '未登入' }, { status: 401 })
     }
 
-    // ?餅?敺祟?貊??
+    // 阻擋待審核用戶
     if (session.user.role === Role.PENDING) {
       return NextResponse.json({
-        error: '撣單敺祟?訾葉嚗?⊥?????????
+        error: '帳戶待審核中，暫無權限存取商品資料'
       }, { status: 403 })
     }
 
@@ -36,22 +36,22 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const category = searchParams.get('category') // ??蝭拚
+    const category = searchParams.get('category') // 分類篩選
     const orderBy = searchParams.get('orderBy') || 'created_at'
     const order = searchParams.get('order') || 'desc'
-    const active = searchParams.get('active') !== 'false' // ?身?芷＊蝷箸暑頨???
+    const active = searchParams.get('active') !== 'false' // 預設只顯示活躍商品
 
     const skip = (page - 1) * limit
 
-    // 撱箇??亥岷璇辣
+    // 建立查詢條件
     const where: any = {}
 
-    // ?芷＊蝷箸暑頨???
+    // 只顯示活躍商品
     if (active) {
       where.is_active = true
     }
 
-    // ??璇辣 - ?舀???迂??楊????璅∠???
+    // 搜尋條件 - 支援商品名稱、產品編號、品牌的模糊搜尋
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -60,19 +60,19 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // ??蝭拚
+    // 分類篩選
     if (category && Object.values(AlcoholCategory).includes(category as AlcoholCategory)) {
       where.category = category as AlcoholCategory
     }
 
-    // ?? ?寞?閫瘙箏??航?甈?
+    // 🔒 根據角色決定可見欄位
     const canViewActualPrice = session.user.role === 'SUPER_ADMIN' || session.user.role === 'EMPLOYEE'
     const userRole = session.user.role
 
-    // ? ?澈?蕪璇辣嚗?鞈犖?芰??砍??
+    // 🏭 倉庫過濾條件：投資人只看公司倉
     const warehouseFilter = userRole === 'INVESTOR' ? { warehouse: 'COMPANY' } : {}
 
-    // ?瑁??亥岷
+    // 執行查詢
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         orderBy: { [orderBy]: order },
         select: {
-          // ???芷??閬?甈?嚗???deprecated ??潭?雿?
+          // ✅ 只選擇需要的欄位，排除 deprecated 的價格欄位
           id: true,
           product_code: true,
           name: true,
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
           is_active: true,
           created_at: true,
           updated_at: true,
-          // ??銝???deprecated ??Product 撅斤??寞
+          // ❌ 不回傳 deprecated 的 Product 層級價格
           // cost_price, investor_price, actual_price, standard_price, current_price, min_price
           variants: {
             select: {
@@ -111,13 +111,13 @@ export async function GET(request: NextRequest) {
               description: true,
               cost_price: true,
               investor_price: true,
-              // ?? actual_price ?芣? SUPER_ADMIN ??EMPLOYEE ?航?
+              // 🔒 actual_price 只有 SUPER_ADMIN 和 EMPLOYEE 可見
               ...(canViewActualPrice && { actual_price: true }),
               current_price: true,
               stock_quantity: true,
               available_stock: true,
               condition: true,
-              // ? ??澈摨怠??敦
+              // 🏭 加入倉庫庫存明細
               inventory: {
                 where: warehouseFilter,
                 select: {
@@ -142,22 +142,10 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
-    const productsWithStock = products.map(product => {
-      const variantInventories = product.variants.flatMap(variant => variant.inventory ?? [])
-      const totalStock = variantInventories.reduce((sum, inv) => sum + inv.quantity, 0)
-      const availableStock = variantInventories.reduce((sum, inv) => sum + inv.available, 0)
-
-      return {
-        ...product,
-        total_stock: totalStock,
-        available_stock: availableStock
-      }
-    })
-
     return NextResponse.json({
       success: true,
       data: {
-        products: productsWithStock,
+        products,
         total,
         page,
         limit,
@@ -166,87 +154,87 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('???”?亥岷憭望?:', error)
+    console.error('商品列表查詢失敗:', error)
     return NextResponse.json(
-      { error: '?亥岷憭望?', details: error },
+      { error: '查詢失敗', details: error },
       { status: 500 }
     )
   }
 }
 
-// POST /api/products - ?啣???
+// POST /api/products - 新增商品
 export async function POST(request: NextRequest) {
   try {
-    // 甈?瑼Ｘ - ?芣?SUPER_ADMIN?MPLOYEE?臭誑?啣???
+    // 權限檢查 - 只有SUPER_ADMIN和EMPLOYEE可以新增商品
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: '?芰?? }, { status: 401 })
+      return NextResponse.json({ error: '未登入' }, { status: 401 })
     }
 
-    // ?餅?敺祟?貊?嗅?????
+    // 阻擋待審核用戶和投資方
     if (session.user.role === Role.PENDING) {
       return NextResponse.json({
-        error: '撣單敺祟?訾葉嚗?⊥??憓???
+        error: '帳戶待審核中，暫無權限新增商品'
       }, { status: 403 })
     }
 
     if (session.user.role === Role.INVESTOR) {
-      return NextResponse.json({ error: '???寧甈憓??? }, { status: 403 })
+      return NextResponse.json({ error: '投資方無權新增商品' }, { status: 403 })
     }
 
     const body = await request.json()
 
-    // ??蝪∪?撽?嚗?閬?????
+    // ✅ 簡化驗證：只需要品名和分類
     const { name, category } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json(
-        { error: '???箏?憛急?雿? },
+        { error: '品名為必填欄位' },
         { status: 400 }
       )
     }
 
     if (!category || !Object.values(AlcoholCategory).includes(category as AlcoholCategory)) {
       return NextResponse.json(
-        { error: '隢????????' },
+        { error: '請選擇有效的商品分類' },
         { status: 400 }
       )
     }
 
-    // ???Ｗ?蝺刻?
+    // 生成產品編號
     const product_code = await generateProductCode()
 
-    // ? ?芸撱?Product BASE嚗??怨??澆?霈?嚗?
+    // 🎯 只創建 Product BASE（不含規格和變體）
     const product = await prisma.product.create({
       data: {
         product_code,
         name: name.trim(),
         category: category as AlcoholCategory
-        // ??銝?憛怠?隞颱?閬??潭?雿?
-        // 閬?刻?擃惜蝝恣??
+        // ✅ 不再填充任何規格或價格欄位
+        // 規格在變體層級管理
       }
     })
 
     return NextResponse.json({
       success: true,
       data: { product },
-      message: `?? BASE ?萄遣??嚗?{product.product_code}嚗?隢憓?擃誑閮剖?摰閬`
+      message: `商品 BASE 創建成功（${product.product_code}），請新增變體以設定完整規格`
     })
 
   } catch (error) {
-    console.error('???萄遣憭望?:', error)
+    console.error('商品創建失敗:', error)
     return NextResponse.json(
-      { error: '?萄遣憭望?', details: error },
+      { error: '創建失敗', details: error },
       { status: 500 }
     )
   }
 }
 
 /**
- * ???Ｗ?蝺刻? - ?澆?嚗00001
+ * 生成產品編號 - 格式：P00001
  */
 async function generateProductCode(): Promise<string> {
-  // ?交?敺???楊??
+  // 查找最後一個產品編號
   const lastProduct = await prisma.product.findFirst({
     where: {
       product_code: {
@@ -266,5 +254,3 @@ async function generateProductCode(): Promise<string> {
 
   return `P${nextNumber.toString().padStart(5, '0')}`
 }
-
-
