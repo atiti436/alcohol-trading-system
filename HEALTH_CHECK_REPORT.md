@@ -599,6 +599,87 @@ export async function getProductInventorySummary(
 
 ---
 
+## 🖨️ 列印功能完整度檢查 (2025-10-05)
+
+### 檢查結果
+
+| 功能 | 狀態 | 說明 |
+|------|------|------|
+| **公司資訊設定** | | |
+| `/settings/company` 頁面 | ✅ | 頁面完整，API 正常 |
+| `/settings` 入口 | ✅ | 已新增「公司資訊」分頁 |
+| 資料庫儲存 | ✅ | CompanySettings 表完整 |
+| Logo 上傳 | ❌ | **缺少此功能** |
+| **出貨單列印** | | |
+| 列印按鈕 | ✅ | 「出貨並列印」+「重新列印」 |
+| 套用公司資訊 | ✅ | `DocumentHeader` 自動載入 |
+| 格式專業 | ✅ | A4 專業排版 + CSS |
+| **採購單列印** | | |
+| 列印按鈕 | ❌ | **無此功能** |
+| 套用公司資訊 | ❌ | **無此功能** |
+| 格式專業 | ❌ | **無此功能** |
+| **銷貨單列印** | | |
+| 列印按鈕 | ✅ | 與出貨單共用 |
+| 套用公司資訊 | ✅ | 使用 `DocumentHeader` |
+| 格式專業 | ✅ | A4 專業排版 |
+| **報價單列印** | | |
+| 列印按鈕 | ⚠️ | 需確認 |
+| 套用公司資訊 | ⚠️ | 需確認 |
+
+### 待補充功能清單
+
+**優先級 P0（必做）**：
+1. **採購單列印功能** - 下單給供應商用，必須專業
+   - 新增列印按鈕到採購管理頁面
+   - 建立採購單列印模板（含公司抬頭）
+   - 套用 `PrintableDocument` 組件
+
+2. **Logo 上傳功能** - 讓列印單據可顯示公司 Logo
+   - CompanySettings 表新增 `logo_url` 欄位
+   - 公司設定頁面新增圖片上傳組件
+   - DocumentHeader 組件整合 Logo 顯示
+
+**優先級 P1（重要）**：
+3. **報價單列印確認** - 確認現有功能是否完整
+4. **收款收據列印** - 收錢後給客戶的證明
+5. **銷貨單獨立版** - 如果和出貨單需要區分
+
+**優先級 P2（可選）**：
+6. **收貨單列印** - 內部驗收用
+7. **庫存盤點單列印** - 盤點時列印清單
+
+### 技術架構（已存在）
+
+系統已建立完整的列印基礎架構：
+- ✅ `PrintableDocument` 組件 - 統一列印容器
+- ✅ `DocumentHeader` 組件 - 自動載入公司設定
+- ✅ `useCompanySettings` Hook - 動態獲取公司資訊
+- ✅ 專用列印 CSS (`shipping-print.css`, `statements-print.css`)
+- ✅ CompanySettings API (`/api/settings/company`)
+
+**複用方式**：
+```typescript
+// 在任何頁面加入列印功能
+import { PrintableDocument } from '@/components/common/PrintableDocument'
+
+<PrintableDocument
+  visible={printVisible}
+  onClose={() => setPrintVisible(false)}
+  documentType="PURCHASE_ORDER" // 新增類型
+  documentNumber={purchase.purchase_code}
+  title="採購單"
+>
+  {/* 列印內容 */}
+</PrintableDocument>
+```
+
+**估計工時**：
+- 採購單列印：2-3 小時
+- Logo 上傳功能：3-4 小時
+- 其他單據列印：各 1-2 小時
+
+---
+
 ## 📝 備註
 
 - 本報告基於靜態代碼分析和業務邏輯審查
@@ -622,12 +703,17 @@ export async function getProductInventorySummary(
 - **2025-10-04**: Issue #1 Day 2-4 完成 - 核心 API 全部修復（Dashboard, Products, Inventory）
 - **2025-10-04**: Issue #1 Day 5 完成 - 前端組件更新完成 ✨
 - **2025-10-04**: 選項 1+2 完成 - 邊緣 API 修復 + 文件完善
+- **2025-10-05**: 新增列印功能完整度檢查
+  - ✅ 在 `/settings` 加入「公司資訊」分頁入口
+  - 📋 記錄列印功能缺失清單（採購單列印、Logo 上傳等）
+  - 📝 建立待補充功能優先級列表
 
-**報告完成時間**: 2025-10-04
+**報告完成時間**: 2025-10-05
 **修復進度**: 12/13 (92%)
 **Issue #1 進度**: ✅ 完成（100%）+ 加強版完成
   - 方案 C（務實 1週）✅
   - 選項 1: 關鍵邊緣 API ✅
   - 選項 2: 文件與標記 ✅
+**新增檢查**: 列印功能完整度（發現 2 項 P0 缺失）
 **下次檢查建議**: 系統已穩定，可選擇性執行方案 A 剩餘工作
-**最新 Git Commit**: `32d4b2d`
+**最新 Git Commit**: `b760b22` (文檔整合)

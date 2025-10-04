@@ -8,7 +8,8 @@ import {
   BellOutlined,
   DatabaseOutlined,
   UserOutlined,
-  LockOutlined
+  LockOutlined,
+  BankOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -90,8 +91,22 @@ export default function SettingsPage() {
         defaultActiveKey={activeTab}
         activeKey={activeTab}
         type="card"
-        onChange={(key) => router.push(`/settings?tab=${key}`)}
+        onChange={(key) => {
+          if (key === 'company') {
+            router.push('/settings/company')
+          } else {
+            router.push(`/settings?tab=${key}`)
+          }
+        }}
       >
+        {/* 公司資訊 */}
+        <TabPane tab={
+          <span>
+            <BankOutlined style={{ marginRight: 8 }} />
+            公司資訊
+          </span>
+        } key="company" />
+
         {/* 一般設定 */}
         <TabPane tab="一般設定" key="general">
           <Row gutter={[24, 24]}>
