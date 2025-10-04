@@ -42,6 +42,7 @@ import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components
 import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
 import { CreatePurchaseRequest } from '@/types/room-2'
 import { PurchaseOrderModal } from '@/components/purchases/PurchaseOrderModal'
+import { ReceiveGoodsModal } from '@/components/purchases/ReceiveGoodsModal'
 
 const { Search } = Input
 const { Option } = Select
@@ -112,6 +113,7 @@ export default function PurchasesPage() {
   const [viewModalVisible, setViewModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [receiveModeVisible, setReceiveModeVisible] = useState(false)
+  const [receiveGoodsVisible, setReceiveGoodsVisible] = useState(false)
   const [selectedForReceive, setSelectedForReceive] = useState<Purchase | null>(null)
 
   // 載入採購單列表
@@ -465,46 +467,58 @@ export default function PurchasesPage() {
     }
   }
 
-  // 處理收貨作業
-  const handleReceive = async (purchase: Purchase) => {
-    const actionKey = `receive-${purchase.id}`
+  // 處理收貨作業（完整版，包含毀損處理）
+  const handleReceive = async (receiveData: any) => {
+    if (!selectedForReceive) return
+
+    const actionKey = `receive-${selectedForReceive.id}`
     setActionLoading(prev => ({ ...prev, [actionKey]: true }))
 
     try {
-      // 簡化收貨：假設全部數量都正常收到，沒有損耗
-      const receiveData = {
-        actual_quantity: purchase.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
-        exchange_rate: purchase.exchangeRate || 1.0,
-        loss_type: 'NONE',
-        loss_quantity: 0,
-        inspection_fee: 0,
-        allocation_method: 'BY_AMOUNT',
-        additional_costs: []
-      }
-
-      console.log('收貨數據:', receiveData) // 調試輸出
-
-      const response = await fetch(`/api/purchases/${purchase.id}/receive`, {
+      const response = await fetch(`/api/purchases/${selectedForReceive.id}/receive`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(receiveData)
+        body: JSON.stringify({
+          ...receiveData,
+          additional_costs: receiveData.additional_costs || []
+        })
       })
 
       const result = await response.json()
-      console.log('收貨API回應:', result) // 調試輸出
 
       if (response.ok && result.success) {
-        message.success('收貨成功，庫存已更新')
-        // 確保同步建立/更新進貨記錄（若尚未建立，允許在 RECEIVED 狀態建立）
+        // 顯示詳細成功訊息
+        let successMsg = '收貨成功，庫存已更新'
+
+        if (result.damage_transfer) {
+          successMsg += `\n毀損商品已調撥至盒損變體（${result.damage_transfer.damaged_quantity} 件）`
+        }
+
+        if (result.backorder_fulfilled > 0) {
+          successMsg += `\n自動補足 ${result.backorder_fulfilled} 筆缺貨訂單`
+        }
+
+        if (result.preorder_converted > 0) {
+          successMsg += `\n自動轉換 ${result.preorder_converted} 筆預購單`
+        }
+
+        message.success(successMsg)
+
+        // 關閉對話框
+        setReceiveModeVisible(false)
+        setSelectedForReceive(null)
+
+        // 確保同步建立/更新進貨記錄
         try {
           await fetch('/api/imports/from-purchase', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ purchaseId: purchase.id })
+            body: JSON.stringify({ purchaseId: selectedForReceive.id })
           })
         } catch {}
+
         await loadPurchases(false) // 重新載入列表
       } else {
         console.error('收貨失敗:', result.error)
@@ -579,18 +593,10 @@ export default function PurchasesPage() {
     }
   }
 
-  // 國內（免報單）：直接收貨
-  const handleReceiveDomesticMode = async () => {
-    if (!selectedForReceive) return
-    const purchase = selectedForReceive
-    const actionKey = `receive-domestic-${purchase.id}`
-    setActionLoading(prev => ({ ...prev, [actionKey]: true }))
-    try {
-      await handleReceive(purchase)
-      setReceiveModeVisible(false)
-    } finally {
-      setActionLoading(prev => ({ ...prev, [actionKey]: false }))
-    }
+  // 國內（免報單）：開啟收貨對話框
+  const handleReceiveDomesticMode = () => {
+    setReceiveModeVisible(false)
+    setReceiveGoodsVisible(true)
   }
 
   // 處理刪除
@@ -804,6 +810,18 @@ export default function PurchasesPage() {
           </Space>
         </div>
       </Modal>
+
+      {/* 收貨對話框 */}
+      <ReceiveGoodsModal
+        visible={receiveGoodsVisible}
+        purchase={selectedForReceive}
+        onCancel={() => {
+          setReceiveGoodsVisible(false)
+          setSelectedForReceive(null)
+        }}
+        onSubmit={handleReceive}
+        loading={actionLoading[`receive-${selectedForReceive?.id}`]}
+      />
 
       {/* 查看詳情Modal */}
       <Modal
