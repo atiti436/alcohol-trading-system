@@ -436,14 +436,16 @@ export default function ImportsPage() {
               </Tooltip>
             )}
 
-            {(record.status === 'PROCESSING' || record.status === 'CUSTOMS_CLEARED') && (
+            {(record.status === 'PROCESSING' || record.status === 'CUSTOMS_CLEARED' || record.status === 'RECEIVED') && (
               <Tooltip title="收貨入庫">
                 <Button
                   icon={<CheckCircleOutlined />}
                   size="small"
                   type="primary"
                   onClick={() => handleReceiveImport(record)}
-                />
+                >
+                  收貨
+                </Button>
               </Tooltip>
             )}
           </Space>
