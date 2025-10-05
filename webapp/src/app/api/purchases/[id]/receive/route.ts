@@ -242,7 +242,9 @@ export async function POST(
                   stock_quantity: 0,
                   reserved_stock: 0,
                   available_stock: 0,
-                  weight_kg: item.weight_kg || 0
+                  weight_kg: item.weight_kg || 0,
+                  volume_ml: item.product?.volume_ml || 700, // 預設 700ml
+                  alc_percentage: item.product?.alc_percentage || 40.0 // 預設 40%
                 }
               })
             }
