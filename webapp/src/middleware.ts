@@ -15,7 +15,7 @@ const rateLimitBuckets: Map<string, { count: number; resetAt: number }> =
 ;(globalThis as any).__globalRateBuckets = rateLimitBuckets
 
 export function middleware(request: NextRequest) {
-  const { pathname, origin: reqOrigin } = new URL(request.url)
+  const { pathname } = new URL(request.url)
   const method = request.method.toUpperCase()
 
   // 🔒 0. HTTPS 強制跳轉（僅生產環境）
@@ -29,7 +29,7 @@ export function middleware(request: NextRequest) {
 
   // 🔒 1. CORS 保護（只檢查寫入操作）
   if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
-    const corsError = checkCORS(request, reqOrigin)
+    const corsError = checkCORS(request)
     if (corsError) return corsError
   }
 
@@ -47,16 +47,16 @@ export function middleware(request: NextRequest) {
 /**
  * CORS 檢查 - 確保請求來自允許的來源
  */
-function checkCORS(request: NextRequest, reqOrigin: string): NextResponse | null {
+function checkCORS(request: NextRequest): NextResponse | null {
   const origin = request.headers.get('origin') || ''
   const allowedOrigin = (process.env.NEXTAUTH_URL || '').replace(/\/$/, '')
 
   // 本地開發或未設定環境變數時跳過
   if (!origin || !allowedOrigin) return null
 
-  // 檢查來源是否匹配
-  if (origin !== allowedOrigin || reqOrigin !== allowedOrigin) {
-    console.warn(`🚨 CORS blocked: ${origin} -> ${reqOrigin}`)
+  // 只檢查 Origin header（瀏覽器自動帶入）
+  if (origin !== allowedOrigin) {
+    console.warn(`🚨 CORS blocked: ${origin} (expected: ${allowedOrigin})`)
     return NextResponse.json(
       { error: 'Cross-origin request blocked' },
       { status: 403 }
