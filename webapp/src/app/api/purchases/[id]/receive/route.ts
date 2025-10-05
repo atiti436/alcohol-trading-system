@@ -31,6 +31,12 @@ export async function POST(
     const purchaseId = params.id
     const body = await request.json()
 
+    // 🐛 Debug: 記錄請求參數
+    console.log('[收貨請求]', {
+      purchaseId,
+      body: JSON.stringify(body, null, 2)
+    })
+
     const {
       actual_quantity, // 實際收到數量
       exchange_rate, // 實際匯率
@@ -648,10 +654,27 @@ export async function POST(
 
   } catch (error) {
     console.error('收貨處理失敗:', error)
+
+    // 詳細錯誤訊息
+    let errorMessage = '未知錯誤'
+    let errorStack = ''
+
+    if (error instanceof Error) {
+      errorMessage = error.message
+      errorStack = error.stack || ''
+    }
+
+    console.error('錯誤詳情:', {
+      message: errorMessage,
+      stack: errorStack,
+      error: error
+    })
+
     return NextResponse.json(
       {
         error: '收貨處理失敗',
-        details: error instanceof Error ? error.message : '未知錯誤'
+        details: errorMessage,
+        stack: process.env.NODE_ENV === 'development' ? errorStack : undefined
       },
       { status: 500 }
     )
