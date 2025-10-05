@@ -65,7 +65,9 @@ export async function POST(
       return NextResponse.json({ error: '採購單不存在' }, { status: 404 })
     }
 
-    if (purchase.status !== 'CONFIRMED') {
+    // 🔧 臨時修復：允許 CONFIRMED 和 RECEIVED 狀態都能收貨（支持分批收貨）
+    // TODO: 未來改用新版 Import 系統的獨立收貨流程
+    if (purchase.status !== 'CONFIRMED' && purchase.status !== 'RECEIVED') {
       return NextResponse.json({
         error: `採購單狀態為 ${purchase.status}，必須先確認採購單才能收貨`
       }, { status: 400 })

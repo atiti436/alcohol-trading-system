@@ -80,19 +80,19 @@ enum ApCategory {
 model Product {
   id           String          @id @default(cuid())
   product_code String          @unique
-  name         String          // 品名（例如：山崎18年）
+  name         String // 品名（例如：山崎18年）
   category     AlcoholCategory // 分類保留在 Product 層級（整體分類）
 
   // ⚠️ DEPRECATED - 2025-10-01 起規格資訊移至 ProductVariant
   // Product 只是品牌/系列容器，具體規格在變體層級
-  volume_ml           Int?    // @deprecated 移至 ProductVariant
-  alc_percentage      Float?  // @deprecated 移至 ProductVariant
-  weight_kg           Float?  // @deprecated 移至 ProductVariant
-  package_weight_kg   Float?  // @deprecated 移至 ProductVariant
-  total_weight_kg     Float?  // @deprecated 移至 ProductVariant
-  has_box             Boolean @default(false) // @deprecated 移至 ProductVariant
-  has_accessories     Boolean @default(false) // @deprecated 移至 ProductVariant
-  accessory_weight_kg Float?  // @deprecated 移至 ProductVariant
+  volume_ml           Int? // @deprecated 移至 ProductVariant
+  alc_percentage      Float? // @deprecated 移至 ProductVariant
+  weight_kg           Float? // @deprecated 移至 ProductVariant
+  package_weight_kg   Float? // @deprecated 移至 ProductVariant
+  total_weight_kg     Float? // @deprecated 移至 ProductVariant
+  has_box             Boolean  @default(false) // @deprecated 移至 ProductVariant
+  has_accessories     Boolean  @default(false) // @deprecated 移至 ProductVariant
+  accessory_weight_kg Float? // @deprecated 移至 ProductVariant
   accessories         String[] // @deprecated 移至 ProductVariant
   hs_code             String? // @deprecated 移至 ProductVariant
   supplier            String? // @deprecated 移至 ProductVariant
@@ -130,16 +130,16 @@ model ProductVariant {
   description  String // 完整描述
 
   // 🍷 酒類規格（從 Product 移至 Variant）
-  volume_ml      Int   // 容量（毫升）- 每個變體可能不同
+  volume_ml      Int // 容量（毫升）- 每個變體可能不同
   alc_percentage Float // 酒精濃度（%）- 每個變體可能不同
 
   // 📦 重量與包裝（從 Product 移至 Variant）
-  weight_kg           Float    // 空瓶重量（公斤）
-  package_weight_kg   Float?   // 外盒重量（公斤）
-  total_weight_kg     Float?   // 總重量（用於空瓶申報）
+  weight_kg           Float // 空瓶重量（公斤）
+  package_weight_kg   Float? // 外盒重量（公斤）
+  total_weight_kg     Float? // 總重量（用於空瓶申報）
   has_box             Boolean  @default(false) // 是否有外盒
   has_accessories     Boolean  @default(false) // 是否有附件
-  accessory_weight_kg Float?   // 附件重量（公斤）
+  accessory_weight_kg Float? // 附件重量（公斤）
   accessories         String[] // 附件清單（例如：["小卡", "證書", "木盒"]）
 
   // 🏷️ 稅則與供應商（從 Product 移至 Variant）
@@ -149,10 +149,10 @@ model ProductVariant {
   expiry_date        String? // 到期日期
 
   // 🎯 三層價格架構
-  cost_price     Float @default(0) // 成本價（真實成本）
-  investor_price Float @default(0) // 投資方期望售價（INVESTOR 可見可改）
-  actual_price   Float @default(0) // 實際售價（僅 SUPER_ADMIN 可見可改）
-  current_price  Float @default(0) // 顯示用價格（向下相容）
+  cost_price     Float  @default(0) // 成本價（真實成本）
+  investor_price Float  @default(0) // 投資方期望售價（INVESTOR 可見可改）
+  actual_price   Float  @default(0) // 實際售價（僅 SUPER_ADMIN 可見可改）
+  current_price  Float  @default(0) // 顯示用價格（向下相容）
   base_price     Float? // 向下相容（保留舊資料）
 
   discount_rate   Float?
@@ -201,7 +201,7 @@ model ProductVariant {
   target_transfers    StockTransfer[]     @relation("TargetVariant")
   import_items        ImportItem[]
   backorder_trackings BackorderTracking[] // 🆕 缺貨追蹤
-  purchase_items      PurchaseItem[]      // 🆕 採購明細
+  purchase_items      PurchaseItem[] // 🆕 採購明細
 
   @@map("product_variants")
 }
@@ -213,12 +213,12 @@ model Inventory {
   warehouse  Warehouse // COMPANY 或 PRIVATE
 
   // 📦 庫存數量
-  quantity        Int     @default(0) // 總庫存
-  reserved        Int     @default(0) // 已預留（訂單鎖定）
-  available       Int     @default(0) // 可售庫存 = quantity - reserved
+  quantity  Int @default(0) // 總庫存
+  reserved  Int @default(0) // 已預留（訂單鎖定）
+  available Int @default(0) // 可售庫存 = quantity - reserved
 
   // 💰 成本價（加權平均）
-  cost_price      Decimal @default(0) @db.Decimal(10, 2)
+  cost_price Decimal @default(0) @db.Decimal(10, 2)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -307,7 +307,7 @@ model Purchase {
 }
 
 model PurchaseItem {
-  id               String   @id @default(cuid())
+  id               String          @id @default(cuid())
   purchase_id      String
   product_id       String?
   variant_id       String?
@@ -321,8 +321,8 @@ model PurchaseItem {
   alc_percentage   Float?
   volume_ml        Int?
   weight_kg        Float?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
   product          Product?        @relation(fields: [product_id], references: [id])
   variant          ProductVariant? @relation(fields: [variant_id], references: [id])
   purchase         Purchase        @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
@@ -363,52 +363,52 @@ model AdditionalCost {
 }
 
 model Sale {
-  id                   String               @id @default(cuid())
-  sale_number          String               @unique
-  customer_id          String
-  total_amount         Float
-  actual_amount        Float?
-  commission           Float?
-  funding_source       String
-  payment_terms        PaymentTerms         @default(CASH)
-  is_paid              Boolean              @default(false)
-  paid_at              DateTime?
-  due_date             DateTime?
-  notes                String?
-  created_by           String
-  created_at           DateTime             @default(now())
-  updated_at           DateTime             @updatedAt
-  confirmed_at         DateTime?
-  confirmed_by         String?
-  status               SaleStatus           @default(DRAFT)
+  id             String       @id @default(cuid())
+  sale_number    String       @unique
+  customer_id    String
+  total_amount   Float
+  actual_amount  Float?
+  commission     Float?
+  funding_source String
+  payment_terms  PaymentTerms @default(CASH)
+  is_paid        Boolean      @default(false)
+  paid_at        DateTime?
+  due_date       DateTime?
+  notes          String?
+  created_by     String
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+  confirmed_at   DateTime?
+  confirmed_by   String?
+  status         SaleStatus   @default(DRAFT)
 
   // 🆕 預購相關欄位
-  is_preorder              Boolean   @default(false)
-  expected_arrival_date    DateTime? // 預計到貨日
-  preorder_notes           String?   // 預購備註
+  is_preorder           Boolean   @default(false)
+  expected_arrival_date DateTime? // 預計到貨日
+  preorder_notes        String? // 預購備註
 
   // 🆕 分配相關欄位
-  allocated_quantity       Int?      // 已分配數量
-  shortage_quantity        Int?      // 缺貨數量
-  allocation_priority      Float?    // 分配優先級分數
-  allocation_notes         String?   // 分配備註/說明
+  allocated_quantity  Int? // 已分配數量
+  shortage_quantity   Int? // 缺貨數量
+  allocation_priority Float? // 分配優先級分數
+  allocation_notes    String? // 分配備註/說明
 
   // 🆕 轉換追蹤
-  converted_at            DateTime? // 預購轉正式訂單時間
-  converted_by            String?   // 轉換操作人
+  converted_at DateTime? // 預購轉正式訂單時間
+  converted_by String? // 轉換操作人
 
   // 🆕 訂單拆分（用於部分滿足）
-  parent_sale_id          String?   // 父訂單ID
-  child_sales             Sale[]    @relation("SaleSplit")
-  parent_sale             Sale?     @relation("SaleSplit", fields: [parent_sale_id], references: [id], onDelete: SetNull)
+  parent_sale_id String? // 父訂單ID
+  child_sales    Sale[]  @relation("SaleSplit")
+  parent_sale    Sale?   @relation("SaleSplit", fields: [parent_sale_id], references: [id], onDelete: SetNull)
 
   accounts_receivables AccountsReceivable[]
   items                SaleItem[]
   creator              User                 @relation(fields: [created_by], references: [id])
   customer             Customer             @relation(fields: [customer_id], references: [id])
   shipping_orders      ShippingOrder[]
-  backorder_trackings  BackorderTracking[]  // 🆕 缺貨追蹤
-  quotations           Quotation[]          // 🆕 關聯報價單（反向）
+  backorder_trackings  BackorderTracking[] // 🆕 缺貨追蹤
+  quotations           Quotation[] // 🆕 關聯報價單（反向）
 
   @@index([parent_sale_id])
   @@index([is_preorder])
@@ -576,7 +576,7 @@ model Quotation {
   quoted_by     String
   source        String          @default("WEB")
   line_user_id  String?
-  sale_id       String?         // 關聯銷售單 (轉單追蹤)
+  sale_id       String? // 關聯銷售單 (轉單追蹤)
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
   customer      Customer        @relation(fields: [customer_id], references: [id])
@@ -592,9 +592,9 @@ model ShippingOrder {
   shipping_number  String         @unique
   sale_id          String
   customer_id      String
-  shipping_address String?        // 可選：親送時不需要地址
+  shipping_address String? // 可選：親送時不需要地址
   shipping_method  String         @default("DELIVERY") // DELIVERY(貨運) / HAND_DELIVERY(親送)
-  tracking_number  String?        // 可選：貨運單號
+  tracking_number  String? // 可選：貨運單號
   status           String         @default("PENDING")
   shipped_at       DateTime?
   delivered_at     DateTime?
@@ -698,10 +698,10 @@ enum PaymentTerms {
 
 enum SaleStatus {
   DRAFT
-  PREORDER              // 🆕 預購中（不檢查庫存）
+  PREORDER // 🆕 預購中（不檢查庫存）
   CONFIRMED
-  PARTIALLY_CONFIRMED   // 🆕 部分確認（庫存不足部分滿足）
-  BACKORDER            // 🆕 缺貨補單（等待補貨）
+  PARTIALLY_CONFIRMED // 🆕 部分確認（庫存不足部分滿足）
+  BACKORDER // 🆕 缺貨補單（等待補貨）
   SHIPPED
   DELIVERED
   CANCELLED
@@ -819,25 +819,25 @@ model CashFlowRecord {
 
 // 公司設定表
 model CompanySettings {
-  id            String   @id @default(cuid())
-  name          String // 公司名稱
-  englishName   String? // 英文名稱
-  address       String // 公司地址
-  phone         String // 聯絡電話
-  email         String? // 電子信箱
-  website       String? // 官方網站
-  taxId         String // 統一編號
-  bankName      String? // 銀行名稱
-  bankAccount   String? // 帳戶號碼
-  bankCode      String? // 銀行代碼
+  id           String   @id @default(cuid())
+  name         String // 公司名稱
+  englishName  String? // 英文名稱
+  address      String // 公司地址
+  phone        String // 聯絡電話
+  email        String? // 電子信箱
+  website      String? // 官方網站
+  taxId        String // 統一編號
+  bankName     String? // 銀行名稱
+  bankAccount  String? // 帳戶號碼
+  bankCode     String? // 銀行代碼
   // 現代聯絡方式
-  lineId        String? // LINE ID
-  customField1  String? // 自訂欄位1 (如 WeChat ID)
-  customField2  String? // 自訂欄位2 (如 Telegram)
+  lineId       String? // LINE ID
+  customField1 String? // 自訂欄位1 (如 WeChat ID)
+  customField2 String? // 自訂欄位2 (如 Telegram)
   // 列印設定
-  showBankInfo  Boolean @default(true) // 列印時顯示銀行帳號
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  showBankInfo Boolean  @default(true) // 列印時顯示銀行帳號
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   @@map("company_settings")
 }
@@ -1136,16 +1136,16 @@ model Notification {
 
 // 🎯 缺貨追蹤表
 model BackorderTracking {
-  id                String   @id @default(cuid())
+  id                String @id @default(cuid())
   sale_id           String
   variant_id        String
-  shortage_quantity Int      // 缺貨數量
-  priority          Float    @default(50.0) // 優先級（用於補貨排序，預設 50）
+  shortage_quantity Int // 缺貨數量
+  priority          Float  @default(50.0) // 優先級（用於補貨排序，預設 50）
 
   // 狀態追蹤
   status      String    @default("PENDING") // PENDING, RESOLVED, CANCELLED
   resolved_at DateTime? // 解決時間
-  resolved_by String?   // 解決人
+  resolved_by String? // 解決人
 
   // 備註
   notes String?
@@ -1170,7 +1170,7 @@ model NotificationLog {
   id          String  @id @default(cuid())
   sale_id     String?
   customer_id String?
-  type        String  // ARRIVAL, PARTIAL_ARRIVAL, BACKORDER_RESOLVED
+  type        String // ARRIVAL, PARTIAL_ARRIVAL, BACKORDER_RESOLVED
 
   // 通知管道
   channel String // LINE, EMAIL, SMS
