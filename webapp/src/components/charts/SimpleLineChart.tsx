@@ -35,22 +35,33 @@ export default function SimpleLineChart({
   // 計算SVG路徑點
   const width = 300
   const chartHeight = height - 40
+  const hasSinglePoint = data.length === 1 // 🔒 檢測單點數據
+
   const points = data.map((item, index) => {
-    const x = (index / (data.length - 1)) * (width - 40) + 20
+    // 🔒 單點時使用固定 x 座標，避免 0/0 = NaN
+    const x = hasSinglePoint
+      ? width / 2
+      : (index / (data.length - 1)) * (width - 40) + 20
+
     // 🔒 當所有值都是0時，顯示在中間位置
     const normalizedValue = range > 0 ? ((item.value - minValue) / range) : 0.5
     const y = chartHeight - normalizedValue * (chartHeight - 20) + 10
+
     return { x, y, value: item.value, month: item.month }
   })
 
-  // 創建路徑字符串
-  const pathData = points.reduce((path, point, index) => {
-    if (index === 0) return `M ${point.x} ${point.y}`
-    return `${path} L ${point.x} ${point.y}`
-  }, '')
+  // 創建路徑字符串（單點時不繪製路徑）
+  const pathData = hasSinglePoint
+    ? ''
+    : points.reduce((path, point, index) => {
+        if (index === 0) return `M ${point.x} ${point.y}`
+        return `${path} L ${point.x} ${point.y}`
+      }, '')
 
-  // 創建面積填充路徑
-  const areaPath = `${pathData} L ${points[points.length - 1].x} ${chartHeight} L ${points[0].x} ${chartHeight} Z`
+  // 創建面積填充路徑（單點時不繪製）
+  const areaPath = hasSinglePoint || !pathData
+    ? ''
+    : `${pathData} L ${points[points.length - 1].x} ${chartHeight} L ${points[0].x} ${chartHeight} Z`
 
   return (
     <Card title={title} style={{ height: height + 80 }}>
@@ -77,21 +88,25 @@ export default function SimpleLineChart({
             />
           ))}
 
-          {/* 面積填充 */}
-          <path
-            d={areaPath}
-            fill="url(#areaGradient)"
-          />
+          {/* 面積填充（單點時不渲染） */}
+          {areaPath && (
+            <path
+              d={areaPath}
+              fill="url(#areaGradient)"
+            />
+          )}
 
-          {/* 主線條 */}
-          <path
-            d={pathData}
-            fill="none"
-            stroke="#1890ff"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {/* 主線條（單點時不渲染） */}
+          {pathData && (
+            <path
+              d={pathData}
+              fill="none"
+              stroke="#1890ff"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
 
           {/* 數據點 */}
           {points.map((point, index) => (

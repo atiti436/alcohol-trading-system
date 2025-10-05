@@ -17,6 +17,8 @@ const rateLimitBuckets: Map<string, { count: number; resetAt: number }> =
 export function middleware(request: NextRequest) {
   const { pathname } = new URL(request.url)
   const method = request.method.toUpperCase()
+  const originHeader = request.headers.get('origin')
+  const allowedOrigins = resolveAllowedOrigins(request)
 
   // 🔒 0. HTTPS 強制跳轉（僅生產環境）
   if (process.env.NODE_ENV === 'production') {
@@ -27,39 +29,74 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 🔒 1. CORS 保護（只檢查寫入操作）
+  // 🔒 1. 處理 OPTIONS preflight 請求
+  if (method === 'OPTIONS') {
+    return handlePreflight(request, allowedOrigins)
+  }
+
+  // 🔒 2. CORS 保護（只檢查寫入操作）
   if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
-    const corsError = checkCORS(request)
+    const corsError = checkCORS(originHeader, allowedOrigins)
     if (corsError) return corsError
   }
 
-  // 🔒 2. Rate Limiting（分級保護）
+  // 🔒 3. Rate Limiting（分級保護）
   const rateLimitError = checkRateLimit(request, pathname, method)
   if (rateLimitError) return rateLimitError
 
-  // 🔒 3. 安全標頭
+  // 🔒 4. 安全標頭 + CORS headers
   const response = NextResponse.next()
+  if (originHeader && allowedOrigins.has(originHeader)) {
+    response.headers.set('Access-Control-Allow-Origin', originHeader)
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    response.headers.append('Vary', 'Origin')
+  }
   addSecurityHeaders(response)
 
   return response
 }
 
 /**
+ * 解析允許的 Origins
+ */
+function resolveAllowedOrigins(request: NextRequest): Set<string> {
+  const origins = new Set<string>()
+
+  // 從環境變數解析 origin（避免路徑干擾）
+  const appUrl = process.env.NEXT_PUBLIC_APP_ORIGIN || process.env.NEXTAUTH_URL
+  if (appUrl) {
+    try {
+      origins.add(new URL(appUrl).origin)
+    } catch (err) {
+      console.warn('Invalid CORS origin configured', appUrl, err)
+    }
+  }
+
+  // 允許同源請求
+  origins.add(request.nextUrl.origin)
+
+  // 開發環境額外允許
+  if (process.env.NODE_ENV !== 'production') {
+    origins.add('http://localhost:3000')
+    origins.add('http://localhost:3001')
+    origins.add('http://localhost:3002')
+    origins.add('http://localhost:3003')
+    origins.add('http://localhost:3004')
+  }
+
+  return origins
+}
+
+/**
  * CORS 檢查 - 確保請求來自允許的來源
  */
-function checkCORS(request: NextRequest): NextResponse | null {
-  const origin = request.headers.get('origin')
-  const allowedOrigin = (process.env.NEXTAUTH_URL || '').replace(/\/$/, '')
-
-  // 🔒 如果沒有 Origin header，表示是同源請求（瀏覽器行為）-> 允許通過
+function checkCORS(origin: string | null, allowedOrigins: Set<string>): NextResponse | null {
+  // 🔒 如果沒有 Origin header，表示是同源請求 -> 允許通過
   if (!origin) return null
 
-  // 🔒 如果未設定環境變數，開發環境下允許通過
-  if (!allowedOrigin) return null
-
-  // 🔒 檢查 Origin header 是否匹配
-  if (origin !== allowedOrigin) {
-    console.warn(`🚨 CORS blocked: ${origin} (expected: ${allowedOrigin})`)
+  // 🔒 檢查 Origin 是否在白名單內
+  if (!allowedOrigins.has(origin)) {
+    console.warn(`🚨 CORS blocked: ${origin} (allowed: ${Array.from(allowedOrigins).join(', ')})`)
     return NextResponse.json(
       { error: 'Cross-origin request blocked' },
       { status: 403 }
@@ -67,6 +104,39 @@ function checkCORS(request: NextRequest): NextResponse | null {
   }
 
   return null
+}
+
+/**
+ * 處理 OPTIONS preflight 請求
+ */
+function handlePreflight(request: NextRequest, allowedOrigins: Set<string>): NextResponse {
+  const origin = request.headers.get('origin')
+
+  // 檢查 origin 是否允許
+  if (origin && !allowedOrigins.has(origin)) {
+    return NextResponse.json(
+      { error: 'Cross-origin request blocked' },
+      { status: 403 }
+    )
+  }
+
+  const response = new NextResponse(null, { status: 204 })
+
+  if (origin) {
+    response.headers.set('Access-Control-Allow-Origin', origin)
+  }
+  response.headers.set('Access-Control-Allow-Credentials', 'true')
+  response.headers.set(
+    'Access-Control-Allow-Methods',
+    'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+  )
+  response.headers.set(
+    'Access-Control-Allow-Headers',
+    request.headers.get('access-control-request-headers') || '*'
+  )
+  response.headers.append('Vary', 'Origin')
+
+  return response
 }
 
 /**
