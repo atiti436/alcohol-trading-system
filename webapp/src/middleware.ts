@@ -48,13 +48,16 @@ export function middleware(request: NextRequest) {
  * CORS 檢查 - 確保請求來自允許的來源
  */
 function checkCORS(request: NextRequest): NextResponse | null {
-  const origin = request.headers.get('origin') || ''
+  const origin = request.headers.get('origin')
   const allowedOrigin = (process.env.NEXTAUTH_URL || '').replace(/\/$/, '')
 
-  // 本地開發或未設定環境變數時跳過
-  if (!origin || !allowedOrigin) return null
+  // 🔒 如果沒有 Origin header，表示是同源請求（瀏覽器行為）-> 允許通過
+  if (!origin) return null
 
-  // 只檢查 Origin header（瀏覽器自動帶入）
+  // 🔒 如果未設定環境變數，開發環境下允許通過
+  if (!allowedOrigin) return null
+
+  // 🔒 檢查 Origin header 是否匹配
   if (origin !== allowedOrigin) {
     console.warn(`🚨 CORS blocked: ${origin} (expected: ${allowedOrigin})`)
     return NextResponse.json(
