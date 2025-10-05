@@ -342,49 +342,54 @@ DELETE /api/sales/... 403 (Forbidden)
 
 ---
 
-## 🔴 當前卡點 - Google OAuth 問題 (2025-10-05 22:00)
+## ✅ 已解決 - Google OAuth 問題 (2025-10-05 22:30)
+
+### 根本原因（Codex 診斷）
+1. **缺少 `trustHost: true`** - NextAuth 不信任反向代理，使用 http:// 組裝 redirect_uri
+2. **缺少 `redirect` callback** - 無法強制使用 HTTPS
+3. **Middleware 攔截 `/api/auth/`** - CORS/Rate Limit 干擾 OAuth 流程
+
+### 修復方案（commit 1531e0a）
+1. nextauth.ts - 新增 `trustHost: true`
+2. nextauth.ts - 新增 `redirect` callback 強制 HTTPS
+3. middleware.ts - 完全跳過 `/api/auth/` 路由
+
+### 結果
+✅ 登入成功！
+
+---
+
+## 🔴 當前卡點 - 刪除銷售單 500 錯誤 (2025-10-05 22:35)
 
 ### 錯誤訊息
 ```
-已封鎖存取權：「報價單」的要求無效
-發生錯誤 400: redirect_uri_mismatch
+DELETE https://alcohol-trading-system.zeabur.app/api/sales/cmg9oxugx000dt70j2djvamoj
+Status: 500 (Internal Server Error)
 ```
 
-### 已執行的修復步驟
+### 操作情境
+- 銷售單狀態：已取消 (CANCELLED)
+- 操作：點擊「刪除」按鈕
+- 預期：刪除該銷售單
+- 實際：返回 500 錯誤
 
-1. ✅ **修改 NEXTAUTH_URL 環境變數**
-   - Zeabur → Variables
-   - 從 `http://...` 改為 `https://alcohol-trading-system.zeabur.app`
-   - 已儲存並重新部署
-
-2. ✅ **修改 Google Cloud Console**
-   - 前往 https://console.cloud.google.com
-   - API 和服務 → 憑證
-   - 已授權的重新導向 URI
-   - 改為 `https://alcohol-trading-system.zeabur.app/api/auth/callback/google`
-   - 已儲存
-
-3. ✅ **清除快取並測試**
-   - 使用無痕模式
-   - 清除瀏覽器快取
-   - 等待 5+ 分鐘讓 Google 同步
-
-### 仍然失敗
-
-**症狀**: 點擊登入按鈕，直接跳轉到 Google 錯誤頁面，沒有帳號選擇
-
-**懷疑**:
-1. Google OAuth Console 可能有其他設定錯誤
-2. NextAuth 配置可能有問題
-3. 可能需要檢查完整的 OAuth 流程
+### 懷疑
+1. DELETE API 可能有 Inventory 查詢未修復
+2. 可能有其他資料庫約束問題
+3. 可能有關聯資料未正確處理
 
 ### 需要 Codex 診斷
 
 請 Codex 檢查：
-1. `webapp/src/modules/auth/providers/nextauth.ts` - NextAuth 配置
-2. Google OAuth Console 的完整設定清單
-3. 是否有其他遺漏的配置項目
-4. 是否需要使用 Credentials Provider 而非 Google OAuth
+1. `webapp/src/app/api/sales/[id]/route.ts` - DELETE 方法
+2. 是否有 Inventory 相關查詢導致超時/錯誤
+3. 資料庫關聯刪除邏輯是否正確
+4. Zeabur Runtime Logs 中的錯誤訊息
+
+### 相關檔案
+- DELETE API: `webapp/src/app/api/sales/[id]/route.ts` (Line 253+)
+- 已知：其他 API 有 26 處 Inventory 查詢已修復
+- 可能：DELETE 方法也有類似問題
 
 ---
 
