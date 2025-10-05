@@ -1,8 +1,8 @@
 # Bug 修復報告 - 2025-10-05
 
-**報告時間**: 2025-10-05 20:00
-**修復範圍**: Dashboard NaN 錯誤 + CORS 403 錯誤
-**當前狀態**: ⚠️ 部分修復，問題持續存在
+**報告時間**: 2025-10-05 22:00 (最終更新)
+**修復範圍**: Dashboard NaN 錯誤 + CORS 403 錯誤 + Inventory 超時 + Google OAuth
+**當前狀態**: 🔴 **卡在 Google OAuth redirect_uri_mismatch**
 
 ---
 
@@ -339,6 +339,52 @@ DELETE /api/sales/... 403 (Forbidden)
 6. **檢查是否有其他 Middleware 干擾**
    - NextAuth middleware
    - 其他第三方 middleware
+
+---
+
+## 🔴 當前卡點 - Google OAuth 問題 (2025-10-05 22:00)
+
+### 錯誤訊息
+```
+已封鎖存取權：「報價單」的要求無效
+發生錯誤 400: redirect_uri_mismatch
+```
+
+### 已執行的修復步驟
+
+1. ✅ **修改 NEXTAUTH_URL 環境變數**
+   - Zeabur → Variables
+   - 從 `http://...` 改為 `https://alcohol-trading-system.zeabur.app`
+   - 已儲存並重新部署
+
+2. ✅ **修改 Google Cloud Console**
+   - 前往 https://console.cloud.google.com
+   - API 和服務 → 憑證
+   - 已授權的重新導向 URI
+   - 改為 `https://alcohol-trading-system.zeabur.app/api/auth/callback/google`
+   - 已儲存
+
+3. ✅ **清除快取並測試**
+   - 使用無痕模式
+   - 清除瀏覽器快取
+   - 等待 5+ 分鐘讓 Google 同步
+
+### 仍然失敗
+
+**症狀**: 點擊登入按鈕，直接跳轉到 Google 錯誤頁面，沒有帳號選擇
+
+**懷疑**:
+1. Google OAuth Console 可能有其他設定錯誤
+2. NextAuth 配置可能有問題
+3. 可能需要檢查完整的 OAuth 流程
+
+### 需要 Codex 診斷
+
+請 Codex 檢查：
+1. `webapp/src/modules/auth/providers/nextauth.ts` - NextAuth 配置
+2. Google OAuth Console 的完整設定清單
+3. 是否有其他遺漏的配置項目
+4. 是否需要使用 Credentials Provider 而非 Google OAuth
 
 ---
 
