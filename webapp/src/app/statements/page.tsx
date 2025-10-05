@@ -30,6 +30,7 @@ import { useSession } from 'next-auth/react'
 import dayjs, { Dayjs } from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { DocumentHeader } from '@/components/common/DocumentHeader'
+import { DocumentFooter } from '@/components/common/DocumentFooter'
 import { DOCUMENT_TYPES } from '@/config/company'
 import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
 import { Sale, SaleItem, AccountReceivable, StatementData, Customer, Product, ProductVariant } from '@/types/business'
@@ -514,11 +515,7 @@ export default function StatementsPage() {
             />
 
             {/* 頁尾 */}
-            <div style={{ marginTop: '40px', textAlign: 'center', borderTop: '1px solid #d9d9d9', paddingTop: '20px' }}>
-              <Text type="secondary">
-                此對帳單由系統自動生成，如有疑問請聯繫業務人員
-              </Text>
-            </div>
+            <DocumentFooter documentType={DOCUMENT_TYPES.STATEMENT} />
           </div>
         )}
       </Modal>

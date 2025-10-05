@@ -812,23 +812,25 @@ model CashFlowRecord {
 
 // 公司設定表
 model CompanySettings {
-  id           String   @id @default(cuid())
-  name         String // 公司名稱
-  englishName  String? // 英文名稱
-  address      String // 公司地址
-  phone        String // 聯絡電話
-  email        String? // 電子信箱
-  website      String? // 官方網站
-  taxId        String // 統一編號
-  bankName     String? // 銀行名稱
-  bankAccount  String? // 帳戶號碼
-  bankCode     String? // 銀行代碼
+  id            String   @id @default(cuid())
+  name          String // 公司名稱
+  englishName   String? // 英文名稱
+  address       String // 公司地址
+  phone         String // 聯絡電話
+  email         String? // 電子信箱
+  website       String? // 官方網站
+  taxId         String // 統一編號
+  bankName      String? // 銀行名稱
+  bankAccount   String? // 帳戶號碼
+  bankCode      String? // 銀行代碼
   // 現代聯絡方式
-  lineId       String? // LINE ID
-  customField1 String? // 自訂欄位1 (如 WeChat ID)
-  customField2 String? // 自訂欄位2 (如 Telegram)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  lineId        String? // LINE ID
+  customField1  String? // 自訂欄位1 (如 WeChat ID)
+  customField2  String? // 自訂欄位2 (如 Telegram)
+  // 列印設定
+  showBankInfo  Boolean @default(true) // 列印時顯示銀行帳號
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
   @@map("company_settings")
 }

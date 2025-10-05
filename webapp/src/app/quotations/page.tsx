@@ -18,6 +18,7 @@ import {
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
 import { DocumentHeader } from '@/components/common/DocumentHeader'
+import { DocumentFooter } from '@/components/common/DocumentFooter'
 import { DOCUMENT_TYPES } from '@/config/company'
 import ProductSearchSelect from '@/components/common/ProductSearchSelect'
 
@@ -839,6 +840,9 @@ export default function QuotationsPage() {
                 <div><strong>報價人員：</strong>{viewingQuotation.quoter.email}</div>
               </div>
             </div>
+
+            {/* 頁尾 */}
+            <DocumentFooter documentType={DOCUMENT_TYPES.QUOTATION} />
           </div>
         )}
       </Modal>

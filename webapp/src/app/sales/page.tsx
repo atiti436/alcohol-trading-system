@@ -46,6 +46,7 @@ import dayjs from 'dayjs'
 import { HideFromInvestor, EmployeeAndAbove, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay, InvestorHiddenPrice } from '@/components/common/SecurePriceDisplay'
 import { PrintableDocument } from '@/components/common/PrintableDocument'
+import { DocumentFooter } from '@/components/common/DocumentFooter'
 import { SaleOrderModal } from '@/components/sales/SaleOrderModal'
 import { ShipModal, ShipFormData } from '@/components/sales/ShipModal'
 import { Sale, SaleItem } from '@/types/room-2'
@@ -1415,6 +1416,9 @@ export default function SalesPage() {
               </div>
             </div>
           )}
+
+          {/* 頁尾 */}
+          <DocumentFooter documentType={DOCUMENT_TYPES.SHIPPING} />
         </PrintableDocument>
       )}
 

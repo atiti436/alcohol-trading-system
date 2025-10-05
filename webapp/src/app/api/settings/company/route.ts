@@ -82,7 +82,8 @@ export async function POST(request: NextRequest) {
       bankCode,
       lineId,
       customField1,
-      customField2
+      customField2,
+      showBankInfo
     } = body
 
     // 驗證必要欄位
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
           lineId: lineId || '',
           customField1: customField1 || '',
           customField2: customField2 || '',
+          showBankInfo: showBankInfo !== undefined ? showBankInfo : true,
           updated_at: new Date()
         }
       })
@@ -134,7 +136,8 @@ export async function POST(request: NextRequest) {
           bankCode: bankCode || '',
           lineId: lineId || '',
           customField1: customField1 || '',
-          customField2: customField2 || ''
+          customField2: customField2 || '',
+          showBankInfo: showBankInfo !== undefined ? showBankInfo : true
         }
       })
     }

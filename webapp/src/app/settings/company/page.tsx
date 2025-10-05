@@ -37,6 +37,7 @@ interface CompanySettings {
   lineId: string
   customField1: string
   customField2: string
+  showBankInfo: boolean
 }
 
 export default function CompanySettingsPage() {
@@ -274,6 +275,25 @@ export default function CompanySettingsPage() {
                   name="bankAccount"
                 >
                   <Input placeholder="123-456-789012" />
+                </Form.Item>
+              </Col>
+
+              <Col span={24}>
+                <Form.Item
+                  name="showBankInfo"
+                  valuePropName="checked"
+                  initialValue={true}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '6px' }}>
+                    <Switch />
+                    <div>
+                      <Text strong>列印時顯示銀行帳號資訊</Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                        啟用後，報價單、對帳單、出貨單等單據列印時會在頁尾顯示銀行匯款資訊
+                      </Text>
+                    </div>
+                  </div>
                 </Form.Item>
               </Col>
             </Row>
