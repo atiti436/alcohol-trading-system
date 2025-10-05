@@ -274,7 +274,7 @@ export async function DELETE(
       include: {
         items: true,
         shipping_orders: true,
-        account_receivable: true,
+        accounts_receivables: true,
         quotations: true
       }
     })
@@ -297,10 +297,10 @@ export async function DELETE(
     }
 
     // 🔒 檢查是否有應收帳款 (Restrict 保護)
-    if (existingSale.account_receivable && existingSale.account_receivable.length > 0) {
+    if (existingSale.accounts_receivables && existingSale.accounts_receivables.length > 0) {
       return NextResponse.json({
         error: '此銷售單已有應收帳款記錄，無法刪除',
-        details: `請先刪除 ${existingSale.account_receivable.length} 筆應收帳款`
+        details: `請先刪除 ${existingSale.accounts_receivables.length} 筆應收帳款`
       }, { status: 400 })
     }
 
