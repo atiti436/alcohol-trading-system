@@ -215,7 +215,7 @@ export async function POST(
 
           if (item.product_id) {
           const targetVariantType = DEFAULT_VARIANT_TYPE
-            // 尋找現有的A類變體（正常品）
+            // 優先尋找「標準款」變體
             variant = await tx.productVariant.findFirst({
               where: {
                 product_id: item.product_id,
@@ -223,8 +223,20 @@ export async function POST(
               }
             })
 
+            // 如果找不到「標準款」，使用該商品的任意一個現有變體
             if (!variant) {
-              // 創建新的A類變體
+              variant = await tx.productVariant.findFirst({
+                where: {
+                  product_id: item.product_id
+                },
+                orderBy: {
+                  created_at: 'asc' // 使用最早建立的變體
+                }
+              })
+            }
+
+            if (!variant) {
+              // 真的沒有任何變體時，才創建新的標準款變體
               const productCode = item.product?.product_code || 'P001'
               const variantCode = await generateVariantCode(tx, item.product_id, productCode, targetVariantType)
               const sku = `SKU-${variantCode}`
