@@ -65,6 +65,11 @@ async function handleTextMessage(text: string, userId: string): Promise<LineMess
     return await handleOrderCommand(text, userId)
   }
 
+  // #收入 / #支出 / #收支 格式處理
+  if (text.startsWith('#收入') || text.startsWith('#支出') || text.startsWith('#收支') || text.includes('收支')) {
+    return await handleCashFlowCommand(text, userId)
+  }
+
   // 測試功能
   if (text.includes('test') || text.includes('測試')) {
     return {
@@ -72,6 +77,9 @@ async function handleTextMessage(text: string, userId: string): Promise<LineMess
       text: '✅ LINE BOT測試成功！\n\n📋 支援格式：\n' +
             '📦 #訂單 客戶\n商品 價格*數量\n' +
             '💰 #報價 客戶\n商品 價格\n' +
+            '💵 #收入 1000 商品銷售\n' +
+            '💵 #支出 500 辦公用品\n' +
+            '💵 #收支 查詢 2025-10\n' +
             '🔍 成本計算、庫存查詢等\n\n' +
             '範例：\n#訂單 花花\n大七梅酒 1800*8\n響2025 6000*3'
     }
@@ -455,6 +463,41 @@ export async function POST(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+// 💰 收支記錄處理
+async function handleCashFlowCommand(text: string, userId: string): Promise<LineMessage> {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/linebot/cashflow`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, userId })
+    })
+
+    const result = await response.json()
+
+    if (result.success && result.data) {
+      return {
+        type: 'text' as const,
+        text: result.data.message
+      }
+    }
+
+    return {
+      type: 'text' as const,
+      text: result.message || '❌ 處理收支記錄時發生錯誤'
+    }
+  } catch (error) {
+    console.error('CashFlow command error:', error)
+    return {
+      type: 'text' as const,
+      text: '❌ 處理收支記錄時發生錯誤\n\n' +
+            '正確格式：\n' +
+            '📥 #收入 1000 商品銷售\n' +
+            '📤 #支出 500 辦公用品\n' +
+            '📊 #收支 查詢 2025-10'
+    }
   }
 }
 

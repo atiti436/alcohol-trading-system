@@ -151,7 +151,7 @@ export async function POST(
           shipping_number: await generateShippingNumber(),
           sale_id: saleId,
           customer_id: sale.customer_id,
-          shipping_address: shipping_address || sale.customer.shipping_address || '親送/自取',
+          shipping_address: shipping_address || null, // 親送/自取時可為 null
           shipping_method,
           tracking_number: tracking_number || null,
           status: 'SHIPPED',

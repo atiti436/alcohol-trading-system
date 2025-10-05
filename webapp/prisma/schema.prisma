@@ -589,9 +589,9 @@ model ShippingOrder {
   shipping_number  String         @unique
   sale_id          String
   customer_id      String
-  shipping_address String
-  shipping_method  String         @default("DELIVERY")
-  tracking_number  String?
+  shipping_address String?        // 可選：親送時不需要地址
+  shipping_method  String         @default("DELIVERY") // DELIVERY(貨運) / HAND_DELIVERY(親送)
+  tracking_number  String?        // 可選：貨運單號
   status           String         @default("PENDING")
   shipped_at       DateTime?
   delivered_at     DateTime?
