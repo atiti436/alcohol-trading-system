@@ -93,23 +93,20 @@ export async function POST(
 
       // 🔒 刪除或取消關聯資料
       if (shouldDelete) {
-        // 刪除應收帳款（如果存在）
+        // 1. 刪除應收帳款（如果存在）
         if (sale.accounts_receivables && sale.accounts_receivables.length > 0) {
           await tx.accountsReceivable.deleteMany({ where: { sale_id: id } })
         }
 
-        // 刪除已取消的出貨單（如果存在）
-        const cancelledShippingOrders = sale.shipping_orders?.filter(o => o.status === 'CANCELLED')
-        if (cancelledShippingOrders && cancelledShippingOrders.length > 0) {
-          await tx.shippingOrder.deleteMany({
-            where: {
-              sale_id: id,
-              status: 'CANCELLED'
-            }
-          })
+        // 2. 刪除所有出貨單（無論狀態，因為銷售單要刪除了）
+        if (sale.shipping_orders && sale.shipping_orders.length > 0) {
+          await tx.shippingOrder.deleteMany({ where: { sale_id: id } })
         }
 
+        // 3. 刪除銷售項目
         await tx.saleItem.deleteMany({ where: { sale_id: id } })
+
+        // 4. 最後刪除銷售單
         await tx.sale.delete({ where: { id } })
       } else {
         // 只取消：同時取消所有出貨單
