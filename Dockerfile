@@ -20,7 +20,8 @@ RUN npm config set fetch-retries 5 && \
 # Install dependencies - postinstall will copy shared-src to shared
 RUN npm install --legacy-peer-deps
 
-# Generate Prisma client with specific binary target
+# Generate Prisma client with specific binary target (設定 OpenSSL 版本)
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build the application
