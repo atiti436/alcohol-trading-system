@@ -271,7 +271,12 @@ export async function DELETE(
     // 檢查銷售訂單是否存在
     const existingSale = await prisma.sale.findUnique({
       where: { id },
-      include: { items: true }
+      include: {
+        items: true,
+        shipping_orders: true,
+        account_receivable: true,
+        quotations: true
+      }
     })
 
     if (!existingSale) {
@@ -281,6 +286,30 @@ export async function DELETE(
     // 檢查是否已付款（已付款的訂單不能刪除）
     if (existingSale.is_paid) {
       return NextResponse.json({ error: '已付款的銷售訂單無法刪除' }, { status: 400 })
+    }
+
+    // 🔒 檢查是否有出貨單 (Restrict 保護)
+    if (existingSale.shipping_orders && existingSale.shipping_orders.length > 0) {
+      return NextResponse.json({
+        error: '此銷售單已有出貨記錄，無法刪除',
+        details: `請先刪除 ${existingSale.shipping_orders.length} 筆出貨單`
+      }, { status: 400 })
+    }
+
+    // 🔒 檢查是否有應收帳款 (Restrict 保護)
+    if (existingSale.account_receivable && existingSale.account_receivable.length > 0) {
+      return NextResponse.json({
+        error: '此銷售單已有應收帳款記錄，無法刪除',
+        details: `請先刪除 ${existingSale.account_receivable.length} 筆應收帳款`
+      }, { status: 400 })
+    }
+
+    // 🔒 檢查是否有關聯的報價單 (Restrict 保護)
+    if (existingSale.quotations && existingSale.quotations.length > 0) {
+      return NextResponse.json({
+        error: '此銷售單由報價單轉換而來，無法直接刪除',
+        details: `請先刪除 ${existingSale.quotations.length} 筆報價單`
+      }, { status: 400 })
     }
 
     // 刪除銷售訂單（CASCADE會自動刪除關聯的items）
@@ -295,6 +324,15 @@ export async function DELETE(
 
   } catch (error) {
     console.error('刪除銷售訂單失敗:', error)
+
+    // 處理 Prisma Restrict 錯誤
+    if (error instanceof Error && error.message.includes('Foreign key constraint')) {
+      return NextResponse.json({
+        error: '無法刪除銷售單，因為有相關的後續單據',
+        details: '請先刪除出貨單、應收帳款或報價單'
+      }, { status: 400 })
+    }
+
     return NextResponse.json(
       { error: '刪除失敗', details: error },
       { status: 500 }

@@ -278,7 +278,11 @@ export async function DELETE(
 
     // 檢查採購單是否存在
     const existingPurchase = await prisma.purchase.findUnique({
-      where: { id: purchaseId }
+      where: { id: purchaseId },
+      include: {
+        receipts: true,
+        imports: true
+      }
     })
 
     if (!existingPurchase) {
@@ -289,6 +293,22 @@ export async function DELETE(
     if (existingPurchase.status === 'RECEIVED' || existingPurchase.status === 'COMPLETED') {
       return NextResponse.json({
         error: '已收貨或已完成的採購單不能刪除'
+      }, { status: 400 })
+    }
+
+    // 🔒 檢查是否有收貨單 (Restrict 保護)
+    if (existingPurchase.receipts && existingPurchase.receipts.length > 0) {
+      return NextResponse.json({
+        error: '此採購單已有收貨記錄，無法刪除',
+        details: `請先刪除 ${existingPurchase.receipts.length} 筆收貨記錄`
+      }, { status: 400 })
+    }
+
+    // 🔒 檢查是否有進口單 (Restrict 保護)
+    if (existingPurchase.imports && existingPurchase.imports.length > 0) {
+      return NextResponse.json({
+        error: '此採購單已有進口單記錄，無法刪除',
+        details: `請先刪除 ${existingPurchase.imports.length} 筆進口單`
       }, { status: 400 })
     }
 
@@ -307,6 +327,15 @@ export async function DELETE(
 
   } catch (error) {
     console.error('採購單刪除失敗:', error)
+
+    // 處理 Prisma Restrict 錯誤
+    if (error instanceof Error && error.message.includes('Foreign key constraint')) {
+      return NextResponse.json({
+        error: '無法刪除採購單，因為有相關的後續單據',
+        details: '請先刪除收貨單或進口單'
+      }, { status: 400 })
+    }
+
     return NextResponse.json(
       { error: '刪除失敗', details: error },
       { status: 500 }

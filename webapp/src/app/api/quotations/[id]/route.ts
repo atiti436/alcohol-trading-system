@@ -178,7 +178,16 @@ export async function DELETE(
 
     // 檢查報價是否存在
     const existingQuotation = await prisma.quotation.findUnique({
-      where: { id: params.id }
+      where: { id: params.id },
+      include: {
+        sale: {
+          select: {
+            id: true,
+            sale_code: true,
+            status: true
+          }
+        }
+      }
     })
 
     if (!existingQuotation) {
@@ -188,6 +197,14 @@ export async function DELETE(
     // 只允許超級管理員或報價創建者刪除
     if (session.user.role !== 'SUPER_ADMIN' && existingQuotation.quoted_by !== session.user.id) {
       return NextResponse.json({ error: '沒有權限刪除此報價' }, { status: 403 })
+    }
+
+    // 🔒 檢查報價是否已轉換為銷售單 (Restrict 保護)
+    if (existingQuotation.sale_id && existingQuotation.sale) {
+      return NextResponse.json({
+        error: '此報價單已轉換為銷售單，無法刪除',
+        details: `關聯銷售單號：${existingQuotation.sale.sale_code} (狀態：${existingQuotation.sale.status})，請先刪除銷售單`
+      }, { status: 400 })
     }
 
     await prisma.quotation.delete({
@@ -201,6 +218,15 @@ export async function DELETE(
 
   } catch (error) {
     console.error('刪除報價失敗:', error)
+
+    // 處理 Prisma Restrict 錯誤
+    if (error instanceof Error && error.message.includes('Foreign key constraint')) {
+      return NextResponse.json({
+        error: '無法刪除報價單，因為已轉換為銷售單',
+        details: '請先刪除關聯的銷售單'
+      }, { status: 400 })
+    }
+
     return NextResponse.json({ error: '刪除報價失敗' }, { status: 500 })
   }
 }
