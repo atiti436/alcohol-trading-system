@@ -29,7 +29,11 @@ export async function POST(
 
     const sale = await prisma.sale.findUnique({
       where: { id },
-      include: { items: true }
+      include: {
+        items: true,
+        accounts_receivables: true,
+        shipping_orders: true
+      }
     })
 
     if (!sale) {
@@ -87,10 +91,35 @@ export async function POST(
         }
       }
 
+      // 🔒 刪除或取消關聯資料
       if (shouldDelete) {
+        // 刪除應收帳款（如果存在）
+        if (sale.accounts_receivables && sale.accounts_receivables.length > 0) {
+          await tx.accountsReceivable.deleteMany({ where: { sale_id: id } })
+        }
+
+        // 刪除已取消的出貨單（如果存在）
+        const cancelledShippingOrders = sale.shipping_orders?.filter(o => o.status === 'CANCELLED')
+        if (cancelledShippingOrders && cancelledShippingOrders.length > 0) {
+          await tx.shippingOrder.deleteMany({
+            where: {
+              sale_id: id,
+              status: 'CANCELLED'
+            }
+          })
+        }
+
         await tx.saleItem.deleteMany({ where: { sale_id: id } })
         await tx.sale.delete({ where: { id } })
       } else {
+        // 只取消：同時取消所有出貨單
+        if (sale.shipping_orders && sale.shipping_orders.length > 0) {
+          await tx.shippingOrder.updateMany({
+            where: { sale_id: id },
+            data: { status: 'CANCELLED' }
+          })
+        }
+
         await tx.sale.update({
           where: { id },
           data: { status: 'CANCELLED' }
