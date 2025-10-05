@@ -11,7 +11,8 @@ import {
   Space,
   Divider,
   Row,
-  Col
+  Col,
+  Switch
 } from 'antd'
 import {
   SaveOutlined,
