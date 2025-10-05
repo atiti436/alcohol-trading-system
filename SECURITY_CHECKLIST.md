@@ -254,17 +254,17 @@ session: {
 
 ---
 
-#### 10. 依賴套件漏洞 ✅ 已修復 (2025-10-05)
+#### 10. 依賴套件漏洞 ✅ 已確認 (2025-10-05)
 
-**發現問題**: xlsx 0.18.5 有高危漏洞
+**檢查結果**: npm audit 顯示 xlsx 0.18.5 有漏洞
 
-**修復內容**:
-- Prototype Pollution (GHSA-4r6h-8v6p-xvw6)
-- ReDoS (GHSA-5pgg-2g8v-p4x9)
+**發現問題**:
+- Prototype Pollution (GHSA-4r6h-8v6p-xvw6) - Moderate
+- ReDoS (GHSA-5pgg-2g8v-p4x9) - High
 
-**修復方式**: 升級至 xlsx 0.20.3
+**狀態**: 已知風險，目前無更新版本可用（最新版仍為 0.18.5）
 
-**位置**: `webapp/package.json:45`
+**建議**: 考慮替換套件（如 exceljs）或接受風險（內部系統，無用戶上傳檔案）
 
 **完成時間**: 2025-10-05
 
