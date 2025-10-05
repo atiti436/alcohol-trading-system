@@ -17,6 +17,12 @@ const rateLimitBuckets: Map<string, { count: number; resetAt: number }> =
 export function middleware(request: NextRequest) {
   const { pathname } = new URL(request.url)
   const method = request.method.toUpperCase()
+
+  // 🔒 完全跳過 NextAuth 路由（避免干擾 OAuth 流程）
+  if (pathname.startsWith('/api/auth/')) {
+    return NextResponse.next()
+  }
+
   const originHeader = request.headers.get('origin')
   const allowedOrigins = resolveAllowedOrigins(request)
 

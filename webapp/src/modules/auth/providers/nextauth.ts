@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 import { Role } from '@/types/auth'
 
 export const authOptions: NextAuthOptions = {
+  // 🔒 信任反向代理（Zeabur/Vercel 等），強制使用 HTTPS
+  trustHost: true,
+
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -33,6 +36,21 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   callbacks: {
+    // 🔒 強制使用 HTTPS 進行重新導向
+    async redirect({ url, baseUrl }) {
+      const appUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, '') || baseUrl
+
+      // 如果是相對路徑，加上完整 URL
+      if (url.startsWith('/')) return `${appUrl}${url}`
+
+      // 如果是完整 URL，檢查是否為同源
+      try {
+        const parsed = new URL(url)
+        return parsed.origin === new URL(appUrl).origin ? url : appUrl
+      } catch {
+        return appUrl
+      }
+    },
     async jwt({ token, user, account }) {
       // 首次登入時從資料庫載入使用者資料
       if (account && user) {
