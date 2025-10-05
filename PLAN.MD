@@ -1,7 +1,7 @@
 # 酒類交易 ERP 系統 - 主計劃文檔
 
-**最後更新**: 2025-10-05
-**專案狀態**: 核心功能完成，持續優化中
+**最後更新**: 2025-10-05 (Issue #1 完全收尾)
+**專案狀態**: 核心功能完成 ✅，進入優化階段
 
 ---
 
@@ -60,14 +60,13 @@
 
 ### 優先級 P0 (核心功能)
 
-- [ ] **Issue #1 遺留**: 3個邊緣 API 修復 (已識別但尚未修復)
-  - `webapp/src/app/api/sales/[id]/ship/route.ts`
-  - `webapp/src/app/api/sales/[id]/deliver/route.ts`
-  - `webapp/src/app/api/sales/delivery-schedule/route.ts`
+- [x] **Issue #1 遺留**: 邊緣 API 修復 ✅ (2025-10-05 完成)
+  - ✅ `webapp/src/app/api/sales/[id]/ship/route.ts` (已修復)
+  - ❌ `deliver/delivery-schedule` API 不存在（原 PLAN 誤記）
 
-- [ ] **預購系統 UI 整合** (Phase 4-5 的前端部分)
-  - AllocationModal 整合到收貨流程 (已整合)
-  - 缺貨管理頁面 (`/sales/backorders`) (已完成)
+- [x] **預購系統 UI 整合** ✅ (Phase 4-5 的前端部分)
+  - ✅ AllocationModal 整合到收貨流程 (已完成)
+  - ✅ 缺貨管理頁面 (`/sales/backorders`) (已完成)
 
 ### 優先級 P1 (重要功能)
 

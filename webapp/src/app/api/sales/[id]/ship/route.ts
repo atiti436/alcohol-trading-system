@@ -59,9 +59,7 @@ export async function POST(
             variant: {
               select: {
                 id: true,
-                variant_code: true,
-                stock_quantity: true,
-                available_stock: true
+                variant_code: true
               }
             }
           }
@@ -351,9 +349,7 @@ export async function GET(
             variant: {
               select: {
                 id: true,
-                variant_code: true,
-                stock_quantity: true,
-                available_stock: true
+                variant_code: true
               }
             }
           }
@@ -387,11 +383,23 @@ export async function GET(
       orderBy: { created_at: 'desc' }
     })
 
-    // 計算庫存可用性
-    const itemsWithStock = sale.items.map(item => ({
-      ...item,
-      can_ship: item.variant ? item.variant.available_stock >= item.quantity : false,
-      available_stock: item.variant?.available_stock || 0
+    // 計算庫存可用性（從 Inventory 表計算）
+    const itemsWithStock = await Promise.all(sale.items.map(async (item) => {
+      if (!item.variant_id) {
+        return { ...item, can_ship: false, available_stock: 0 }
+      }
+
+      // 從 Inventory 表計算可用庫存
+      const inventories = await prisma.inventory.findMany({
+        where: { variant_id: item.variant_id }
+      })
+      const availableStock = inventories.reduce((sum, inv) => sum + inv.available, 0)
+
+      return {
+        ...item,
+        can_ship: availableStock >= item.quantity,
+        available_stock: availableStock
+      }
     }))
 
     const totalOrderedQuantity = sale.items.reduce((sum, item) => sum + item.quantity, 0)
