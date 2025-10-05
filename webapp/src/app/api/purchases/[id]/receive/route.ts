@@ -91,12 +91,38 @@ export async function POST(
     // 使用資料庫交易確保數據一致性
     const result = await prisma.$transaction(async (tx) => {
       // 1. 建立收貨記錄
+
+      // 生成收貨單編號 (GR-YYYYMMDD-XXXX)
+      const today = new Date()
+      const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
+      const existingReceipts = await tx.goodsReceipt.findMany({
+        where: {
+          receipt_number: {
+            startsWith: `GR-${dateStr}`
+          }
+        },
+        orderBy: {
+          receipt_number: 'desc'
+        },
+        take: 1
+      })
+
+      let sequence = 1
+      if (existingReceipts.length > 0) {
+        const lastNumber = existingReceipts[0].receipt_number
+        const lastSequence = parseInt(lastNumber.split('-')[2] || '0')
+        sequence = lastSequence + 1
+      }
+
+      const receipt_number = `GR-${dateStr}-${sequence.toString().padStart(4, '0')}`
+
       const total_cost = purchase.items.reduce((sum, item) =>
         sum + (item.quantity * item.unit_price), 0
       ) * actualExchangeRate + inspection_fee + additional_costs.reduce((sum: number, cost: any) => sum + cost.amount, 0)
 
       const goodsReceipt = await tx.goodsReceipt.create({
         data: {
+          receipt_number,
           purchase_id: purchaseId,
           actual_quantity,
           exchange_rate: actualExchangeRate,
