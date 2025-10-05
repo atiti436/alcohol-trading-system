@@ -669,8 +669,9 @@ export async function getProductInventorySummary(
 | 套用公司資訊 | ✅ | 使用 `DocumentHeader` |
 | 格式專業 | ✅ | A4 專業排版 |
 | **報價單列印** | | |
-| 列印按鈕 | ⚠️ | 需確認 |
-| 套用公司資訊 | ⚠️ | 需確認 |
+| 列印按鈕 | ✅ | 「列印/匯出PDF」按鈕（查看詳情 Modal） |
+| 套用公司資訊 | ✅ | 使用 `DocumentHeader` + `DocumentFooter` |
+| 格式專業 | ✅ | 完整資訊 + 銀行帳號顯示 |
 
 ### 待補充功能清單
 
@@ -680,13 +681,11 @@ export async function getProductInventorySummary(
    - 建立採購單列印模板（含公司抬頭）
    - 套用 `PrintableDocument` 組件
 
-2. **Logo 上傳功能** - 讓列印單據可顯示公司 Logo
+**優先級 P1（重要）**：
+2. **Logo 上傳功能** - 讓列印單據可顯示公司 Logo（暫緩，考慮模板分享）
    - CompanySettings 表新增 `logo_url` 欄位
    - 公司設定頁面新增圖片上傳組件
    - DocumentHeader 組件整合 Logo 顯示
-
-**優先級 P1（重要）**：
-3. **報價單列印確認** - 確認現有功能是否完整
 4. **收款收據列印** - 收錢後給客戶的證明
 5. **銷貨單獨立版** - 如果和出貨單需要區分
 
@@ -761,11 +760,19 @@ import { PrintableDocument } from '@/components/common/PrintableDocument'
   - ✅ GoodsReceipt 新增 receipt_number 編號
   - ✅ Quotation 新增 sale_id 追蹤
   - ✅ 修改刪除保護規則 (Cascade → Restrict)
+- **2025-10-05**: 加強 DELETE API 錯誤處理
+  - ✅ Purchase DELETE - 檢查收貨單/進口單依賴
+  - ✅ Sale DELETE - 檢查出貨單/應收帳款/報價單依賴
+  - ✅ Quotation DELETE - 檢查銷售單轉換狀態
+  - ✅ 友善錯誤訊息與刪除指引
+- **2025-10-05**: 報價單列印功能驗證
+  - ✅ 確認報價單列印功能 100% 完整
+  - ✅ DocumentHeader + DocumentFooter 架構完善
 
 **報告完成時間**: 2025-10-05
 **修復進度**: 15/16 (94%)
 **Issue #1 進度**: ✅ 完成（100%）
 **Issue #2 進度**: ✅ 完成（100%）- 單據關聯與刪除保護
-**新增檢查**: 列印功能完整度（發現 2 項 P0 缺失）
-**下次檢查建議**: API 刪除邏輯需處理 Restrict 錯誤訊息
-**最新 Git Commit**: `eba4448` (Issue #2 修復)
+**新增檢查**: 列印功能完整度（報價單 ✅ 完整，採購單 ❌ 缺失）
+**最新完成**: DELETE API 錯誤處理加強
+**最新 Git Commit**: `4371fd2` (DELETE API 錯誤處理)

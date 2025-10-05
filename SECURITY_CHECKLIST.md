@@ -29,50 +29,44 @@
 
 ### P0 - 嚴重風險（立即處理）
 
-#### 1. 環境變數洩漏風險 ⚠️
+#### 1. 環境變數洩漏風險 ✅ 已通過 (2025-10-05)
 
-**發現**:
-- 10 個檔案使用 `process.env.`
-- 15 個檔案包含 password/secret/key 關鍵字
+**檢查結果**:
+- ✅ `.env*` 已加入 `.gitignore`
+- ✅ 無硬編碼 password/secret/API key
+- ✅ 僅 1 個 `NEXT_PUBLIC_` 變數（功能開關，非敏感）
+- ✅ 所有敏感環境變數僅用於後端
 
-**檢查清單**:
-- [ ] 確認 `.env` 已加入 `.gitignore`
-- [ ] 移除程式碼中的硬編碼 API KEY
-- [ ] 檢查前端程式碼是否暴露後端 SECRET
+**統計**:
+- 認證相關: 5 個（後端）
+- API Keys: 3 個（後端）
+- 功能開關: 1 個（前端，非敏感）
+- 環境判斷: 4 個（後端）
 
-**修復範例**:
-```typescript
-// ❌ 危險：前端可見
-const apiKey = process.env.NEXT_PUBLIC_GEMINI_KEY
+**安全等級**: 🟢 優秀
 
-// ✅ 安全：僅後端使用
-// app/api/gemini/route.ts
-const apiKey = process.env.GEMINI_API_KEY
-```
-
-**實施時間**: 2 小時
+**檢查時間**: 2025-10-05
+**檢查人員**: Claude Code
 
 ---
 
-#### 2. SQL Injection 防護檢查 ⚠️
+#### 2. SQL Injection 防護檢查 ✅ 已通過 (2025-10-05)
 
-**建議**: 確認所有資料庫查詢使用參數化
+**檢查結果**:
+- ✅ 僅 3 處使用 `$queryRaw`（Dashboard 統計查詢）
+- ✅ 全部使用 tagged template 語法（反引號）
+- ✅ 無外部參數注入（純靜態查詢）
+- ✅ 其餘查詢全部使用 Prisma ORM（自動參數化）
 
-```typescript
-// ✅ 安全：Prisma 自動參數化
-await prisma.product.findMany({
-  where: { name: { contains: searchTerm } }
-})
+**原生 SQL 位置**:
+1. `dashboard/route.ts:93` - 庫存價值查詢 ✅
+2. `dashboard/route.ts:118` - 低庫存商品查詢 ✅
+3. `dashboard/route.ts:261` - 庫存警報查詢 ✅
 
-// ❌ 危險（如果有的話）
-await prisma.$queryRaw(`SELECT * FROM products WHERE name = '${searchTerm}'`)
-```
+**安全等級**: 🟢 完美
 
-**檢查清單**:
-- [ ] 搜尋所有 `$queryRaw` 使用處
-- [ ] 確認都使用 `$queryRaw` 的參數化語法
-
-**實施時間**: 1 小時
+**檢查時間**: 2025-10-05
+**檢查人員**: Claude Code
 
 ---
 
