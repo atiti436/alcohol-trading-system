@@ -72,51 +72,66 @@
 
 ### P1 - 高風險（本週處理）
 
-#### 3. CORS 設定檢查
+#### 3. CORS 設定檢查 🟡 部分實現 (2025-10-05)
 
-**建議**: 明確設定允許的來源
+**檢查結果**:
+- ✅ 已實現 `assertSameOrigin()` 函數（lib/security.ts）
+- ⚠️ 僅 4/88 個 API 使用 CORS 保護（4.5%）
+- ⚠️ 其他 84 個 API 可能被外部網站呼叫
 
-```typescript
-// next.config.js
-module.exports = {
-  async headers() {
-    return [
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: 'https://yourdomain.com' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE' },
-        ],
-      },
-    ]
-  },
-}
-```
+**已保護 API**:
+- finance/payables/[id]/payment ✅
+- finance/payables ✅
+- shipping/export ✅
+- purchases/export ✅
 
-**實施時間**: 0.5 小時
+**建議**:
+- 為所有 POST/PUT/DELETE API 加入 CORS 檢查
+- 或使用 Next.js Middleware 全域保護
+
+**優先級**: P1（內部系統，可後補）
+**實施時間**: 2-4 小時
+
+**檢查時間**: 2025-10-05
+**檢查人員**: Claude Code
 
 ---
 
-#### 4. Rate Limiting（防 DDoS）
+#### 4. Rate Limiting（防 DDoS）🟡 部分實現 (2025-10-05)
 
-**建議**: 加入 API 請求限制
+**檢查結果**:
+- ✅ 已實現 Rate Limiting 工具（lib/security.ts + lib/rate-limit.ts）
+- ⚠️ 僅 6/88 個 API 使用（6.8% 覆蓋率）
+- ⚠️ 82 個 API 沒有請求頻率限制
 
-```bash
-npm install @upstash/ratelimit @upstash/redis
-```
+**已保護 API**:
+1. finance/payables/[id]/payment - 30/分鐘 ✅
+2. finance/payables - 20/分鐘 ✅
+3. shipping/export - 10/分鐘 ✅
+4. purchases/export - 10/分鐘 ✅
+5. linebot/gemini - 30/分鐘 ✅
+6. settings/test-api-key - 10/分鐘 ✅
 
-```typescript
-// middleware.ts
-import { Ratelimit } from '@upstash/ratelimit'
-import { Redis } from '@upstash/redis'
+**未保護關鍵 API**:
+- ❌ `/api/auth/*` - 認證相關（防暴力破解）
+- ❌ `/api/products/*` - 產品查詢（防爬蟲）
+- ❌ `/api/sales/*` - 銷售單（防濫用）
+- ❌ `/api/quotations/*` - 報價單
+- ❌ `/api/customers/*` - 客戶資料
 
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, '10 s'), // 10 秒內最多 10 次
-})
+**發現問題**:
+- ⚠️ 兩個檔案重複實現（lib/security.ts + lib/rate-limit.ts）
+- 建議統一使用 lib/security.ts
 
-export async function middleware(request: Request) {
-  const ip = request.headers.get('x-forwarded-for') ?? 'anonymous'
+**建議**:
+- 內部系統可後補，上線前再補全
+- 優先保護認證、查詢、寫入 API
+
+**優先級**: P1（內部系統，可後補）
+**實施時間**: 1-2 小時（快速方案）/ 4-6 小時（完整方案）
+
+**檢查時間**: 2025-10-05
+**檢查人員**: Claude Code
   const { success } = await ratelimit.limit(ip)
 
   if (!success) {
