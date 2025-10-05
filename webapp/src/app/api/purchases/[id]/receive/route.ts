@@ -74,9 +74,12 @@ export async function POST(
       return NextResponse.json({ error: '損耗數量不能為負數或大於等於收貨數量' }, { status: 400 })
     }
 
-    // 驗證匯率
-    if (!exchange_rate || exchange_rate <= 0) {
-      return NextResponse.json({ error: '實際匯率必須大於0' }, { status: 400 })
+    // 驗證匯率（如果是台幣，預設 1.0）
+    let actualExchangeRate = exchange_rate
+    if (purchase.currency === 'TWD') {
+      actualExchangeRate = 1.0 // 台幣不需要匯率轉換
+    } else if (!exchange_rate || exchange_rate <= 0) {
+      return NextResponse.json({ error: '外幣採購必須提供實際匯率' }, { status: 400 })
     }
 
     // 使用資料庫交易確保數據一致性
@@ -84,13 +87,13 @@ export async function POST(
       // 1. 建立收貨記錄
       const total_cost = purchase.items.reduce((sum, item) =>
         sum + (item.quantity * item.unit_price), 0
-      ) * exchange_rate + inspection_fee + additional_costs.reduce((sum: number, cost: any) => sum + cost.amount, 0)
+      ) * actualExchangeRate + inspection_fee + additional_costs.reduce((sum: number, cost: any) => sum + cost.amount, 0)
 
       const goodsReceipt = await tx.goodsReceipt.create({
         data: {
           purchase_id: purchaseId,
           actual_quantity,
-          exchange_rate,
+          exchange_rate: actualExchangeRate,
           loss_type,
           loss_quantity,
           inspection_fee,
@@ -131,7 +134,7 @@ export async function POST(
 
       for (const item of purchase.items) {
         // 計算該項目的實際成本（包含分攤）
-        let itemCost = item.unit_price * exchange_rate
+        let itemCost = item.unit_price * actualExchangeRate
 
         // 根據分攤方式計算額外成本分攤
         const totalAdditionalCost = inspection_fee + additional_costs.reduce((sum: number, cost: any) => sum + cost.amount, 0)
@@ -201,8 +204,8 @@ export async function POST(
                   sku,
                   variant_type: targetVariantType,
                   description: `${item.product_name} - ${targetVariantType}`,
-                  base_price: item.product?.standard_price || item.unit_price * exchange_rate,
-                  current_price: item.product?.current_price || item.unit_price * exchange_rate,
+                  base_price: item.product?.standard_price || item.unit_price * actualExchangeRate,
+                  current_price: item.product?.current_price || item.unit_price * actualExchangeRate,
                   cost_price: finalUnitCost,
                   stock_quantity: 0,
                   reserved_stock: 0,
