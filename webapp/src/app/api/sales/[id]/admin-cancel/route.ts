@@ -56,6 +56,9 @@ export async function POST(
             })
 
             // 2. 更新 Inventory 表（主要庫存來源）- FIFO 回滾
+            // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+            // TODO: 執行 prisma db push 後取消註解
+            /*
             let remainingToRelease = item.quantity
             const inventories = await tx.inventory.findMany({
               where: {
@@ -79,6 +82,7 @@ export async function POST(
 
               remainingToRelease -= toRelease
             }
+            */
           }
         }
       }
