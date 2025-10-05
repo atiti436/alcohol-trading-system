@@ -52,12 +52,12 @@ const { Step } = Steps
 interface ImportRecord {
   id: string
   importNumber: string
-  purchaseId: string
+  purchaseId: string | null
   purchaseNumber: string
   supplier: string
   declarationNumber?: string
   declarationDate?: string
-  status: 'PENDING' | 'PROCESSING' | 'CUSTOMS_CLEARED' | 'RECEIVED' | 'COMPLETED'
+  status: 'PENDING' | 'PROCESSING' | 'CUSTOMS_CLEARED' | 'RECEIVED' | 'COMPLETED' | 'CONVERTED'
   totalValue: number
   currency: string
   exchangeRate: number
@@ -235,6 +235,7 @@ export default function ImportsPage() {
       case 'CUSTOMS_CLEARED': return 'cyan'
       case 'RECEIVED': return 'green'
       case 'COMPLETED': return 'purple'
+      case 'CONVERTED': return 'success'
       default: return 'default'
     }
   }
@@ -246,7 +247,8 @@ export default function ImportsPage() {
       PROCESSING: '處理中',
       CUSTOMS_CLEARED: '通關完成',
       RECEIVED: '已收貨',
-      COMPLETED: '已完成'
+      COMPLETED: '已完成',
+      CONVERTED: '已轉採購'
     }
     return statusNames[status as keyof typeof statusNames] || status
   }
@@ -394,7 +396,8 @@ export default function ImportsPage() {
         { text: '處理中', value: 'PROCESSING' },
         { text: '通關完成', value: 'CUSTOMS_CLEARED' },
         { text: '已收貨', value: 'RECEIVED' },
-        { text: '已完成', value: 'COMPLETED' }
+        { text: '已完成', value: 'COMPLETED' },
+        { text: '已轉採購', value: 'CONVERTED' }
       ]
     },
     {
@@ -436,14 +439,16 @@ export default function ImportsPage() {
               </Tooltip>
             )}
 
-            {(record.status === 'PROCESSING' || record.status === 'CUSTOMS_CLEARED') && (
-              <Tooltip title="收貨入庫">
+            {(record.status === 'CUSTOMS_CLEARED' || record.status === 'RECEIVED') && !record.purchaseId && (
+              <Tooltip title="轉換成採購單">
                 <Button
-                  icon={<CheckCircleOutlined />}
+                  icon={<ImportOutlined />}
                   size="small"
                   type="primary"
-                  onClick={() => handleReceiveImport(record)}
-                />
+                  onClick={() => handleConvertToPurchase(record)}
+                >
+                  轉採購
+                </Button>
               </Tooltip>
             )}
           </Space>
@@ -582,6 +587,54 @@ export default function ImportsPage() {
       console.error('創建進貨記錄失敗:', error)
       message.error('創建進貨記錄失敗')
     }
+  }
+
+  // 轉換成採購單
+  const handleConvertToPurchase = async (importRecord: ImportRecord) => {
+    Modal.confirm({
+      title: '轉換成採購單',
+      content: `確定要將進貨記錄 ${importRecord.importNumber} 轉換成採購單嗎？轉換後可以在採購管理進行收貨作業。`,
+      okText: '確定轉換',
+      cancelText: '取消',
+      onOk: async () => {
+        const loadingKey = 'converting'
+        message.loading({ content: '正在轉換...', key: loadingKey })
+
+        try {
+          const response = await fetch(`/api/imports/${importRecord.id}/convert-to-purchase`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+
+          const result = await response.json()
+
+          if (response.ok && result.success) {
+            message.success({ content: '轉換成功！即將跳轉到採購管理...', key: loadingKey, duration: 2 })
+
+            // 重新載入進貨記錄
+            await loadImports(false)
+
+            // 1秒後跳轉到採購管理頁面
+            setTimeout(() => {
+              window.location.href = `/purchases?search=${encodeURIComponent(result.data.purchase_number)}`
+            }, 1000)
+          } else {
+            message.error({
+              content: result.error || '轉換失敗',
+              key: loadingKey,
+              duration: 3
+            })
+          }
+        } catch (error) {
+          console.error('轉換採購單失敗:', error)
+          message.error({
+            content: '轉換失敗，請稍後再試',
+            key: loadingKey,
+            duration: 3
+          })
+        }
+      }
+    })
   }
 
   return (
