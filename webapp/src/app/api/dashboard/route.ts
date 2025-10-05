@@ -89,13 +89,12 @@ async function getSuperAdminDashboard(context: PermissionContext): Promise<Parti
   // 計算總傭金 (老闆賺的差價)
   const totalCommission = sales.reduce((sum, sale) => sum + (sale.commission || 0), 0)
 
-  // 庫存價值 - 🔧 修正：從 Inventory 表計算
+  // 庫存價值 - ⚠️ 暫時方案：從 ProductVariant 表計算（等資料庫同步 Inventory 表後改回）
   const stockValueResult = await prisma.$queryRaw`
     SELECT
-      SUM(i.quantity * COALESCE(i.cost_price, pv.cost_price)) as stock_value,
-      SUM(i.quantity) as stock_count
-    FROM inventory i
-    INNER JOIN product_variants pv ON i.variant_id = pv.id
+      SUM(pv.stock_quantity * pv.cost_price) as stock_value,
+      SUM(pv.stock_quantity) as stock_count
+    FROM product_variants pv
     INNER JOIN products p ON pv.product_id = p.id
     WHERE p.is_active = true
   ` as Array<{ stock_value: number, stock_count: number }>
@@ -114,19 +113,18 @@ async function getSuperAdminDashboard(context: PermissionContext): Promise<Parti
   const pendingReceivables = unpaidSales.reduce((sum, sale) =>
     sum + (sale.actual_amount || sale.total_amount), 0)
 
-  // 低庫存商品 - 🔧 修正：從 Inventory 表查詢
+  // 低庫存商品 - ⚠️ 暫時方案：從 ProductVariant 表查詢（等資料庫同步 Inventory 表後改回）
   const lowStockItemsRaw = await prisma.$queryRaw`
     SELECT
       p.id,
       p.name,
-      SUM(i.quantity) as total_stock
+      SUM(pv.stock_quantity) as total_stock
     FROM products p
     INNER JOIN product_variants pv ON pv.product_id = p.id
-    INNER JOIN inventory i ON i.variant_id = pv.id
     WHERE p.is_active = true
     GROUP BY p.id, p.name
-    HAVING SUM(i.quantity) < 10
-    ORDER BY SUM(i.quantity) ASC
+    HAVING SUM(pv.stock_quantity) < 10
+    ORDER BY SUM(pv.stock_quantity) ASC
     LIMIT 5
   ` as Array<{ id: string, name: string, total_stock: number }>
 
@@ -192,21 +190,18 @@ async function getInvestorDashboard(context: PermissionContext): Promise<Partial
   }, 0)
   const investmentProfit = investmentRevenue - investmentCost // 基於顯示價格的獲利
 
-  // 投資商品庫存 - 🔧 修正：從 Inventory 表查詢（只看公司倉）
-  const investmentStockResult = await prisma.inventory.aggregate({
+  // 投資商品庫存 - ⚠️ 暫時方案：從 ProductVariant 表查詢（等資料庫同步後改回）
+  const investmentStockResult = await prisma.productVariant.aggregate({
     where: {
-      warehouse: 'COMPANY', // 投資方只看公司倉
-      variant: {
-        product: {
-          is_active: true
-        }
+      product: {
+        is_active: true
       }
     },
     _sum: {
-      quantity: true
+      stock_quantity: true
     }
   })
-  const investmentStock = investmentStockResult._sum.quantity || 0
+  const investmentStock = investmentStockResult._sum.stock_quantity || 0
 
   return {
     // 🔑 投資方可見的KPI (基於顯示價格)
@@ -257,19 +252,18 @@ async function getEmployeeDashboard(context: PermissionContext): Promise<Partial
     take: 5
   })
 
-  // 庫存警報 - 🔧 修正：從 Inventory 表查詢
+  // 庫存警報 - ⚠️ 暫時方案：從 ProductVariant 表查詢（等資料庫同步後改回）
   const stockAlertsRaw = await prisma.$queryRaw`
     SELECT
       p.id,
       p.name,
-      SUM(i.quantity) as total_stock
+      SUM(pv.stock_quantity) as total_stock
     FROM products p
     INNER JOIN product_variants pv ON pv.product_id = p.id
-    INNER JOIN inventory i ON i.variant_id = pv.id
     WHERE p.is_active = true
     GROUP BY p.id, p.name
-    HAVING SUM(i.quantity) < 10
-    ORDER BY SUM(i.quantity) ASC
+    HAVING SUM(pv.stock_quantity) < 10
+    ORDER BY SUM(pv.stock_quantity) ASC
     LIMIT 5
   ` as Array<{ id: string, name: string, total_stock: number }>
 
