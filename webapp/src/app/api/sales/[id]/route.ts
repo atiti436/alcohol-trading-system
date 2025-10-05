@@ -288,11 +288,14 @@ export async function DELETE(
       return NextResponse.json({ error: '已付款的銷售訂單無法刪除' }, { status: 400 })
     }
 
-    // 🔒 檢查是否有出貨單 (Restrict 保護)
-    if (existingSale.shipping_orders && existingSale.shipping_orders.length > 0) {
+    // 🔒 檢查是否有出貨單 (Restrict 保護) - 僅阻擋非取消狀態的出貨單
+    const activeShippingOrders = existingSale.shipping_orders?.filter(
+      order => order.status !== 'CANCELLED'
+    )
+    if (activeShippingOrders && activeShippingOrders.length > 0) {
       return NextResponse.json({
         error: '此銷售單已有出貨記錄，無法刪除',
-        details: `請先刪除 ${existingSale.shipping_orders.length} 筆出貨單`
+        details: `請先處理 ${activeShippingOrders.length} 筆出貨單`
       }, { status: 400 })
     }
 
