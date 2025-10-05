@@ -316,15 +316,18 @@ function calculateMonthlySalesTrend(sales: any[], includeActualAmount: boolean) 
     monthlyData[month].count += 1
   })
 
-  return Object.entries(monthlyData)
+  const result = Object.entries(monthlyData)
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-6) // 最近6個月
     .map(([month, data]) => ({
       month,
-      revenue: data.revenue,
-      profit: data.profit,
+      revenue: Number.isFinite(data.revenue) ? data.revenue : 0, // 🔒 NaN 保護
+      profit: Number.isFinite(data.profit) ? data.profit : 0, // 🔒 NaN 保護
       orders: data.count
     }))
+
+  // 如果沒有資料，返回空陣列（前端會顯示「暫無數據」）
+  return result.length > 0 ? result : []
 }
 
 /**
@@ -367,14 +370,21 @@ async function calculateCategoryDistribution(sales: any[]) {
 
   const colors = ['#1890ff', '#52c41a', '#faad14', '#722ed1', '#eb2f96', '#f5222d']
 
-  return Object.entries(categoryData)
+  const result = Object.entries(categoryData)
     .map(([name, value], index) => ({
       name,
-      value,
+      value: Number.isFinite(value) ? value : 0, // 🔒 NaN 保護
       color: colors[index % colors.length]
     }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 6) // 只顯示前6個類別
+
+  // 如果沒有資料，返回預設值
+  if (result.length === 0) {
+    return [{ name: '暫無數據', value: 1, color: '#d9d9d9' }]
+  }
+
+  return result
 }
 
 /**
