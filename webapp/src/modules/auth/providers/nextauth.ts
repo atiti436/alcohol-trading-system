@@ -12,7 +12,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 天
+    maxAge: 8 * 60 * 60, // 🔒 8 小時自動登出（安全考量）
   },
   // 🔒 安全設定：HttpOnly Cookie
   cookies: {

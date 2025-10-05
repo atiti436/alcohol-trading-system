@@ -18,6 +18,15 @@ export function middleware(request: NextRequest) {
   const { pathname, origin: reqOrigin } = new URL(request.url)
   const method = request.method.toUpperCase()
 
+  // 🔒 0. HTTPS 強制跳轉（僅生產環境）
+  if (process.env.NODE_ENV === 'production') {
+    const proto = request.headers.get('x-forwarded-proto')
+    if (proto && proto !== 'https') {
+      const httpsUrl = request.url.replace(/^http:/, 'https:')
+      return NextResponse.redirect(httpsUrl, 301)
+    }
+  }
+
   // 🔒 1. CORS 保護（只檢查寫入操作）
   if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
     const corsError = checkCORS(request, reqOrigin)

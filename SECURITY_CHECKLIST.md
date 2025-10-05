@@ -188,42 +188,107 @@ const safeLog = (msg, data) => {
 
 ### P2 - 中風險（兩週處理）
 
-#### 6. HTTPS 強制跳轉
+#### 6. HTTPS 強制跳轉 ✅ 已完成 (2025-10-05)
 
-**建議**: 生產環境強制使用 HTTPS
+**實施方式**: Middleware 生產環境自動跳轉
+
+**實施位置**: `webapp/src/middleware.ts:22-28`
 
 ```typescript
-// middleware.ts
-export function middleware(request: Request) {
-  if (process.env.NODE_ENV === 'production' &&
-      request.headers.get('x-forwarded-proto') !== 'https') {
-    return Response.redirect(`https://${request.headers.get('host')}${request.url}`)
+if (process.env.NODE_ENV === 'production') {
+  const proto = request.headers.get('x-forwarded-proto')
+  if (proto && proto !== 'https') {
+    return NextResponse.redirect(httpsUrl, 301)
   }
 }
 ```
 
-**實施時間**: 0.5 小時
+**完成時間**: 2025-10-05
 
 ---
 
-#### 7. CSRF 防護
+#### 7. CSRF 防護 ✅ 已確認 (2025-10-05)
 
-**建議**: NextAuth 已內建 CSRF token，確認啟用
+**檢查結果**: NextAuth 已啟用 CSRF 保護
+
+**實施方式**: Cookie SameSite 屬性
+
+**位置**: `webapp/src/modules/auth/providers/nextauth.ts:25`
 
 ```typescript
-// modules/auth/providers/nextauth.ts
-export const authOptions: AuthOptions = {
-  // ✅ 確認有這行
-  csrf: true,
-  // ...
+cookies: {
+  sessionToken: {
+    sameSite: 'lax', // 🔒 CSRF 防護
+  }
 }
 ```
 
-**實施時間**: 0.2 小時（檢查即可）
+**完成時間**: 2025-10-05
 
 ---
 
-#### 8. XSS 防護
+#### 8. XSS 防護 ✅ 已確認 (2025-10-05)
+
+**檢查結果**: 無使用 dangerouslySetInnerHTML
+
+**React 自動轉義**: 所有用戶輸入自動安全處理
+
+**完成時間**: 2025-10-05
+
+---
+
+#### 9. Session 逾時設定 ✅ 已完成 (2025-10-05)
+
+**修改內容**: 30天 → 8小時
+
+**位置**: `webapp/src/modules/auth/providers/nextauth.ts:15`
+
+```typescript
+session: {
+  strategy: 'jwt',
+  maxAge: 8 * 60 * 60, // 🔒 8 小時自動登出
+}
+```
+
+**完成時間**: 2025-10-05
+
+---
+
+#### 10. 依賴套件漏洞 ✅ 已修復 (2025-10-05)
+
+**發現問題**: xlsx 0.18.5 有高危漏洞
+
+**修復內容**:
+- Prototype Pollution (GHSA-4r6h-8v6p-xvw6)
+- ReDoS (GHSA-5pgg-2g8v-p4x9)
+
+**修復方式**: 升級至 xlsx 0.20.3
+
+**位置**: `webapp/package.json:45`
+
+**完成時間**: 2025-10-05
+
+---
+
+#### 11. 敏感資料日誌 ✅ 已確認 (2025-10-05)
+
+**檢查結果**: 無 console.log 洩漏密碼、token、secret
+
+**完成時間**: 2025-10-05
+
+---
+
+#### 12. 檔案上傳安全 ✅ 已確認 (2025-10-05)
+
+**檢查結果**: 系統無檔案上傳功能
+
+**完成時間**: 2025-10-05
+
+---
+
+### P3 - 低風險（技術債）
+
+#### 13. XSS 防護（舊建議）
 
 **建議**: 避免 dangerouslySetInnerHTML
 
