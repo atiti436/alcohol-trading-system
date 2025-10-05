@@ -329,6 +329,7 @@ model PurchaseItem {
 
 model GoodsReceipt {
   id                String           @id @default(cuid())
+  receipt_number    String           @unique // 收貨單編號
   purchase_id       String
   actual_quantity   Int
   exchange_rate     Float
@@ -340,7 +341,7 @@ model GoodsReceipt {
   created_at        DateTime         @default(now())
   updated_at        DateTime         @updatedAt
   additional_costs  AdditionalCost[]
-  purchase          Purchase         @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  purchase          Purchase         @relation(fields: [purchase_id], references: [id], onDelete: Restrict)
 
   @@map("goods_receipts")
 }
@@ -404,6 +405,7 @@ model Sale {
   customer             Customer             @relation(fields: [customer_id], references: [id])
   shipping_orders      ShippingOrder[]
   backorder_trackings  BackorderTracking[]  // 🆕 缺貨追蹤
+  quotations           Quotation[]          // 🆕 關聯報價單（反向）
 
   @@index([parent_sale_id])
   @@index([is_preorder])
@@ -491,7 +493,7 @@ model AccountsReceivable {
   updated_at       DateTime        @updatedAt
   creator          User            @relation(fields: [created_by], references: [id])
   customer         Customer        @relation(fields: [customer_id], references: [id])
-  sale             Sale            @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  sale             Sale            @relation(fields: [sale_id], references: [id], onDelete: Restrict)
   payments         PaymentRecord[]
 
   @@map("accounts_receivable")
@@ -571,11 +573,13 @@ model Quotation {
   quoted_by     String
   source        String          @default("WEB")
   line_user_id  String?
+  sale_id       String?         // 關聯銷售單 (轉單追蹤)
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
   customer      Customer        @relation(fields: [customer_id], references: [id])
   product       Product?        @relation(fields: [product_id], references: [id])
   quoter        User            @relation(fields: [quoted_by], references: [id])
+  sale          Sale?           @relation(fields: [sale_id], references: [id], onDelete: Restrict)
 
   @@map("quotations")
 }
@@ -596,7 +600,7 @@ model ShippingOrder {
   updated_at       DateTime       @updatedAt
   items            ShippingItem[]
   customer         Customer       @relation(fields: [customer_id], references: [id])
-  sale             Sale           @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  sale             Sale           @relation(fields: [sale_id], references: [id], onDelete: Restrict)
 
   @@map("shipping_orders")
 }
@@ -954,7 +958,7 @@ model Import {
   updated_at DateTime @updatedAt
 
   // 關聯
-  purchase             Purchase?           @relation(fields: [purchase_id], references: [id], onDelete: SetNull)
+  purchase             Purchase?           @relation(fields: [purchase_id], references: [id], onDelete: Restrict)
   creator              User                @relation("ImportCreator", fields: [created_by], references: [id])
   finalizer            User?               @relation("ImportFinalizer", fields: [finalized_by], references: [id])
   items                ImportItem[]
