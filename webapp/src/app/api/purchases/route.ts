@@ -216,6 +216,7 @@ export async function POST(request: NextRequest) {
 
       validatedItems.push({
         product_id: item.product_id || null,
+        variant_id: item.variant_id || null,
         product_name: item.product_name,
         quantity: parseInt(item.quantity),
         unit_price: parseFloat(item.unit_price),

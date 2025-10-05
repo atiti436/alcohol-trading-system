@@ -201,6 +201,7 @@ model ProductVariant {
   target_transfers    StockTransfer[]     @relation("TargetVariant")
   import_items        ImportItem[]
   backorder_trackings BackorderTracking[] // 🆕 缺貨追蹤
+  purchase_items      PurchaseItem[]      // 🆕 採購明細
 
   @@map("product_variants")
 }
@@ -309,6 +310,7 @@ model PurchaseItem {
   id               String   @id @default(cuid())
   purchase_id      String
   product_id       String?
+  variant_id       String?
   product_name     String
   quantity         Int
   unit_price       Float
@@ -321,8 +323,9 @@ model PurchaseItem {
   weight_kg        Float?
   created_at       DateTime @default(now())
   updated_at       DateTime @updatedAt
-  product          Product? @relation(fields: [product_id], references: [id])
-  purchase         Purchase @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  product          Product?        @relation(fields: [product_id], references: [id])
+  variant          ProductVariant? @relation(fields: [variant_id], references: [id])
+  purchase         Purchase        @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
 
   @@map("purchase_items")
 }

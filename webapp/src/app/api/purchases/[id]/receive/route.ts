@@ -213,7 +213,15 @@ export async function POST(
           // 查找或創建產品變體
           let variant = null
 
-          if (item.product_id) {
+          // 🎯 Step 1: 優先使用採購單指定的 variant_id
+          if (item.variant_id) {
+            variant = await tx.productVariant.findUnique({
+              where: { id: item.variant_id }
+            })
+          }
+
+          // Step 2: 沒有 variant_id，嘗試用 product_id 找
+          if (!variant && item.product_id) {
           const targetVariantType = DEFAULT_VARIANT_TYPE
             // 優先尋找「標準款」變體
             variant = await tx.productVariant.findFirst({
@@ -234,10 +242,14 @@ export async function POST(
                 }
               })
             }
+          }
 
-            if (!variant) {
-              // 真的沒有任何變體時，才創建新的標準款變體
+          // Step 3: 真的沒有任何變體，報錯提示用戶
+          if (!variant) {
+            if (item.product_id) {
+              // 有 product_id 但沒有變體，才創建新的標準款變體（向後兼容）
               const productCode = item.product?.product_code || 'P001'
+              const targetVariantType = DEFAULT_VARIANT_TYPE
               const variantCode = await generateVariantCode(tx, item.product_id, productCode, targetVariantType)
               const sku = `SKU-${variantCode}`
 
