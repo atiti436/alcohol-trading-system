@@ -25,6 +25,18 @@ export default function SimplePieChart({
   if (!data || data.length === 0) return null
 
   const total = data.reduce((sum, item) => sum + item.value, 0)
+
+  // 🔒 如果總數為0，顯示空狀態
+  if (total === 0 || !Number.isFinite(total)) {
+    return (
+      <Card title={title} style={{ height: height + 120 }}>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+          暫無數據
+        </div>
+      </Card>
+    )
+  }
+
   const radius = Math.min(height, 200) / 3
   const centerX = 120
   const centerY = height / 2
@@ -32,7 +44,7 @@ export default function SimplePieChart({
   // 計算每個扇形的角度
   let currentAngle = -Math.PI / 2 // 從頂部開始
   const sectors = data.map(item => {
-    const percentage = item.value / total
+    const percentage = (item.value || 0) / total // 🔒 防止 undefined / total
     const angle = percentage * 2 * Math.PI
     const startAngle = currentAngle
     const endAngle = currentAngle + angle

@@ -30,14 +30,16 @@ export default function SimpleLineChart({
 
   const maxValue = Math.max(...data.map(d => d.value))
   const minValue = Math.min(...data.map(d => d.value))
-  const range = maxValue - minValue
+  const range = maxValue - minValue || 1 // 🔒 防止除以0產生NaN
 
   // 計算SVG路徑點
   const width = 300
   const chartHeight = height - 40
   const points = data.map((item, index) => {
     const x = (index / (data.length - 1)) * (width - 40) + 20
-    const y = chartHeight - ((item.value - minValue) / range) * (chartHeight - 20) + 10
+    // 🔒 當所有值都是0時，顯示在中間位置
+    const normalizedValue = range > 0 ? ((item.value - minValue) / range) : 0.5
+    const y = chartHeight - normalizedValue * (chartHeight - 20) + 10
     return { x, y, value: item.value, month: item.month }
   })
 
