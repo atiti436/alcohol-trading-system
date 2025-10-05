@@ -290,7 +290,15 @@ export async function DELETE(
       return NextResponse.json({ error: '已付款的銷售訂單無法刪除' }, { status: 400 })
     }
 
-    // 2. 檢查是否有活躍的出貨單（僅阻擋非取消狀態）
+    // 2. 建議先取消再刪除（避免直接刪除 CONFIRMED 訂單）
+    if (existingSale.status === 'CONFIRMED' || existingSale.status === 'SHIPPED') {
+      return NextResponse.json({
+        error: '此銷售單尚未取消',
+        details: '請先使用「取消」功能，再進行刪除'
+      }, { status: 400 })
+    }
+
+    // 3. 檢查是否有活躍的出貨單（僅阻擋非取消狀態）
     const activeShippingOrders = existingSale.shipping_orders?.filter(
       order => order.status !== 'CANCELLED'
     )
@@ -301,7 +309,7 @@ export async function DELETE(
       }, { status: 400 })
     }
 
-    // 3. 檢查是否有未結清的應收帳款
+    // 4. 檢查是否有未結清的應收帳款
     const unpaidReceivables = existingSale.accounts_receivables?.filter(
       ar => ar.status !== 'PAID'
     )
@@ -312,7 +320,7 @@ export async function DELETE(
       }, { status: 400 })
     }
 
-    // 4. 檢查是否有關聯的報價單
+    // 5. 檢查是否有關聯的報價單
     if (existingSale.quotations && existingSale.quotations.length > 0) {
       return NextResponse.json({
         error: '此銷售單由報價單轉換而來，無法直接刪除',
@@ -321,6 +329,7 @@ export async function DELETE(
     }
 
     // 🔒 刪除銷售訂單及其關聯資料（使用 transaction 確保一致性）
+    // 注意：此時銷售單必定是 CANCELLED 或 PENDING，庫存已由 admin-cancel 還原
     await prisma.$transaction(async (tx) => {
       // 1. 清理應收帳款（如果有）
       await tx.accountsReceivable.deleteMany({
