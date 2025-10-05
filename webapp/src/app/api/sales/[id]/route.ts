@@ -283,8 +283,19 @@ export async function DELETE(
       return NextResponse.json({ error: '銷售訂單不存在' }, { status: 404 })
     }
 
+    // 🐛 Debug: 記錄銷售單狀態
+    console.log('[DELETE Sale Debug]', {
+      id,
+      status: existingSale.status,
+      is_paid: existingSale.is_paid,
+      shipping_orders: existingSale.shipping_orders?.map(o => ({ id: o.id, status: o.status })),
+      accounts_receivables_count: existingSale.accounts_receivables?.length || 0,
+      quotations_count: existingSale.quotations?.length || 0,
+    })
+
     // 檢查是否已付款（已付款的訂單不能刪除）
     if (existingSale.is_paid) {
+      console.log('[DELETE Sale] Blocked: is_paid = true')
       return NextResponse.json({ error: '已付款的銷售訂單無法刪除' }, { status: 400 })
     }
 
@@ -293,6 +304,7 @@ export async function DELETE(
       order => order.status !== 'CANCELLED'
     )
     if (activeShippingOrders && activeShippingOrders.length > 0) {
+      console.log('[DELETE Sale] Blocked: Active shipping orders', activeShippingOrders)
       return NextResponse.json({
         error: '此銷售單已有出貨記錄，無法刪除',
         details: `請先處理 ${activeShippingOrders.length} 筆出貨單`
@@ -301,6 +313,7 @@ export async function DELETE(
 
     // 🔒 檢查是否有應收帳款 (Restrict 保護)
     if (existingSale.accounts_receivables && existingSale.accounts_receivables.length > 0) {
+      console.log('[DELETE Sale] Blocked: Has accounts_receivables')
       return NextResponse.json({
         error: '此銷售單已有應收帳款記錄，無法刪除',
         details: `請先刪除 ${existingSale.accounts_receivables.length} 筆應收帳款`
@@ -309,6 +322,7 @@ export async function DELETE(
 
     // 🔒 檢查是否有關聯的報價單 (Restrict 保護)
     if (existingSale.quotations && existingSale.quotations.length > 0) {
+      console.log('[DELETE Sale] Blocked: Has quotations')
       return NextResponse.json({
         error: '此銷售單由報價單轉換而來，無法直接刪除',
         details: `請先刪除 ${existingSale.quotations.length} 筆報價單`
