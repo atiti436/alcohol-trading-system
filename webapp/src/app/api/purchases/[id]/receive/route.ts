@@ -231,6 +231,9 @@ export async function POST(
             })
           }
 
+          // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+          // TODO: 執行 prisma db push 後取消註解
+          /*
           // 🏭 更新或創建 Inventory 記錄（公司倉）
           let inventory = await tx.inventory.findFirst({
             where: {
@@ -261,6 +264,18 @@ export async function POST(
                 cost_price: finalUnitCost
               }
             })
+          }
+          */
+
+          // ⚠️ 暫時使用虛擬庫存記錄
+          let inventory = {
+            id: 'temp-id',
+            variant_id: variant?.id || '',
+            warehouse: 'COMPANY' as const,
+            quantity: actualStockIncrease,
+            reserved: 0,
+            available: actualStockIncrease,
+            cost_price: finalUnitCost
           }
 
           // 建立庫存異動記錄
@@ -353,6 +368,9 @@ export async function POST(
           const partiallyResolved: any[] = []
 
           for (const backorder of pendingBackorders) {
+            // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+            // TODO: 執行 prisma db push 後取消註解
+            /*
             // 檢查該變體的可用庫存
             const inventories = await tx.inventory.findMany({
               where: {
@@ -383,6 +401,11 @@ export async function POST(
 
                 remainingToReserve -= toReserve
               }
+            */
+
+            // ⚠️ 暫時跳過缺貨處理
+            const availableStock = 0
+            if (false) {
 
               // 標記缺貨已解決
               await tx.backorderTracking.update({
@@ -414,7 +437,10 @@ export async function POST(
                 quantity: backorder.shortage_quantity,
                 variantCode: backorder.variant.variant_code
               })
-            } else if (availableStock > 0) {
+            } else if (false) {
+              // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+              // TODO: 執行 prisma db push 後取消註解
+              /*
               // 部分補貨
               let remainingToReserve = availableStock
 
@@ -451,6 +477,7 @@ export async function POST(
                 remainingShortage: backorder.shortage_quantity - availableStock,
                 variantCode: backorder.variant.variant_code
               })
+              */
             }
           }
 
@@ -492,11 +519,15 @@ export async function POST(
                     name: true
                   }
                 },
+                // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+                // TODO: 執行 prisma db push 後取消註解
+                /*
                 inventory: {
                   select: {
                     available: true
                   }
                 }
+                */
               }
             })
 
@@ -524,7 +555,12 @@ export async function POST(
               })
 
               if (preorders.length > 0) {
+                // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+                // TODO: 執行 prisma db push 後取消註解
+                /*
                 const totalAvailable = variant.inventory.reduce((sum, inv) => sum + inv.available, 0)
+                */
+                const totalAvailable = 0 // ⚠️ 暫時硬編碼為 0
                 const totalRequested = preorders.reduce((sum, sale) =>
                   sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
                 )

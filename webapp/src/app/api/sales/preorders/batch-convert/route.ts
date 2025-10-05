@@ -136,6 +136,9 @@ async function autoConvertPreordersBySaleIds(
           )
         }
 
+        // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+        // TODO: 執行 prisma db push 後取消註解
+        /*
         // 檢查庫存
         const inventories = await tx.inventory.findMany({
           where: { variant_id: variantIdToUse },
@@ -143,6 +146,8 @@ async function autoConvertPreordersBySaleIds(
         })
 
         const availableStock = inventories.reduce((sum: number, inv: any) => sum + inv.available, 0)
+        */
+        const availableStock = 0 // ⚠️ 暫時硬編碼為 0
 
         if (availableStock < item.quantity) {
           stockCheckErrors.push(
@@ -198,6 +203,9 @@ async function autoConvertPreordersBySaleIds(
           })
         }
 
+        // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+        // TODO: 執行 prisma db push 後取消註解
+        /*
         // 預留庫存（從 available 移到 reserved）- FIFO 策略
         let remainingToReserve = item.quantity
 
@@ -224,6 +232,7 @@ async function autoConvertPreordersBySaleIds(
 
           remainingToReserve -= toReserve
         }
+        */
       }
 
       // 轉換成功

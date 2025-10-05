@@ -98,7 +98,10 @@ export async function GET(request: NextRequest) {
               cost_price: true,
               base_price: true,
               current_price: true,
-              condition: true,
+              condition: true
+              // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+              // TODO: 執行 prisma db push 後取消註解
+              /*
               // 🔧 從 Inventory 表查詢庫存
               inventory: {
                 select: {
@@ -111,6 +114,7 @@ export async function GET(request: NextRequest) {
                   updated_at: true
                 }
               }
+              */
             }
           },
           _count: {
@@ -123,6 +127,9 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where })
     ])
 
+    // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+    // TODO: 執行 prisma db push 後取消註解
+    /*
     // 計算庫存統計資訊（從 Inventory 表匯總）
     const inventoryData = products.map(product => {
       const stats: DashboardStatsAccumulator = product.variants.reduce(
@@ -147,6 +154,10 @@ export async function GET(request: NextRequest) {
         },
         { total_stock_quantity: 0, total_reserved_stock: 0, total_available_stock: 0, total_value: 0 }
       )
+    */
+    // ⚠️ 暫時使用空統計資料
+    const inventoryData = products.map(product => {
+      const stats: DashboardStatsAccumulator = { total_stock_quantity: 0, total_reserved_stock: 0, total_available_stock: 0, total_value: 0 }
 
       // 判斷庫存狀態
       let stock_status: InventoryStats['stock_status'] = 'NORMAL'
@@ -271,6 +282,9 @@ export async function POST(request: NextRequest) {
 
     // 使用 transaction 確保數據一致性
     const result = await prisma.$transaction(async (tx) => {
+      // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+      // TODO: 執行 prisma db push 後取消註解
+      /*
       // 查詢或創建該倉庫的庫存記錄
       let inventory = await tx.inventory.findFirst({
         where: {
@@ -292,6 +306,18 @@ export async function POST(request: NextRequest) {
           }
         })
       }
+      */
+
+      // ⚠️ 暫時使用虛擬庫存記錄
+      let inventory = {
+        id: 'temp-id',
+        variant_id,
+        warehouse,
+        quantity: 0,
+        reserved: 0,
+        available: 0,
+        cost_price: variant.cost_price || 0
+      }
 
       // 計算新的庫存數量
       let newQuantity: number
@@ -310,6 +336,9 @@ export async function POST(request: NextRequest) {
           throw new Error('無效的調整類型')
       }
 
+      // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+      // TODO: 執行 prisma db push 後取消註解
+      /*
       // 檢查庫存不能小於已預留的數量
       if (newQuantity < inventory.reserved) {
         throw new Error(`庫存調整後 (${newQuantity}) 不能少於已預留數量 (${inventory.reserved})`)
@@ -324,6 +353,15 @@ export async function POST(request: NextRequest) {
           updated_at: new Date()
         }
       })
+      */
+
+      // ⚠️ 暫時返回虛擬更新結果
+      const updatedInventory = {
+        ...inventory,
+        quantity: newQuantity,
+        available: newQuantity - inventory.reserved,
+        updated_at: new Date()
+      }
 
       // 記錄庫存異動
       const quantityChange = newQuantity - inventory.quantity

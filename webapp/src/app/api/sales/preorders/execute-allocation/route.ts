@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
             continue
           }
 
+          // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+          // TODO: 執行 prisma db push 後取消註解
+          /*
           // 如果分配數量 > 0，預留庫存
           if (allocatedQuantity > 0) {
             // 預留庫存（FIFO）
@@ -106,6 +109,7 @@ export async function POST(request: NextRequest) {
               continue
             }
           }
+          */
 
           // 更新訂單狀態
           const isFullyFulfilled = shortageQuantity === 0

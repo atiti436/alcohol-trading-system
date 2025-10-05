@@ -122,6 +122,9 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
           }
         })
 
+        // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+        // TODO: 執行 prisma db push 後取消註解
+        /*
         // 更新庫存 (個人倉) - 使用新的獨立 Inventory 表
         const existingStock = await tx.inventory.findUnique({
           where: {
@@ -159,6 +162,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
             }
           })
         }
+        */
 
         // 記錄庫存異動
         await tx.inventoryMovement.create({

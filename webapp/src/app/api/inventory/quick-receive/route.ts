@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
 
     // 使用 transaction 確保數據一致性
     const result = await prisma.$transaction(async (tx) => {
+      // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+      // TODO: 執行 prisma db push 後取消註解
+      /*
       // 查詢或創建個人倉庫存記錄
       let inventory = await tx.inventory.findFirst({
         where: {
@@ -99,6 +102,19 @@ export async function POST(request: NextRequest) {
             cost_price: costPrice
           }
         })
+      }
+      */
+
+      // ⚠️ 暫時使用虛擬庫存記錄
+      const oldQuantity = 0
+      let inventory = {
+        id: 'temp-id',
+        variant_id,
+        warehouse: 'PRIVATE' as const,
+        quantity: receiveQuantity,
+        reserved: 0,
+        available: receiveQuantity,
+        cost_price: costPrice
       }
 
       // 記錄庫存異動

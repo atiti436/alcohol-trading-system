@@ -97,6 +97,9 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
 
       const affectedVariantIds = [...new Set(inventoryMovements.map(m => m.variant_id))]
 
+      // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+      // TODO: 執行 prisma db push 後取消註解
+      /*
       // 3. 更新剩餘庫存成本 (加權平均) - 使用新的獨立 Inventory 表
       for (const variantId of affectedVariantIds) {
         // 同時更新公司倉和個人倉的庫存
@@ -118,6 +121,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
           }
         }
       }
+      */
 
       // 4. 🔄 回溯調整已售出商品的成本與利潤
       // 查詢已售出的商品 (透過 InventoryMovement 找 SALE 類型)
