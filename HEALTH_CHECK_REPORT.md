@@ -15,7 +15,7 @@
 | 多餘程式碼 | ✅ 良好 | 3個待清理項目 | 3/3 |
 | Schema一致性 | ✅ 完美 | 2個問題 | 2/2 |
 
-**修復進度**: 12/13 問題已修復（92%）+ **Issue #1 完成（100%）** ✨
+**修復進度**: 15/16 問題已修復（94%）+ **Issue #1 完成（100%）** + **Issue #2 完成（100%）** ✨
 
 ---
 
@@ -103,6 +103,52 @@ preorder_mode: 'SKIP'    // ⏸️ 暫不處理（稍後手動）
 - `webapp/src/app/api/purchases/[id]/receive/route.ts` - 新增 preorder_mode 參數支援
 - `webapp/src/components/purchases/ReceiveGoodsModal.tsx` - 新增模式選擇器
 - `webapp/src/app/purchases/page.tsx` - 整合 AllocationModal 流程
+
+---
+
+### ✅ Issue #2: 單據關聯與刪除保護機制 (已修復 - 2025-10-05)
+
+**發現問題**:
+1. ❌ **收貨單沒有獨立編號** - GoodsReceipt 缺少 receipt_number
+2. ❌ **報價單轉銷售單無追蹤** - Quotation 無法追蹤是否已轉成 Sale
+3. ⚠️ **刪除保護規則錯誤** - Cascade 刪除會誤刪後續單據
+
+**修復內容**:
+
+1. **收貨單新增編號系統** ✅
+   ```prisma
+   model GoodsReceipt {
+     receipt_number String @unique // 新增編號欄位
+   }
+   ```
+
+2. **報價單追蹤銷售單** ✅
+   ```prisma
+   model Quotation {
+     sale_id String? // 新增關聯欄位
+     sale    Sale?   @relation(..., onDelete: Restrict)
+   }
+   ```
+
+3. **修復刪除保護規則** ✅
+   | 模型 | 關聯 | 修改前 | 修改後 |
+   |------|------|--------|--------|
+   | GoodsReceipt → Purchase | onDelete | Cascade ❌ | **Restrict** ✅ |
+   | Import → Purchase | onDelete | SetNull ❌ | **Restrict** ✅ |
+   | ShippingOrder → Sale | onDelete | Cascade ❌ | **Restrict** ✅ |
+   | AccountsReceivable → Sale | onDelete | Cascade ❌ | **Restrict** ✅ |
+
+**業務邏輯**:
+- 刪除 Purchase (有 GoodsReceipt) → ❌ 系統阻止
+- 刪除 Sale (有 ShippingOrder) → ❌ 系統阻止
+- 刪除 Quotation (已轉 Sale) → ❌ 系統阻止
+
+**影響**:
+- ✅ 防止誤刪後續單據造成資料遺失
+- ✅ 保護業務流程完整性
+- ⚠️ API 刪除邏輯需要處理 Restrict 錯誤（後續處理）
+
+**Commit**: `eba4448`
 
 ---
 
@@ -707,13 +753,19 @@ import { PrintableDocument } from '@/components/common/PrintableDocument'
   - ✅ 在 `/settings` 加入「公司資訊」分頁入口
   - 📋 記錄列印功能缺失清單（採購單列印、Logo 上傳等）
   - 📝 建立待補充功能優先級列表
+- **2025-10-05**: 新增銀行帳號全域顯示設定
+  - ✅ CompanySettings 新增 `showBankInfo` 開關
+  - ✅ 建立統一頁尾組件 DocumentFooter
+  - ✅ 整合到報價單、對帳單、出貨單
+- **2025-10-05**: 修復單據關聯與刪除保護 (Issue #2)
+  - ✅ GoodsReceipt 新增 receipt_number 編號
+  - ✅ Quotation 新增 sale_id 追蹤
+  - ✅ 修改刪除保護規則 (Cascade → Restrict)
 
 **報告完成時間**: 2025-10-05
-**修復進度**: 12/13 (92%)
-**Issue #1 進度**: ✅ 完成（100%）+ 加強版完成
-  - 方案 C（務實 1週）✅
-  - 選項 1: 關鍵邊緣 API ✅
-  - 選項 2: 文件與標記 ✅
+**修復進度**: 15/16 (94%)
+**Issue #1 進度**: ✅ 完成（100%）
+**Issue #2 進度**: ✅ 完成（100%）- 單據關聯與刪除保護
 **新增檢查**: 列印功能完整度（發現 2 項 P0 缺失）
-**下次檢查建議**: 系統已穩定，可選擇性執行方案 A 剩餘工作
-**最新 Git Commit**: `b760b22` (文檔整合)
+**下次檢查建議**: API 刪除邏輯需處理 Restrict 錯誤訊息
+**最新 Git Commit**: `eba4448` (Issue #2 修復)
