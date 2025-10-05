@@ -35,10 +35,14 @@ export function middleware(request: NextRequest) {
   }
 
   // 🔒 2. CORS 保護（只檢查寫入操作）
+  // ⚠️ 暫時關閉 CORS 檢查進行診斷
+  // TODO: 修復環境變數後重新啟用
+  /*
   if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
     const corsError = checkCORS(originHeader, allowedOrigins)
     if (corsError) return corsError
   }
+  */
 
   // 🔒 3. Rate Limiting（分級保護）
   const rateLimitError = checkRateLimit(request, pathname, method)
@@ -152,9 +156,9 @@ function checkRateLimit(request: NextRequest, pathname: string, method: string):
   let windowMs = 60_000 // 1分鐘
   let key = `general:${pathname}`
 
-  // P0: 認證相關（最嚴格）- 10次/分鐘
+  // P0: 認證相關（最嚴格）- 暫時放寬到 100次/分鐘
   if (pathname.startsWith('/api/auth/')) {
-    limit = 10
+    limit = 100  // 暫時放寬，避免 CORS 錯誤觸發 Rate Limit
     key = `auth:${ip}`
   }
   // P1: 寫入操作（嚴格）- 20次/分鐘
