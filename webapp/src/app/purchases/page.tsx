@@ -517,9 +517,9 @@ export default function PurchasesPage() {
         setReceiveGoodsVisible(false)
         setReceiveModeVisible(false)
 
-        // 確保同步建立/更新進貨記錄
+        // ✅ 使用新版 API 建立進貨記錄
         try {
-          await fetch('/api/imports/from-purchase', {
+          await fetch('/api/imports-v2/from-purchase', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ purchaseId: selectedForReceive.id })
@@ -651,7 +651,8 @@ export default function PurchasesPage() {
     const actionKey = `receive-import-${purchase.id}`
     setActionLoading(prev => ({ ...prev, [actionKey]: true }))
     try {
-      const response = await fetch('/api/imports/from-purchase', {
+      // ✅ 使用新版 API 創建進貨單
+      const response = await fetch('/api/imports-v2/from-purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ purchaseId: purchase.id })
@@ -660,7 +661,7 @@ export default function PurchasesPage() {
 
       if (response.ok && result.success) {
         setReceiveModeVisible(false)
-        message.success('已轉進貨，正在跳轉...')
+        message.success('已創建進貨單，正在跳轉...')
         if (purchase.purchaseNumber) {
           router.push(`/imports?search=${encodeURIComponent(purchase.purchaseNumber)}`)
         } else {

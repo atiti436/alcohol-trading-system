@@ -472,7 +472,7 @@ export default function ImportsPage() {
     setDeclarationModalVisible(true)
   }
 
-  // ✅ 使用新版 Import API 執行收貨入庫
+  // ✅ 智能收貨：優先使用新版 API，如果失敗則提示創建新版進貨單
   const handleReceiveImport = async (importRecord: ImportRecord) => {
     try {
       // 先嘗試使用新版 imports-v2 API
@@ -489,9 +489,18 @@ export default function ImportsPage() {
         message.success('收貨完成，庫存已更新')
         await loadImports(false)
       } else {
-        // 如果新版 API 失敗，顯示錯誤
-        message.error(result.error?.message || result.error || result.details || '收貨失敗')
-        console.error('收貨失敗詳情:', result)
+        // 如果是舊版進貨單，提示用戶從採購單重新創建
+        if (result.error?.includes('進貨單不存在') || result.error?.includes('不存在')) {
+          Modal.confirm({
+            title: '這是舊版進貨單',
+            content: '此進貨單使用舊版資料結構，無法直接收貨。請從採購管理重新創建進貨單。',
+            okText: '我知道了',
+            cancelText: '取消'
+          })
+        } else {
+          message.error(result.error?.message || result.error || result.details || '收貨失敗')
+          console.error('收貨失敗詳情:', result)
+        }
       }
     } catch (error) {
       console.error('進貨收貨失敗:', error)
