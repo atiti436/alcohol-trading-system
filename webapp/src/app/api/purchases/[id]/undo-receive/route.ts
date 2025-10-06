@@ -62,15 +62,42 @@ export async function POST(
         }
       })
 
-      // 2. 還原庫存數量
+      console.log(`[撤銷收貨] 找到 ${inventoryMovements.length} 筆庫存異動記錄`)
+      inventoryMovements.forEach(m => {
+        console.log(`  - variant: ${m.variant_id}, 倉庫: ${m.warehouse}, 數量變化: ${m.quantity_change}`)
+      })
+
+      // 2. 還原庫存數量（兩個表都要回滾）
       for (const movement of inventoryMovements) {
         if (movement.variant_id) {
-          // 還原變體庫存
+          // 🔄 還原 Inventory 表（新版庫存）
+          const inventory = await tx.inventory.findFirst({
+            where: {
+              variant_id: movement.variant_id,
+              warehouse: movement.warehouse
+            }
+          })
+
+          if (inventory) {
+            await tx.inventory.update({
+              where: { id: inventory.id },
+              data: {
+                quantity: {
+                  decrement: movement.quantity_change
+                },
+                available: {
+                  decrement: movement.quantity_change
+                }
+              }
+            })
+          }
+
+          // 🔄 還原 ProductVariant 表（舊版庫存，向後兼容）
           await tx.productVariant.update({
             where: { id: movement.variant_id },
             data: {
               stock_quantity: {
-                decrement: movement.quantity_change // 扣除之前增加的數量
+                decrement: movement.quantity_change
               },
               available_stock: {
                 decrement: movement.quantity_change
@@ -89,11 +116,24 @@ export async function POST(
         }
       })
 
-      // 4. 將採購單狀態改回已確認
+      // 4. 刪除收貨單（GoodsReceipt）及其額外費用
+      const goodsReceipts = await tx.goodsReceipt.findMany({
+        where: { purchase_id: purchaseId }
+      })
+
+      for (const receipt of goodsReceipts) {
+        // 先刪除額外費用（AdditionalCost 會級聯刪除）
+        await tx.goodsReceipt.delete({
+          where: { id: receipt.id }
+        })
+      }
+
+      // 5. 將採購單狀態改回已確認
       const updatedPurchase = await tx.purchase.update({
         where: { id: purchaseId },
         data: {
           status: 'CONFIRMED',
+          received_date: null, // 清除收貨日期
           updated_at: new Date()
         },
         include: {

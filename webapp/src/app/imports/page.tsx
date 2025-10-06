@@ -33,7 +33,8 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   ExclamationCircleOutlined,
-  EditOutlined
+  EditOutlined,
+  DeleteOutlined
 } from '@ant-design/icons'
 import { useSession } from 'next-auth/react'
 import dayjs from 'dayjs'
@@ -42,6 +43,7 @@ import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
 import CustomsDeclarationUpload from '@/components/customs/CustomsDeclarationUpload'
 import CustomsDeclarationReview from '@/components/customs/CustomsDeclarationReview'
 import ImportEditModal from '@/components/imports/ImportEditModal'
+import ManualDeclarationModal from '@/components/imports/ManualDeclarationModal'
 
 const { Search } = Input
 const { Option } = Select
@@ -111,6 +113,7 @@ export default function ImportsPage() {
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [selectedImport, setSelectedImport] = useState<ImportRecord | null>(null)
   const [declarationModalVisible, setDeclarationModalVisible] = useState(false)
+  const [manualDeclarationModalVisible, setManualDeclarationModalVisible] = useState(false)
   const [reviewModalVisible, setReviewModalVisible] = useState(false)
   const [pendingPurchases, setPendingPurchases] = useState<any[]>([])
   const [ocrResult, setOcrResult] = useState<any>(null)
@@ -426,14 +429,25 @@ export default function ImportsPage() {
             )}
 
             {record.status === 'PENDING' && (
-              <Tooltip title="上傳報單">
-                <Button
-                  icon={<UploadOutlined />}
-                  size="small"
-                  type="primary"
-                  onClick={() => handleUploadDeclaration(record)}
-                />
-              </Tooltip>
+              <>
+                <Tooltip title="上傳報單（OCR辨識）">
+                  <Button
+                    icon={<UploadOutlined />}
+                    size="small"
+                    type="primary"
+                    onClick={() => handleUploadDeclaration(record)}
+                  />
+                </Tooltip>
+                <Tooltip title="手動輸入報單">
+                  <Button
+                    icon={<EditOutlined />}
+                    size="small"
+                    onClick={() => handleManualDeclaration(record)}
+                  >
+                    手KEY
+                  </Button>
+                </Tooltip>
+              </>
             )}
 
             {(record.status === 'PROCESSING' || record.status === 'CUSTOMS_CLEARED' || record.status === 'RECEIVED') && (
@@ -446,6 +460,17 @@ export default function ImportsPage() {
                 >
                   收貨
                 </Button>
+              </Tooltip>
+            )}
+
+            {isAdmin && (
+              <Tooltip title="刪除">
+                <Button
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  danger
+                  onClick={() => handleDeleteImport(record)}
+                />
               </Tooltip>
             )}
           </Space>
@@ -470,6 +495,12 @@ export default function ImportsPage() {
   const handleUploadDeclaration = (importRecord: ImportRecord) => {
     setSelectedImport(importRecord)
     setDeclarationModalVisible(true)
+  }
+
+  // 處理手動輸入報單
+  const handleManualDeclaration = (importRecord: ImportRecord) => {
+    setSelectedImport(importRecord)
+    setManualDeclarationModalVisible(true)
   }
 
   // ✅ 智能收貨：優先使用新版 API，如果失敗則提示創建新版進貨單
@@ -587,6 +618,48 @@ export default function ImportsPage() {
       console.error('創建進貨記錄失敗:', error)
       message.error('創建進貨記錄失敗')
     }
+  }
+
+  // 處理刪除進貨單
+  const handleDeleteImport = (importRecord: ImportRecord) => {
+    Modal.confirm({
+      title: '確定要刪除此進貨單嗎？',
+      content: (
+        <div>
+          <p>進貨單號：{importRecord.importNumber}</p>
+          <p style={{ color: '#ff4d4f' }}>
+            刪除後將：
+          </p>
+          <ul>
+            <li>回滾所有庫存變動</li>
+            <li>刪除所有相關記錄</li>
+            <li>無法復原</li>
+          </ul>
+        </div>
+      ),
+      okText: '確定刪除',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          const response = await fetch(`/api/imports-v2/${importRecord.id}`, {
+            method: 'DELETE'
+          })
+
+          const result = await response.json()
+
+          if (response.ok && result.success) {
+            message.success('進貨單已刪除')
+            await loadImports(false)
+          } else {
+            message.error(result.error || '刪除失敗')
+          }
+        } catch (error) {
+          console.error('刪除進貨單失敗:', error)
+          message.error('刪除失敗，請檢查網路連線')
+        }
+      }
+    })
   }
 
   return (
@@ -953,6 +1026,21 @@ export default function ImportsPage() {
         }}
         onSuccess={() => {
           setEditModalVisible(false)
+          setSelectedImport(null)
+          loadImports()
+        }}
+      />
+
+      {/* 手動輸入報單 Modal */}
+      <ManualDeclarationModal
+        visible={manualDeclarationModalVisible}
+        importRecord={selectedImport}
+        onCancel={() => {
+          setManualDeclarationModalVisible(false)
+          setSelectedImport(null)
+        }}
+        onSuccess={() => {
+          setManualDeclarationModalVisible(false)
           setSelectedImport(null)
           loadImports()
         }}

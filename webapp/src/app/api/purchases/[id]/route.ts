@@ -262,7 +262,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/purchases/[id] - 刪除採購單
+// DELETE /api/purchases/[id] - 刪除採購單（級聯刪除所有相關資料）
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -281,7 +281,8 @@ export async function DELETE(
       where: { id: purchaseId },
       include: {
         receipts: true,
-        imports: true
+        Import: true, // ✅ 正確：schema 中是 Import（大寫）
+        items: true
       }
     })
 
@@ -289,55 +290,119 @@ export async function DELETE(
       return NextResponse.json({ error: '採購單不存在' }, { status: 404 })
     }
 
-    // 檢查狀態 - 已收貨或已完成的採購單不能刪除
-    if (existingPurchase.status === 'RECEIVED' || existingPurchase.status === 'COMPLETED') {
-      return NextResponse.json({
-        error: '已收貨或已完成的採購單不能刪除'
-      }, { status: 400 })
-    }
+    // 使用事務進行級聯刪除
+    await prisma.$transaction(async (tx) => {
+      // 1. 查找所有庫存異動記錄
+      const inventoryMovements = await tx.inventoryMovement.findMany({
+        where: {
+          reference_type: 'PURCHASE',
+          reference_id: purchaseId
+        }
+      })
 
-    // 🔒 檢查是否有收貨單 (Restrict 保護)
-    if (existingPurchase.receipts && existingPurchase.receipts.length > 0) {
-      return NextResponse.json({
-        error: '此採購單已有收貨記錄，無法刪除',
-        details: `請先刪除 ${existingPurchase.receipts.length} 筆收貨記錄`
-      }, { status: 400 })
-    }
+      // 2. 回滾庫存（如果已收貨）
+      for (const movement of inventoryMovements) {
+        if (movement.variant_id && movement.quantity_change > 0) {
+          // 回滾 Inventory 表
+          const inventory = await tx.inventory.findFirst({
+            where: {
+              variant_id: movement.variant_id,
+              warehouse: movement.warehouse
+            }
+          })
 
-    // 🔒 檢查是否有進口單 (Restrict 保護)
-    if (existingPurchase.imports && existingPurchase.imports.length > 0) {
-      return NextResponse.json({
-        error: '此採購單已有進口單記錄，無法刪除',
-        details: `請先刪除 ${existingPurchase.imports.length} 筆進口單`
-      }, { status: 400 })
-    }
+          if (inventory) {
+            await tx.inventory.update({
+              where: { id: inventory.id },
+              data: {
+                quantity: {
+                  decrement: movement.quantity_change
+                },
+                available: {
+                  decrement: movement.quantity_change
+                }
+              }
+            })
+          }
 
-    // 軟刪除 - 標記為已取消而非實際刪除
-    await prisma.purchase.update({
-      where: { id: purchaseId },
-      data: {
-        status: 'CANCELLED',
+          // 回滾 ProductVariant 表
+          await tx.productVariant.update({
+            where: { id: movement.variant_id },
+            data: {
+              stock_quantity: {
+                decrement: movement.quantity_change
+              },
+              available_stock: {
+                decrement: movement.quantity_change
+              }
+            }
+          })
+        }
       }
+
+      // 3. 刪除庫存異動記錄
+      await tx.inventoryMovement.deleteMany({
+        where: {
+          reference_type: 'PURCHASE',
+          reference_id: purchaseId
+        }
+      })
+
+      // 4. 刪除收貨單（GoodsReceipt 會級聯刪除 AdditionalCost）
+      await tx.goodsReceipt.deleteMany({
+        where: { purchase_id: purchaseId }
+      })
+
+      // 5. 刪除新版進貨單（Import）
+      const imports = await tx.import.findMany({
+        where: { purchase_id: purchaseId }
+      })
+
+      for (const importRecord of imports) {
+        // 先刪除進貨明細（ImportItem 會被級聯刪除）
+        // 先刪除進貨費用（ImportCost）
+        await tx.importCost.deleteMany({
+          where: { import_id: importRecord.id }
+        })
+
+        // 刪除成本調整記錄
+        await tx.costAdjustmentLog.deleteMany({
+          where: { import_id: importRecord.id }
+        })
+
+        // 刪除進貨單本身（ImportItem 會級聯刪除）
+        await tx.import.delete({
+          where: { id: importRecord.id }
+        })
+      }
+
+      // 6. 刪除採購明細（PurchaseItem 會級聯刪除）
+      await tx.purchaseItem.deleteMany({
+        where: { purchase_id: purchaseId }
+      })
+
+      // 7. 最後刪除採購單
+      await tx.purchase.delete({
+        where: { id: purchaseId }
+      })
     })
 
     return NextResponse.json({
       success: true,
-      message: '採購單已取消'
+      message: '採購單及所有相關資料已刪除'
     })
 
   } catch (error) {
     console.error('採購單刪除失敗:', error)
 
-    // 處理 Prisma Restrict 錯誤
-    if (error instanceof Error && error.message.includes('Foreign key constraint')) {
-      return NextResponse.json({
-        error: '無法刪除採購單，因為有相關的後續單據',
-        details: '請先刪除收貨單或進口單'
-      }, { status: 400 })
+    // 詳細錯誤訊息
+    let errorMessage = '刪除失敗'
+    if (error instanceof Error) {
+      errorMessage = error.message
     }
 
     return NextResponse.json(
-      { error: '刪除失敗', details: error },
+      { error: '刪除失敗', details: errorMessage },
       { status: 500 }
     )
   }
