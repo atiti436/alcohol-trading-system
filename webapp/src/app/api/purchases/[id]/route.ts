@@ -300,9 +300,17 @@ export async function DELETE(
         }
       })
 
+      console.log(`[刪除採購單] 採購單ID: ${purchaseId}`)
+      console.log(`[刪除採購單] 找到 ${inventoryMovements.length} 筆庫存異動記錄`)
+      inventoryMovements.forEach(m => {
+        console.log(`  - variant: ${m.variant_id}, 倉庫: ${m.warehouse}, 數量變化: ${m.quantity_change}`)
+      })
+
       // 2. 回滾庫存（如果已收貨）
       for (const movement of inventoryMovements) {
         if (movement.variant_id && movement.quantity_change > 0) {
+          console.log(`  → 開始回滾 variant ${movement.variant_id}，數量: -${movement.quantity_change}`)
+
           // 回滾 Inventory 表
           const inventory = await tx.inventory.findFirst({
             where: {
@@ -312,6 +320,7 @@ export async function DELETE(
           })
 
           if (inventory) {
+            console.log(`    - 找到 Inventory，現有庫存: ${inventory.quantity}`)
             await tx.inventory.update({
               where: { id: inventory.id },
               data: {
@@ -323,6 +332,9 @@ export async function DELETE(
                 }
               }
             })
+            console.log(`    - Inventory 已更新: ${inventory.quantity} → ${inventory.quantity - movement.quantity_change}`)
+          } else {
+            console.log(`    ⚠️ 找不到 Inventory 記錄！`)
           }
 
           // 回滾 ProductVariant 表
@@ -337,6 +349,7 @@ export async function DELETE(
               }
             }
           })
+          console.log(`    - ProductVariant 已更新`)
         }
       }
 
