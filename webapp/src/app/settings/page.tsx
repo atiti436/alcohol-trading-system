@@ -16,6 +16,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import ApiKeySettings from '@/components/settings/ApiKeySettings'
 import LineBotSettings from '@/components/settings/LineBotSettings'
 import UserManagementTab from '@/components/settings/UserManagementTab'
+import CompanyInfoTab from '@/components/settings/CompanyInfoTab'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -92,20 +93,20 @@ export default function SettingsPage() {
         activeKey={activeTab}
         type="card"
         onChange={(key) => {
-          if (key === 'company') {
-            router.push('/settings/company')
-          } else {
-            router.push(`/settings?tab=${key}`)
-          }
+          router.push(`/settings?tab=${key}`)
         }}
       >
         {/* 公司資訊 */}
-        <TabPane tab={
-          <span>
-            <BankOutlined style={{ marginRight: 8 }} />
-            公司資訊
-          </span>
-        } key="company" />
+        {isAdmin && (
+          <TabPane tab={
+            <span>
+              <BankOutlined style={{ marginRight: 8 }} />
+              公司資訊
+            </span>
+          } key="company">
+            <CompanyInfoTab />
+          </TabPane>
+        )}
 
         {/* 一般設定 */}
         <TabPane tab="一般設定" key="general">
