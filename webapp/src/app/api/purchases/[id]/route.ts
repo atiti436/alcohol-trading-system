@@ -337,19 +337,11 @@ export async function DELETE(
             console.log(`    ⚠️ 找不到 Inventory 記錄！`)
           }
 
-          // 回滾 ProductVariant 表
-          await tx.productVariant.update({
-            where: { id: movement.variant_id },
-            data: {
-              stock_quantity: {
-                decrement: movement.quantity_change
-              },
-              available_stock: {
-                decrement: movement.quantity_change
-              }
-            }
-          })
-          console.log(`    - ProductVariant 已更新`)
+          // ⚠️ 不再回滾 ProductVariant，因為：
+          // 1. Inventory 表才是真實庫存來源
+          // 2. ProductVariant.stock_quantity 應該禁止直接修改（參考 API 保護機制）
+          // 3. Dashboard 和其他功能都應該讀取 Inventory 表
+          console.log(`    - 跳過 ProductVariant 回滾（Inventory 才是真實庫存）`)
         }
       }
 

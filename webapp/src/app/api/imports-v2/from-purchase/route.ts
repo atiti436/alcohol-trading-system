@@ -90,8 +90,10 @@ export async function POST(request: NextRequest) {
     const warehouse = purchase.funding_source === 'PRIVATE' ? 'PRIVATE' : 'COMPANY'
     const importType = purchase.funding_source === 'PRIVATE' ? 'PRIVATE' : 'COMPANY'
 
-    // 🔑 決定進貨狀態：國內採購直接完成，國外採購待報關
-    const isDomestic = purchase.funding_source === 'DOMESTIC'
+    // 🔑 決定進貨狀態：根據幣別判斷是否需要報關
+    // TWD (台幣) → 國內採購，直接完成
+    // JPY/USD/其他 → 國外採購，需要報關流程
+    const isDomestic = purchase.currency === 'TWD'
     const initialStatus = isDomestic ? 'FINALIZED' : 'PENDING'
 
     // 創建進貨記錄（使用事務）
