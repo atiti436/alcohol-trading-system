@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     if (purchase.status !== 'CONFIRMED' && purchase.status !== 'RECEIVED') {
       return NextResponse.json(
-        { success: false, error: '只能從已確認的採購單創建進貨記錄' },
+        { success: false, error: `只能從已確認的採購單創建進貨記錄（目前狀態：${purchase.status}）` },
         { status: 400 }
       )
     }
@@ -69,10 +69,14 @@ export async function POST(request: NextRequest) {
     // 驗證所有採購項目都有 variant_id
     const missingVariants = purchase.items.filter(item => !item.variant_id)
     if (missingVariants.length > 0) {
+      console.error('❌ 採購項目缺少 variant_id:', missingVariants.map(i => ({
+        product_name: i.product_name,
+        variant_id: i.variant_id
+      })))
       return NextResponse.json(
         {
           success: false,
-          error: `以下採購項目缺少商品變體：${missingVariants.map(i => i.product_name).join(', ')}`
+          error: `以下採購項目缺少商品變體：${missingVariants.map(i => i.product_name).join(', ')}。請先在採購單中選擇正確的商品規格。`
         },
         { status: 400 }
       )
