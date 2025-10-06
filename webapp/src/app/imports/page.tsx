@@ -642,7 +642,8 @@ export default function ImportsPage() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const response = await fetch(`/api/imports-v2/${importRecord.id}`, {
+          // 使用舊版進貨單 API（/api/imports）
+          const response = await fetch(`/api/imports/${importRecord.id}`, {
             method: 'DELETE'
           })
 
