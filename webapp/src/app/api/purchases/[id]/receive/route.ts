@@ -294,23 +294,22 @@ export async function POST(
             })
           }
 
-          // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
-          // TODO: 執行 prisma db push 後取消註解
-          /*
-          // 🏭 更新或創建 Inventory 記錄（公司倉）
+          // ✅ 更新或創建 Inventory 記錄（根據資金來源決定倉庫）
+          const targetWarehouse = purchase.funding_source === 'PRIVATE' ? 'PRIVATE' : 'COMPANY'
+
           let inventory = await tx.inventory.findFirst({
             where: {
               variant_id: variant?.id,
-              warehouse: 'COMPANY'
+              warehouse: targetWarehouse
             }
           })
 
           if (!inventory) {
-            // 創建公司倉庫存記錄
+            // 創建庫存記錄
             inventory = await tx.inventory.create({
               data: {
                 variant_id: variant?.id || '',
-                warehouse: 'COMPANY',
+                warehouse: targetWarehouse,
                 quantity: actualStockIncrease,
                 reserved: 0,
                 available: actualStockIncrease,
@@ -318,7 +317,7 @@ export async function POST(
               }
             })
           } else {
-            // 更新公司倉庫存
+            // 更新庫存
             await tx.inventory.update({
               where: { id: inventory.id },
               data: {
@@ -328,35 +327,23 @@ export async function POST(
               }
             })
           }
-          */
 
-          // ⚠️ 暫時使用虛擬庫存記錄
-          let inventory = {
-            id: 'temp-id',
-            variant_id: variant?.id || '',
-            warehouse: 'COMPANY' as const,
-            quantity: actualStockIncrease,
-            reserved: 0,
-            available: actualStockIncrease,
-            cost_price: finalUnitCost
-          }
-
-          // 建立庫存異動記錄
+          // ✅ 建立庫存異動記錄
           await tx.inventoryMovement.create({
             data: {
               variant_id: variant?.id || '',
               movement_type: 'PURCHASE',
               adjustment_type: 'ADD',
-              quantity_before: inventory.quantity - actualStockIncrease,
+              quantity_before: (inventory.quantity || 0) - actualStockIncrease,
               quantity_change: actualStockIncrease,
-              quantity_after: inventory.quantity,
+              quantity_after: inventory.quantity || 0,
               unit_cost: finalUnitCost,
               total_cost: finalUnitCost * actualStockIncrease,
               reason: `採購進貨 - ${purchase.purchase_number}`,
               reference_type: 'PURCHASE',
               reference_id: purchaseId,
               notes: loss_quantity > 0 ? `損耗 ${itemLoss} 件 (${loss_type})` : '正常進貨',
-              warehouse: 'COMPANY',
+              warehouse: targetWarehouse,
               created_by: session.user.id
             }
           })
