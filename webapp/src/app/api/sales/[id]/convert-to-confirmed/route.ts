@@ -75,9 +75,7 @@ export async function POST(
 
       if (!variantIdToUse) {
         // 嘗試找到該商品下可用庫存足夠的變體，優先 A 版
-        // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
-        // TODO: 執行 prisma db push 後取消註解
-        /*
+        // ✅ 從 Inventory 表查詢可用庫存
         const variants = await prisma.productVariant.findMany({
           where: { product_id: item.product_id },
           include: {
@@ -99,21 +97,6 @@ export async function POST(
           variant_code: v.variant_code,
           available_stock: v.inventory.reduce((sum, inv) => sum + inv.available, 0)
         }))
-        */
-
-        // ⚠️ 暫時使用空庫存
-        const variants = await prisma.productVariant.findMany({
-          where: { product_id: item.product_id },
-          orderBy: [
-            { variant_type: 'asc' }
-          ]
-        })
-        const variantsWithStock = variants.map(v => ({
-          id: v.id,
-          variant_type: v.variant_type,
-          variant_code: v.variant_code,
-          available_stock: 0 // ⚠️ 暫時硬編碼為 0
-        }))
 
         // 優先選擇正常變體（非盒損），且庫存充足
         const normalVariants = variantsWithStock.filter(v => !v.variant_code.endsWith('-D'))
@@ -131,17 +114,13 @@ export async function POST(
           availableStock = totalAvailable
         }
       } else {
-        // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
-        // TODO: 執行 prisma db push 後取消註解
-        /*
+        // ✅ 從 Inventory 表查詢可用庫存
         // 查詢指定變體的庫存（匯總所有倉庫）
         const inventories = await prisma.inventory.findMany({
           where: { variant_id: variantIdToUse },
           select: { available: true }
         })
         availableStock = inventories.reduce((sum, inv) => sum + inv.available, 0)
-        */
-        availableStock = 0 // ⚠️ 暫時硬編碼為 0
       }
 
       if (availableStock < item.quantity) {
@@ -188,9 +167,7 @@ export async function POST(
           throw new Error(`銷售項目 ${item.product?.name || item.product_id} 缺少可用變體`)
         }
 
-        // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
-        // TODO: 執行 prisma db push 後取消註解
-        /*
+        // ✅ 從 Inventory 表查詢可用庫存
         // 查詢該變體的所有倉庫庫存，優先從公司倉扣
         const inventories = await tx.inventory.findMany({
           where: { variant_id: variantId },
@@ -219,7 +196,6 @@ export async function POST(
         if (remainingQty > 0) {
           throw new Error(`變體 ${variantId} 庫存不足，無法預留`)
         }
-        */
 
         // 更新 sale item 的 variant_id（如果是自動選擇的）
         if (!item.variant_id) {

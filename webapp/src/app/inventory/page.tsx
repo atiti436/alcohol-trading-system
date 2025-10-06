@@ -442,6 +442,61 @@ export default function InventoryPage() {
           rowKey="id"
           loading={loading}
           scroll={{ x: 1200 }}
+          expandable={{
+            expandedRowRender: (record: InventoryItem) => {
+              if (!record.variants || record.variants.length === 0) {
+                return <div style={{ padding: '12px', color: '#999' }}>無變體資料</div>
+              }
+
+              return (
+                <Table
+                  size="small"
+                  dataSource={record.variants}
+                  rowKey="id"
+                  pagination={false}
+                  columns={[
+                    {
+                      title: '變體代碼',
+                      dataIndex: 'variant_code',
+                      key: 'variant_code',
+                      width: 150,
+                      render: (text: string) => (
+                        <span style={{ color: '#1890ff', fontWeight: 'bold' }}>{text}</span>
+                      )
+                    },
+                    {
+                      title: '庫存數量',
+                      dataIndex: 'stock_quantity',
+                      key: 'stock_quantity',
+                      width: 100,
+                      align: 'center' as const
+                    },
+                    {
+                      title: '可售庫存',
+                      dataIndex: 'available_stock',
+                      key: 'available_stock',
+                      width: 100,
+                      align: 'center' as const,
+                      render: (value: number) => (
+                        <span style={{ color: value > 0 ? '#52c41a' : '#ff4d4f' }}>
+                          {value}
+                        </span>
+                      )
+                    },
+                    {
+                      title: '成本價',
+                      dataIndex: 'cost_price',
+                      key: 'cost_price',
+                      width: 100,
+                      align: 'right' as const,
+                      render: (value: number) => `$${value.toLocaleString()}`
+                    }
+                  ]}
+                />
+              )
+            },
+            rowExpandable: (record: InventoryItem) => (record.variants_count || 0) > 0
+          }}
           pagination={{
             total: filteredInventory.length,
             pageSize: 20,

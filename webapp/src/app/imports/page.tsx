@@ -820,7 +820,17 @@ export default function ImportsPage() {
                       title: '商品名稱',
                       dataIndex: 'product_name',
                       key: 'product_name',
-                      width: 200
+                      width: 250,
+                      render: (text: string, record: any) => (
+                        <div>
+                          <div style={{ fontWeight: 'bold' }}>{text}</div>
+                          {record.variant_code && (
+                            <div style={{ fontSize: '12px', color: '#1890ff', marginTop: '4px' }}>
+                              變體：{record.variant_code}
+                            </div>
+                          )}
+                        </div>
+                      )
                     },
                     {
                       title: '數量',

@@ -106,9 +106,7 @@ export async function POST(
       }
 
       // 檢查預留庫存（因為確認訂單時已經預留了）
-      // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
-      // TODO: 執行 prisma db push 後取消註解
-      /*
+      // ✅ 從 Inventory 表查詢可用庫存
       // 查詢 Inventory 表中的預留庫存
       const inventories = await prisma.inventory.findMany({
         where: { variant_id: shipItem.variant_id },
@@ -137,11 +135,10 @@ export async function POST(
           error: `商品 ${saleItem.product.name} 預留庫存不足，已預留：${totalReserved}，需要出貨：${shipItem.ship_quantity}。請先確認訂單以預留庫存。`
         }, { status: 400 })
       }
-      */
 
       inventoryChecks.push({
         saleItem,
-        inventories: [], // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
+        inventories: inventories,
         shipQuantity: shipItem.ship_quantity,
         variantId: shipItem.variant_id
       })
@@ -170,9 +167,7 @@ export async function POST(
       for (const check of inventoryChecks) {
         const { saleItem, inventories, shipQuantity, variantId } = check
 
-        // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
-        // TODO: 執行 prisma db push 後取消註解
-        /*
+        // ✅ 從 Inventory 表查詢可用庫存
         // 從預留庫存扣除並實際扣庫存（優先從公司倉）
         let remainingToShip = shipQuantity
         let totalCost = 0
@@ -215,7 +210,6 @@ export async function POST(
             remainingToShip -= toShip
           }
         }
-        */
 
         // 建立出貨項目記錄
         const shippingItem = await tx.shippingItem.create({
@@ -236,16 +230,12 @@ export async function POST(
           select: { variant_code: true }
         })
 
-        // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
-        // TODO: 執行 prisma db push 後取消註解
-        /*
+        // ✅ 從 Inventory 表查詢可用庫存
         // 計算剩餘庫存
         const remainingInventories = await tx.inventory.findMany({
           where: { variant_id: variantId }
         })
         const remainingStock = remainingInventories.reduce((sum, inv) => sum + inv.quantity, 0)
-        */
-        const remainingStock = 0 // ⚠️ 暫時硬編碼為 0
 
         shippingItems.push({
           product_name: saleItem.product.name,
@@ -402,16 +392,12 @@ export async function GET(
         return { ...item, can_ship: false, available_stock: 0 }
       }
 
-      // ⚠️ 暫時註解：Production 資料庫缺少 Inventory 表
-      // TODO: 執行 prisma db push 後取消註解
-      /*
+      // ✅ 從 Inventory 表查詢可用庫存
       // 從 Inventory 表計算可用庫存
       const inventories = await prisma.inventory.findMany({
         where: { variant_id: item.variant_id }
       })
       const availableStock = inventories.reduce((sum, inv) => sum + inv.available, 0)
-      */
-      const availableStock = 0 // ⚠️ 暫時硬編碼為 0
 
       return {
         ...item,
