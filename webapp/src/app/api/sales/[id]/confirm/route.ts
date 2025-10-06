@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { Role } from '@/types/auth'
+import { syncSaleCashflow } from '@/lib/cashflow/syncSaleCashflow'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -193,6 +194,16 @@ export async function POST(
             data: { variant_id: variantId }
           })
         }
+      }
+
+      // 3. 🔄 載入完整的銷售單（含 items）並同步 cashflow
+      const saleWithItems = await tx.sale.findUnique({
+        where: { id },
+        include: { items: true }
+      })
+
+      if (saleWithItems) {
+        await syncSaleCashflow(tx, saleWithItems)
       }
 
       return sale

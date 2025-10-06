@@ -342,6 +342,11 @@ export async function DELETE(
     // 🔒 刪除銷售訂單及其關聯資料（使用 transaction 確保一致性）
     // 注意：此時銷售單必定是 CANCELLED 或 PENDING，庫存已由 admin-cancel 還原
     await prisma.$transaction(async (tx) => {
+      // 0. 🔄 清理 cashflow 記錄（同步刪除收支記錄）
+      await tx.cashFlowRecord.deleteMany({
+        where: { reference: `sale:${id}` }
+      })
+
       // 1. 清理應收帳款（如果有）
       await tx.accountsReceivable.deleteMany({
         where: { sale_id: id }

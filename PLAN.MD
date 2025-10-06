@@ -1,7 +1,7 @@
 # 酒類交易 ERP 系統 - 主計劃文檔
 
-**最後更新**: 2025-10-07 (移動平均成本計算 + 空瓶重量推估功能完成)
-**專案狀態**: 🟢 生產環境就緒 - 核心功能完整，成本計算優化完成
+**最後更新**: 2025-10-07 (銷售單收支同步功能 - 實作進行中)
+**專案狀態**: 🟡 功能擴充中 - 銷售與收支自動同步功能開發中
 
 ---
 
@@ -29,7 +29,16 @@
 
 ## 📊 當前狀態
 
-### 最新完成項目 (2025-10-07)
+### 🚧 進行中項目 (2025-10-07)
+
+🔄 **銷售單與收支記錄自動同步** (今日進行中 - 方案 A)
+- 目標：銷售單建立/確認/刪除時自動產生 cashflow 記錄
+- 進度：Helper 函數建立中，核心 API 整合中
+- 詳見：P0 優先級任務
+
+---
+
+### 最新完成項目 (2025-10-07 上午)
 
 ✅ **移動平均成本計算系統** (100% 完成)
 - 實作加權移動平均法（Weighted Moving Average）
@@ -172,6 +181,63 @@
   - ✅ HTTPS 強制跳轉
   - ✅ Session 逾時設定（8小時）
   - ✅ 依賴漏洞修復（xlsx 0.20.3）
+
+### 🔥 優先級 P0 (進行中 - 2025-10-07)
+
+- [ ] **銷售單與收支記錄自動同步** (50% 完成 - 今日進行中)
+  - 📋 **需求來源**: CASH.txt 設計文件
+  - 🎯 **核心目標**:
+    - 銷售單同時保留「投資方售價」(unit_price) 與「實際成交價」(actual_unit_price)
+    - 自動產生 cashflow 記錄（實際收入、應付投資方、利潤差額）
+    - 刪除/取消銷售單時同步清理 cashflow 記錄
+  - 📦 **實作範圍**:
+    - ✅ **今日完成 (方案 A - 核心功能)**:
+      1. [ ] 建立 Helper 函數 `webapp/src/lib/cashflow/syncSaleCashflow.ts`
+      2. [ ] 整合核心 3 個 API:
+         - POST `/api/sales` (建立銷售單)
+         - DELETE `/api/sales/[id]` (刪除銷售單)
+         - POST `/api/sales/[id]/confirm` (確認訂單)
+      3. [ ] 基礎測試（建立→確認→刪除）
+      4. [ ] 推送到 GitHub
+    - ⏳ **後續完成 (方案 B - 完整整合)**:
+      5. [ ] 整合剩餘 API:
+         - PUT `/api/sales/[id]` (更新銷售單)
+         - POST `/api/sales/[id]/admin-cancel` (取消訂單)
+         - POST/PUT/DELETE `/api/sales/[id]/items` (增刪項目)
+      6. [ ] 前端調整:
+         - `CashFlowManager.tsx` - 加 reference 欄位和跳轉
+         - `SaleOrderModal.tsx` - 確認 actual_unit_price 欄位權限
+      7. [ ] 完整測試（所有銷售流程）
+
+  - 🔑 **技術設計**:
+    ```typescript
+    // 自動產生 3 筆 cashflow 記錄
+    1. INCOME - 實際收入（客戶付款）
+    2. EXPENSE - 應付投資方（期望售價）
+    3. INCOME/EXPENSE - 利潤差額（兩者差價）
+
+    // 使用 reference 欄位串連
+    reference: `sale:${sale.id}`
+
+    // Transaction 確保一致性
+    await prisma.$transaction(async tx => {
+      await syncSaleCashflow(tx, sale)
+    })
+    ```
+
+  - ⚠️ **已知風險評估**:
+    - ✅ Schema 完整（CashFlowRecord.category 存在）
+    - ✅ 雙價格機制已存在（unit_price + actual_unit_price）
+    - ⚠️ `admin-cancel` 邏輯複雜度未知（需讀檔確認）
+    - ⚠️ `items` API 增刪後需重算總額（需 transaction）
+    - ⚠️ 舊銷售單沒有 cashflow 記錄（不影響新單）
+
+  - 📊 **進度追蹤**:
+    - 預估工時：今日 2-3 小時（核心功能）+ 明日 1-2 小時（完整整合）
+    - 測試時間：30-60 分鐘
+    - 總計：4-6 小時
+
+  - 📚 **參考文件**: `D:\claude-project\alcohol-trading-system\CASH.txt`
 
 ### 優先級 P2 (未來功能 - 待開發)
 

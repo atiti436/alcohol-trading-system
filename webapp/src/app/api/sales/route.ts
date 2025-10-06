@@ -6,6 +6,7 @@ import { PermissionContext, Role } from '@/types/auth'
 import { validateSaleData } from '@/lib/validation'
 import { DatabaseWhereCondition } from '@/types/business'
 import { Sale, SaleItem, Customer, Product, ProductVariant } from '@prisma/client'
+import { syncSaleCashflow } from '@/lib/cashflow/syncSaleCashflow'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -282,45 +283,53 @@ export const POST = withAppActiveUser(async (
       }, { status: 400 })
     }
 
-    // 建立銷售單
-    const sale = await prisma.sale.create({
-      data: {
-        sale_number,
-        customer_id,
-        total_amount: totalDisplayAmount,       // 顯示金額 (投資方看到)
-        actual_amount: totalActualAmount,       // 實際金額 (僅超級管理員)
-        commission: commission,                // 老闆傭金 (僅超級管理員)
-        funding_source,
-        payment_terms,
-        notes,
-        created_by: context.userId,
-        // 🆕 預購相關欄位
-        is_preorder,
-        status: is_preorder ? 'PREORDER' : 'DRAFT', // 預購單自動設為 PREORDER 狀態
-        expected_arrival_date: expected_arrival_date ? new Date(expected_arrival_date) : null,
-        preorder_notes,
-        items: {
-          create: items.map((item: any, index: number) => ({
-            product_id: item.product_id,
-            variant_id: item.variant_id,
-            quantity: item.quantity,
-            unit_price: normDisplayPrices[index],                    // 顯示單價
-            actual_unit_price: normActualPrices?.[index] || normDisplayPrices[index], // 實際單價
-            total_price: normDisplayPrices[index] * item.quantity,   // 顯示總價
-            actual_total_price: (normActualPrices?.[index] || normDisplayPrices[index]) * item.quantity, // 實際總價
-            is_personal_purchase: funding_source === 'PERSONAL'
-          }))
-        }
-      },
-      include: {
-        customer: true,
-        items: {
-          include: {
-            product: true,
-            variant: true
+    // 🔄 使用 Transaction 建立銷售單並同步 cashflow
+    const sale = await prisma.$transaction(async (tx) => {
+      // 建立銷售單
+      const newSale = await tx.sale.create({
+        data: {
+          sale_number,
+          customer_id,
+          total_amount: totalDisplayAmount,       // 顯示金額 (投資方看到)
+          actual_amount: totalActualAmount,       // 實際金額 (僅超級管理員)
+          commission: commission,                // 老闆傭金 (僅超級管理員)
+          funding_source,
+          payment_terms,
+          notes,
+          created_by: context.userId,
+          // 🆕 預購相關欄位
+          is_preorder,
+          status: is_preorder ? 'PREORDER' : 'DRAFT', // 預購單自動設為 PREORDER 狀態
+          expected_arrival_date: expected_arrival_date ? new Date(expected_arrival_date) : null,
+          preorder_notes,
+          items: {
+            create: items.map((item: any, index: number) => ({
+              product_id: item.product_id,
+              variant_id: item.variant_id,
+              quantity: item.quantity,
+              unit_price: normDisplayPrices[index],                    // 顯示單價
+              actual_unit_price: normActualPrices?.[index] || normDisplayPrices[index], // 實際單價
+              total_price: normDisplayPrices[index] * item.quantity,   // 顯示總價
+              actual_total_price: (normActualPrices?.[index] || normDisplayPrices[index]) * item.quantity, // 實際總價
+              is_personal_purchase: funding_source === 'PERSONAL'
+            }))
+          }
+        },
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: true,
+              variant: true
+            }
           }
         }
-      }
+      })
+
+      // 🔄 同步 cashflow 記錄（只有 CONFIRMED 狀態才會產生記錄）
+      await syncSaleCashflow(tx, newSale)
+
+      return newSale
     })
 
     // 🔒 回傳前也要過濾敏感資料
