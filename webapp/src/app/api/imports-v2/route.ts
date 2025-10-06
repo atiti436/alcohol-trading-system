@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
                   variant_code: true,
                   product: {
                     select: {
-                      product_name: true
+                      name: true // ✅ 修正：欄位是 name 不是 product_name
                     }
                   }
                 }
