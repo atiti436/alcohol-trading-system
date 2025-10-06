@@ -121,7 +121,10 @@ export async function PUT(
       serial_number,
       condition,
       stock_quantity,  // ⚠️ 已廢棄，不再使用
-      cost_price
+      cost_price,
+      // 🔑 三層價格架構
+      investor_price,  // 期望售價（投資方價）
+      actual_price     // 實際售價
     } = body
 
     // ⚠️ 禁止手動修改 stock_quantity
@@ -147,20 +150,39 @@ export async function PUT(
       return NextResponse.json({ error: '變體不屬於指定商品' }, { status: 400 })
     }
 
+    // 🔒 權限檢查：根據角色決定能更新哪些欄位
+    const isSuperAdmin = session.user.role === 'SUPER_ADMIN'
+    const isEmployee = session.user.role === 'EMPLOYEE'
+
     // 更新變體資料（不包含 stock_quantity）
+    const updateData: any = {
+      ...(description && { description }),
+      ...(condition && { condition }),
+      ...(limited_edition !== undefined && { limited_edition }),
+      ...(production_year !== undefined && { production_year }),
+      ...(serial_number !== undefined && { serial_number }),
+      ...(discount_rate !== undefined && { discount_rate }),
+    }
+
+    // 🔑 超級管理員可以修改所有價格
+    if (isSuperAdmin) {
+      if (cost_price !== undefined) updateData.cost_price = cost_price
+      if (investor_price !== undefined) updateData.investor_price = investor_price
+      if (actual_price !== undefined) updateData.actual_price = actual_price
+      // 保持舊欄位兼容
+      if (base_price !== undefined) updateData.base_price = base_price
+      if (current_price !== undefined) updateData.current_price = current_price
+    }
+    // 員工只能修改期望售價（investor_price）
+    else if (isEmployee) {
+      if (investor_price !== undefined) updateData.investor_price = investor_price
+      // 保持舊欄位兼容
+      if (current_price !== undefined) updateData.current_price = current_price
+    }
+
     const variant = await prisma.productVariant.update({
       where: { id: params.variantId },
-      data: {
-        ...(description && { description }),
-        ...(base_price !== undefined && { base_price }),
-        ...(current_price !== undefined && { current_price }),
-        ...(discount_rate !== undefined && { discount_rate }),
-        ...(limited_edition !== undefined && { limited_edition }),
-        ...(production_year !== undefined && { production_year }),
-        ...(serial_number !== undefined && { serial_number }),
-        ...(condition && { condition }),
-        ...(cost_price !== undefined && { cost_price })
-      }
+      data: updateData
     })
 
     return NextResponse.json({
