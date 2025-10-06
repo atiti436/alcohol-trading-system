@@ -90,6 +90,10 @@ export async function POST(request: NextRequest) {
     const warehouse = purchase.funding_source === 'PRIVATE' ? 'PRIVATE' : 'COMPANY'
     const importType = purchase.funding_source === 'PRIVATE' ? 'PRIVATE' : 'COMPANY'
 
+    // 🔑 決定進貨狀態：國內採購直接完成，國外採購待報關
+    const isDomestic = purchase.funding_source === 'DOMESTIC'
+    const initialStatus = isDomestic ? 'FINALIZED' : 'PENDING'
+
     // 創建進貨記錄（使用事務）
     const importRecord = await prisma.$transaction(async (tx) => {
       // 創建 Import 主記錄
@@ -104,7 +108,7 @@ export async function POST(request: NextRequest) {
           currency: purchase.currency,
           exchange_rate: purchase.exchange_rate,
           goods_total: purchase.total_amount,
-          status: 'PENDING',
+          status: initialStatus,
           created_by: session.user.id,
           items: {
             create: purchase.items.map(item => {
