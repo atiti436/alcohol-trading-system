@@ -472,32 +472,26 @@ export default function ImportsPage() {
     setDeclarationModalVisible(true)
   }
 
-  // 從進貨記錄執行收貨入庫（串接既有採購收貨API）
+  // ✅ 使用新版 Import API 執行收貨入庫
   const handleReceiveImport = async (importRecord: ImportRecord) => {
     try {
-      const actualQty = (importRecord.items || []).reduce((sum, it: any) => sum + (it.quantity || 0), 0)
-      const receiveData = {
-        actual_quantity: actualQty,
-        exchange_rate: importRecord.exchangeRate || 1.0,
-        loss_type: 'NONE',
-        loss_quantity: 0,
-        inspection_fee: 0,
-        allocation_method: 'BY_AMOUNT',
-        additional_costs: []
-      }
-
-      const resp = await fetch(`/api/purchases/${importRecord.purchaseId}/receive`, {
+      // 先嘗試使用新版 imports-v2 API
+      const resp = await fetch(`/api/imports-v2/${importRecord.id}/receive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(receiveData)
+        body: JSON.stringify({
+          item_damages: []  // 暫時不處理損毀，可以後續擴展
+        })
       })
       const result = await resp.json()
+
       if (resp.ok && result.success) {
-        await fetch(`/api/imports/${importRecord.id}/receive`, { method: 'POST' })
         message.success('收貨完成，庫存已更新')
         await loadImports(false)
       } else {
-        message.error(result.error?.message || result.error || '收貨失敗')
+        // 如果新版 API 失敗，顯示錯誤
+        message.error(result.error?.message || result.error || result.details || '收貨失敗')
+        console.error('收貨失敗詳情:', result)
       }
     } catch (error) {
       console.error('進貨收貨失敗:', error)
