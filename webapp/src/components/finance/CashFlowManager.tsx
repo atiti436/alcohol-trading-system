@@ -291,6 +291,17 @@ export default function CashFlowManager() {
 
   return (
     <div style={{ padding: 24 }}>
+      {/* 頁面標題 */}
+      <div style={{ marginBottom: 24 }}>
+        <Title level={2}>
+          <DollarOutlined style={{ marginRight: 8 }} />
+          收支記錄管理
+        </Title>
+        <Text type="secondary">
+          記錄日常收支明細、區分投資方與個人墊付、追蹤現金流量
+        </Text>
+      </div>
+
       {/* 📊 統計卡片 */}
       {stats && (
         <Row gutter={16} style={{ marginBottom: 24 }}>
