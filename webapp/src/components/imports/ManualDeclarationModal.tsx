@@ -248,7 +248,8 @@ const ManualDeclarationModal: React.FC<ManualDeclarationModalProps> = ({
       const totalBusinessTax = items.reduce((sum, item) => sum + item.business_tax, 0)
       const totalTaxes = totalAlcoholTax + totalBusinessTax
 
-      const response = await fetch(`/api/imports/${importRecord.id}/declaration`, {
+      // ✅ 改用新版 API
+      const response = await fetch(`/api/imports-v2/${importRecord.id}/declaration`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

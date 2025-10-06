@@ -131,7 +131,8 @@ export default function ImportsPage() {
         }
       })
 
-      const response = await fetch(`/api/imports?${queryParams}`)
+      // ✅ 改用新版 API
+      const response = await fetch(`/api/imports-v2?${queryParams}`)
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
@@ -149,26 +150,29 @@ export default function ImportsPage() {
           declarationNumber: rec.declaration_number,
           declarationDate: rec.declaration_date,
           status: rec.status,
-          totalValue: rec.total_value,
+          totalValue: rec.goods_total, // ✅ 新版欄位
           currency: rec.currency,
           exchangeRate: rec.exchange_rate,
-          alcoholTax: rec.alcohol_tax,
-          businessTax: rec.business_tax,
-          tradePromotionFee: rec.trade_promotion_fee,
-          totalTaxes: rec.total_taxes,
+          alcoholTax: rec.tariff_amount || 0, // ✅ 新版欄位
+          businessTax: 0, // ✅ 新版暫無此欄位
+          tradePromotionFee: 0,
+          totalTaxes: rec.tariff_amount || 0,
           created_at: rec.created_at,
           items: (rec.items || []).map((item: any) => ({
             id: item.id,
             product_name: item.product_name,
-            quantity: item.quantity,
-            alcoholPercentage: item.alcohol_percentage,
-            volume: item.volume,
-            dutiableValue: item.dutiable_value,
-            alcoholTax: item.alcohol_tax,
-            businessTax: item.business_tax,
-            tariffCode: item.tariff_code
+            quantity: item.ordered_quantity, // ✅ 新版欄位
+            alcoholPercentage: 0, // ✅ 新版在 variant 裡
+            volume: 0, // ✅ 新版在 variant 裡
+            dutiableValue: item.subtotal,
+            alcoholTax: item.tariff_amount || 0,
+            businessTax: 0,
+            tariffCode: null,
+            variant_code: item.variant_code // ✅ 新版有變體代碼
           })),
           _count: rec._count,
+          warehouse: rec.warehouse, // ✅ 新版有倉庫
+          importType: rec.import_type // ✅ 新版有進貨類型
         }))
         setImports(mapped)
         setTotal(result.data.total)
@@ -199,8 +203,8 @@ export default function ImportsPage() {
         if (result.success) {
           const purchases = result.data.purchases || []
 
-          // 查詢所有進貨記錄，過濾掉已有進貨記錄的採購單
-          const importsResponse = await fetch('/api/imports?limit=1000')
+          // ✅ 查詢所有進貨記錄，過濾掉已有進貨記錄的採購單（改用新版）
+          const importsResponse = await fetch('/api/imports-v2?limit=1000')
           const importsResult = await importsResponse.json()
           const importedPurchaseIds = new Set(
             (importsResult.data?.imports || []).map((imp: any) => imp.purchase_id)
@@ -551,8 +555,8 @@ export default function ImportsPage() {
     if (!selectedImport) return
 
     try {
-      // 提交審核後的數據
-      const response = await fetch(`/api/imports/${selectedImport.id}/declaration`, {
+      // ✅ 提交審核後的數據（改用新版）
+      const response = await fetch(`/api/imports-v2/${selectedImport.id}/declaration`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -600,7 +604,8 @@ export default function ImportsPage() {
   // 從採購單創建進貨記錄
   const handleCreateFromPurchase = async (purchaseId: string) => {
     try {
-      const response = await fetch('/api/imports/from-purchase', {
+      // ✅ 改用新版 API
+      const response = await fetch('/api/imports-v2/from-purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ purchaseId })
@@ -642,8 +647,8 @@ export default function ImportsPage() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          // 使用舊版進貨單 API（/api/imports）
-          const response = await fetch(`/api/imports/${importRecord.id}`, {
+          // ✅ 改用新版進貨單 API
+          const response = await fetch(`/api/imports-v2/${importRecord.id}`, {
             method: 'DELETE'
           })
 
