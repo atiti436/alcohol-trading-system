@@ -39,33 +39,40 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
       const movements = []
 
       for (const adjustment of validAdjustments) {
-        // 獲取當前變體庫存
-        const variant = await tx.productVariant.findUnique({
-          where: { id: adjustment.variant_id },
-          select: {
-            id: true,
-            stock_quantity: true,
-            cost_price: true,
-            variant_code: true
+        // ✅ 改用 Inventory 表：查詢公司倉庫存（預設調整公司倉）
+        const inventory = await tx.inventory.findFirst({
+          where: {
+            variant_id: adjustment.variant_id,
+            warehouse: 'COMPANY'
+          },
+          include: {
+            variant: {
+              select: {
+                variant_code: true,
+                cost_price: true
+              }
+            }
           }
         })
 
-        if (!variant) {
-          throw new Error(`變體 ${adjustment.variant_id} 不存在`)
+        if (!inventory) {
+          throw new Error(`變體 ${adjustment.variant_id} 在公司倉庫不存在`)
         }
 
-        const newStockQuantity = variant.stock_quantity + adjustment.adjustment_quantity
+        const newQuantity = inventory.quantity + adjustment.adjustment_quantity
+        const newAvailable = inventory.available + adjustment.adjustment_quantity
 
         // 檢查庫存不能為負數
-        if (newStockQuantity < 0) {
-          throw new Error(`變體 ${variant.variant_code} 庫存不足，當前庫存 ${variant.stock_quantity}，調整數量 ${adjustment.adjustment_quantity}`)
+        if (newQuantity < 0) {
+          throw new Error(`變體 ${inventory.variant.variant_code} 庫存不足，當前庫存 ${inventory.quantity}，調整數量 ${adjustment.adjustment_quantity}`)
         }
 
-        // 更新變體庫存
-        await tx.productVariant.update({
-          where: { id: adjustment.variant_id },
+        // ✅ 更新 Inventory 表（公司倉）
+        await tx.inventory.update({
+          where: { id: inventory.id },
           data: {
-            stock_quantity: newStockQuantity,
+            quantity: newQuantity,
+            available: newAvailable,
             updated_at: new Date()
           }
         })
@@ -75,12 +82,14 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
           data: {
             variant_id: adjustment.variant_id,
             movement_type: 'ADJUSTMENT',
+            adjustment_type: adjustment.adjustment_quantity > 0 ? 'ADD' : 'SUBTRACT',
             quantity_change: adjustment.adjustment_quantity,
-            quantity_before: variant.stock_quantity,
-            quantity_after: newStockQuantity,
-            unit_cost: variant.cost_price,
-            total_cost: Math.abs(adjustment.adjustment_quantity) * (variant.cost_price || 0),
+            quantity_before: inventory.quantity,
+            quantity_after: newQuantity,
+            unit_cost: inventory.variant.cost_price || 0,
+            total_cost: Math.abs(adjustment.adjustment_quantity) * (inventory.variant.cost_price || 0),
             reason: adjustment.reason,
+            warehouse: 'COMPANY',
             notes: notes || `庫存調整 - ${adjustment_type}`,
             reference_type: 'ADJUSTMENT',
             created_by: session.user.id

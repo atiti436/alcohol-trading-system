@@ -120,9 +120,19 @@ export async function PUT(
       production_year,
       serial_number,
       condition,
-      stock_quantity,
+      stock_quantity,  // ⚠️ 已廢棄，不再使用
       cost_price
     } = body
+
+    // ⚠️ 禁止手動修改 stock_quantity
+    if (stock_quantity !== undefined) {
+      return NextResponse.json({
+        error: '不允許直接修改庫存數量。請使用以下方式管理庫存：\n' +
+               '- 採購收貨：/api/purchases/[id]/receive\n' +
+               '- 庫存調整：/api/inventory/adjustments\n' +
+               '- 品號調撥：/api/stock-transfers'
+      }, { status: 400 })
+    }
 
     // 檢查變體是否存在並屬於指定商品
     const existingVariant = await prisma.productVariant.findUnique({
@@ -137,7 +147,7 @@ export async function PUT(
       return NextResponse.json({ error: '變體不屬於指定商品' }, { status: 400 })
     }
 
-    // 更新變體資料
+    // 更新變體資料（不包含 stock_quantity）
     const variant = await prisma.productVariant.update({
       where: { id: params.variantId },
       data: {
@@ -149,7 +159,6 @@ export async function PUT(
         ...(production_year !== undefined && { production_year }),
         ...(serial_number !== undefined && { serial_number }),
         ...(condition && { condition }),
-        ...(stock_quantity !== undefined && { stock_quantity }),
         ...(cost_price !== undefined && { cost_price })
       }
     })

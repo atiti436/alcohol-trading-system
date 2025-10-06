@@ -159,24 +159,60 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // 更新來源變體庫存（減少）
-      await tx.productVariant.update({
-        where: { id: source_variant_id },
-        data: {
-          stock_quantity: { decrement: quantity },
-          available_stock: { decrement: quantity }
+      // ✅ 更新來源變體的 Inventory 表（減少公司倉庫存）
+      const sourceInventory = await tx.inventory.findFirst({
+        where: {
+          variant_id: source_variant_id,
+          warehouse: 'COMPANY'
         }
       })
 
-      // 更新目標變體庫存（增加）並繼承成本
-      await tx.productVariant.update({
-        where: { id: target_variant_id },
+      if (!sourceInventory) {
+        throw new Error(`來源變體 ${sourceVariant.variant_code} 在公司倉無庫存記錄`)
+      }
+
+      if (sourceInventory.available < quantity) {
+        throw new Error(`庫存不足。可用：${sourceInventory.available}，需要：${quantity}`)
+      }
+
+      await tx.inventory.update({
+        where: { id: sourceInventory.id },
         data: {
-          stock_quantity: { increment: quantity },
-          available_stock: { increment: quantity },
-          cost_price: unit_cost  // 繼承來源成本
+          quantity: { decrement: quantity },
+          available: { decrement: quantity }
         }
       })
+
+      // ✅ 更新目標變體的 Inventory 表（增加公司倉庫存）
+      const targetInventory = await tx.inventory.findFirst({
+        where: {
+          variant_id: target_variant_id,
+          warehouse: 'COMPANY'
+        }
+      })
+
+      if (!targetInventory) {
+        // 如果目標變體沒有庫存記錄，創建一筆
+        await tx.inventory.create({
+          data: {
+            variant_id: target_variant_id,
+            warehouse: 'COMPANY',
+            quantity: quantity,
+            available: quantity,
+            reserved: 0,
+            cost_price: unit_cost
+          }
+        })
+      } else {
+        await tx.inventory.update({
+          where: { id: targetInventory.id },
+          data: {
+            quantity: { increment: quantity },
+            available: { increment: quantity },
+            cost_price: unit_cost  // 繼承來源成本
+          }
+        })
+      }
 
       // 記錄庫存異動（來源）
       await tx.inventoryMovement.create({
@@ -189,12 +225,12 @@ export async function POST(request: NextRequest) {
           reference_id: transfer.id,
           reference_type: 'STOCK_TRANSFER',
           created_by: session.user.id,
-          quantity_before: sourceVariant.stock_quantity,
-          quantity_after: sourceVariant.stock_quantity - quantity,
+          quantity_before: sourceInventory.quantity,
+          quantity_after: sourceInventory.quantity - quantity,
           quantity_change: -quantity,
           unit_cost,
           total_cost,
-          warehouse: sourceVariant.warehouse
+          warehouse: 'COMPANY'
         }
       })
 
@@ -209,12 +245,12 @@ export async function POST(request: NextRequest) {
           reference_id: transfer.id,
           reference_type: 'STOCK_TRANSFER',
           created_by: session.user.id,
-          quantity_before: targetVariant.stock_quantity,
-          quantity_after: targetVariant.stock_quantity + quantity,
+          quantity_before: targetInventory?.quantity || 0,
+          quantity_after: (targetInventory?.quantity || 0) + quantity,
           quantity_change: quantity,
           unit_cost,
           total_cost,
-          warehouse: targetVariant.warehouse
+          warehouse: 'COMPANY'
         }
       })
 
