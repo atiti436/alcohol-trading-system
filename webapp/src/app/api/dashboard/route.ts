@@ -92,13 +92,13 @@ async function getSuperAdminDashboard(context: PermissionContext): Promise<Parti
   // 庫存價值 - ✅ 改用新版 Inventory 表計算
   const stockValueResult = await prisma.$queryRaw`
     SELECT
-      SUM(i.quantity * pv.cost_price) as stock_value,
-      SUM(i.quantity) as stock_count
+      COALESCE(SUM(i.quantity * COALESCE(pv.cost_price, 0)), 0) as stock_value,
+      COALESCE(SUM(i.quantity), 0) as stock_count
     FROM inventory i
     INNER JOIN product_variants pv ON i.variant_id = pv.id
     INNER JOIN products p ON pv.product_id = p.id
-    WHERE p.is_active = true
-  ` as Array<{ stock_value: number, stock_count: number }>
+    WHERE p.is_active = true AND i.quantity > 0
+  ` as Array<{ stock_value: number | bigint, stock_count: number | bigint }>
 
   const stockValue = Number(stockValueResult[0]?.stock_value || 0)
   const stockCount = Number(stockValueResult[0]?.stock_count || 0)
@@ -119,16 +119,16 @@ async function getSuperAdminDashboard(context: PermissionContext): Promise<Parti
     SELECT
       p.id,
       p.name,
-      SUM(i.quantity) as total_stock
+      COALESCE(SUM(i.quantity), 0) as total_stock
     FROM products p
     INNER JOIN product_variants pv ON pv.product_id = p.id
-    INNER JOIN inventory i ON i.variant_id = pv.id
+    LEFT JOIN inventory i ON i.variant_id = pv.id
     WHERE p.is_active = true
     GROUP BY p.id, p.name
-    HAVING SUM(i.quantity) < 10
-    ORDER BY SUM(i.quantity) ASC
+    HAVING COALESCE(SUM(i.quantity), 0) < 10 AND COALESCE(SUM(i.quantity), 0) >= 0
+    ORDER BY COALESCE(SUM(i.quantity), 0) ASC
     LIMIT 5
-  ` as Array<{ id: string, name: string, total_stock: number }>
+  ` as Array<{ id: string, name: string, total_stock: number | bigint }>
 
   const lowStockItems = lowStockItemsRaw.map(item => ({
     name: item.name,
@@ -261,16 +261,16 @@ async function getEmployeeDashboard(context: PermissionContext): Promise<Partial
     SELECT
       p.id,
       p.name,
-      SUM(i.quantity) as total_stock
+      COALESCE(SUM(i.quantity), 0) as total_stock
     FROM products p
     INNER JOIN product_variants pv ON pv.product_id = p.id
-    INNER JOIN inventory i ON i.variant_id = pv.id
+    LEFT JOIN inventory i ON i.variant_id = pv.id
     WHERE p.is_active = true
     GROUP BY p.id, p.name
-    HAVING SUM(i.quantity) < 10
-    ORDER BY SUM(i.quantity) ASC
+    HAVING COALESCE(SUM(i.quantity), 0) < 10 AND COALESCE(SUM(i.quantity), 0) >= 0
+    ORDER BY COALESCE(SUM(i.quantity), 0) ASC
     LIMIT 5
-  ` as Array<{ id: string, name: string, total_stock: number }>
+  ` as Array<{ id: string, name: string, total_stock: number | bigint }>
 
   const stockAlerts = stockAlertsRaw.map(item => ({
     id: item.id,
