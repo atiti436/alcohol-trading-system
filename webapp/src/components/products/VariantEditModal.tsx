@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Modal, Form, Input, InputNumber, Select, Space, Typography, Alert, Divider, Switch, DatePicker } from 'antd'
-import { InfoCircleOutlined } from '@ant-design/icons'
+import { Modal, Form, Input, InputNumber, Select, Space, Typography, Alert, Divider, Switch, DatePicker, Button, Popover, Table } from 'antd'
+import { InfoCircleOutlined, CalculatorOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { calculateLiquidWeight, estimateBottleWeight, getBottleWeightReferenceList } from '@/utils/weightCalculator'
 
 const { Text } = Typography
 const { TextArea } = Input
@@ -244,13 +245,103 @@ export default function VariantEditModal({
           {/* 3. 重量與包裝 */}
           <Divider orientation="left">重量與包裝（空瓶費申報）</Divider>
 
+          {/* 酒液重量顯示 */}
+          <Form.Item shouldUpdate noStyle>
+            {({ getFieldValue }) => {
+              const volumeMl = getFieldValue('volume_ml')
+              const alcPercentage = getFieldValue('alc_percentage')
+
+              if (volumeMl && alcPercentage) {
+                const liquidWeight = calculateLiquidWeight(volumeMl, alcPercentage)
+                return (
+                  <Alert
+                    message={`預估酒液重量：${liquidWeight}g (${(liquidWeight / 1000).toFixed(3)}kg)`}
+                    type="info"
+                    showIcon
+                    icon={<InfoCircleOutlined />}
+                    style={{ marginBottom: 16 }}
+                  />
+                )
+              }
+              return null
+            }}
+          </Form.Item>
+
           <Form.Item
             label="空瓶重量 (kg)"
             name="weight_kg"
             rules={[{ required: true, message: '請輸入空瓶重量' }]}
             tooltip="空酒瓶本身重量（不含酒液、包裝、附件）"
           >
-            <InputNumber placeholder="1.2" min={0} step={0.1} precision={3} style={{ width: '100%' }} />
+            <Space.Compact style={{ width: '100%' }}>
+              <InputNumber placeholder="0.5" min={0} step={0.1} precision={3} style={{ width: 'calc(100% - 120px)' }} />
+              <Form.Item shouldUpdate noStyle>
+                {({ getFieldValue, setFieldsValue }) => {
+                  const volumeMl = getFieldValue('volume_ml')
+
+                  // 參考表內容
+                  const referenceList = getBottleWeightReferenceList()
+                  const columns = [
+                    { title: '容量', dataIndex: 'volume', key: 'volume', render: (v: number) => `${v}ml` },
+                    { title: '參考重量', dataIndex: 'weight', key: 'weight', render: (w: any) => `${w.min}-${w.max}g` },
+                    { title: '平均', dataIndex: 'weight', key: 'average', render: (w: any) => `${w.average}g` },
+                    { title: '類型', dataIndex: 'type', key: 'type' }
+                  ]
+
+                  const content = (
+                    <div style={{ width: 400 }}>
+                      <Table
+                        size="small"
+                        dataSource={referenceList}
+                        columns={columns}
+                        pagination={false}
+                        rowKey="volume"
+                        onRow={(record) => ({
+                          onClick: () => {
+                            // 點擊行時套用平均值 (轉換為 kg)
+                            setFieldsValue({ weight_kg: record.weight.average / 1000 })
+                            message.success(`已套用 ${record.volume}ml 的參考值：${record.weight.average}g`)
+                          },
+                          style: { cursor: 'pointer' }
+                        })}
+                      />
+                      {volumeMl && (
+                        <div style={{ marginTop: 12, padding: 8, background: '#f0f2f5', borderRadius: 4 }}>
+                          <Text strong>根據您的容量 ({volumeMl}ml)：</Text>
+                          <br />
+                          {(() => {
+                            const estimate = estimateBottleWeight(volumeMl)
+                            return (
+                              <>
+                                <Text>推估空瓶重量：{estimate.average}g ({estimate.min}-{estimate.max}g)</Text>
+                                <br />
+                                <Button
+                                  type="link"
+                                  size="small"
+                                  onClick={() => {
+                                    setFieldsValue({ weight_kg: estimate.average / 1000 })
+                                    message.success(`已套用推估值：${estimate.average}g`)
+                                  }}
+                                  style={{ padding: 0 }}
+                                >
+                                  套用推估值
+                                </Button>
+                              </>
+                            )
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  )
+
+                  return (
+                    <Popover content={content} title="空瓶重量參考表" trigger="click" placement="right">
+                      <Button icon={<CalculatorOutlined />}>參考值</Button>
+                    </Popover>
+                  )
+                }}
+              </Form.Item>
+            </Space.Compact>
           </Form.Item>
 
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>

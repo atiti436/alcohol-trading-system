@@ -305,7 +305,7 @@ export async function POST(
           })
 
           if (!inventory) {
-            // 創建庫存記錄
+            // 首次進貨：直接使用新成本
             inventory = await tx.inventory.create({
               data: {
                 variant_id: variant?.id || '',
@@ -317,13 +317,30 @@ export async function POST(
               }
             })
           } else {
-            // 更新庫存
+            // 📊 移動平均成本計算
+            const oldQuantity = inventory.quantity
+            const oldCost = Number(inventory.cost_price || 0)
+            const newQuantity = actualStockIncrease
+            const newCost = finalUnitCost
+
+            // 計算加權平均成本
+            const totalOldCost = oldQuantity * oldCost
+            const totalNewCost = newQuantity * newCost
+            const totalQuantity = oldQuantity + newQuantity
+            const newAverageCost = totalQuantity > 0 ? (totalOldCost + totalNewCost) / totalQuantity : newCost
+
+            console.log(`[移動平均成本] ${item.product_name}`)
+            console.log(`  原庫存：${oldQuantity} 瓶 @ $${oldCost.toFixed(2)} = $${totalOldCost.toFixed(2)}`)
+            console.log(`  新進貨：${newQuantity} 瓶 @ $${newCost.toFixed(2)} = $${totalNewCost.toFixed(2)}`)
+            console.log(`  新平均：${totalQuantity} 瓶 @ $${newAverageCost.toFixed(2)}`)
+
+            // 更新庫存（使用移動平均成本）
             await tx.inventory.update({
               where: { id: inventory.id },
               data: {
                 quantity: { increment: actualStockIncrease },
                 available: { increment: actualStockIncrease },
-                cost_price: finalUnitCost
+                cost_price: newAverageCost  // ✅ 更新為移動平均成本
               }
             })
           }
