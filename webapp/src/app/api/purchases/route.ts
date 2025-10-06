@@ -80,10 +80,24 @@ export async function GET(request: NextRequest) {
           items: {
             select: {
               id: true,
+              product_id: true,
+              variant_id: true,
               product_name: true,
               quantity: true,
               unit_price: true,
-              total_price: true
+              total_price: true,
+              dutiable_value: true,
+              import_duty_rate: true,
+              tariff_code: true,
+              // ✅ 加入 variant 關聯資訊
+              variant: {
+                select: {
+                  id: true,
+                  variant_code: true,
+                  variant_type: true,
+                  description: true
+                }
+              }
             }
           },
           _count: {

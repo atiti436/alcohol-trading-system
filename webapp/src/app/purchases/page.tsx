@@ -989,13 +989,19 @@ export default function PurchasesPage() {
                       title: '商品名稱',
                       dataIndex: 'product_name',
                       key: 'product_name',
-                      width: 200,
-                      render: (text: string, record: PurchaseItem) => (
+                      width: 250,
+                      render: (text: string, record: any) => (
                         <div>
                           <div style={{ fontWeight: 'bold' }}>{text}</div>
-                          {record.tariffCode && (
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              稅則：{record.tariffCode}
+                          {record.variant && record.variant.variant_code && (
+                            <div style={{ fontSize: '12px', color: '#1890ff', marginTop: '4px' }}>
+                              變體：{record.variant.variant_code}
+                              {record.variant.description && ` (${record.variant.description})`}
+                            </div>
+                          )}
+                          {record.tariff_code && (
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                              稅則：{record.tariff_code}
                             </div>
                           )}
                         </div>
@@ -1026,16 +1032,16 @@ export default function PurchasesPage() {
                     },
                     {
                       title: '完稅價格',
-                      dataIndex: 'dutiableValue',
-                      key: 'dutiableValue',
+                      dataIndex: 'dutiable_value',
+                      key: 'dutiable_value',
                       width: 100,
                       align: 'right' as const,
                       render: (value: number) => value ? `$${value.toLocaleString()}` : '-'
                     },
                     {
                       title: '進口稅率',
-                      dataIndex: 'importDutyRate',
-                      key: 'importDutyRate',
+                      dataIndex: 'import_duty_rate',
+                      key: 'import_duty_rate',
                       width: 80,
                       align: 'center' as const,
                       render: (rate: number) => rate ? `${rate}%` : '-'
