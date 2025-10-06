@@ -273,9 +273,18 @@ export async function DELETE(
       where: { id },
       include: {
         items: true,
-        shipping_orders: true,
-        accounts_receivables: true,
-        quotations: true
+        shipping_orders: {
+          select: {
+            id: true,
+            status: true
+          }
+        },
+        accounts_receivables: {
+          select: { id: true }
+        },
+        quotations: {
+          select: { id: true }
+        }
       }
     })
 
@@ -298,14 +307,16 @@ export async function DELETE(
       }, { status: 400 })
     }
 
-    // 3. 檢查是否有活躍的出貨單（僅阻擋非取消狀態）
-    const activeShippingOrders = existingSale.shipping_orders?.filter(
-      order => order.status !== 'CANCELLED'
-    )
-    if (activeShippingOrders && activeShippingOrders.length > 0) {
+    // 3. 檢查是否有活躍的出貨單（過濾掉已取消/作廢的出貨單）
+    const blockingShippingOrders = existingSale.shipping_orders?.filter(order => {
+      const status = (order.status || '').toUpperCase()
+      return status !== 'CANCELLED' && status !== 'VOIDED'
+    }) ?? []
+
+    if (blockingShippingOrders.length > 0) {
       return NextResponse.json({
-        error: '此銷售單已有出貨記錄，無法刪除',
-        details: `請先處理 ${activeShippingOrders.length} 筆出貨單`
+        error: '此銷售單已有出貨紀錄，無法刪除',
+        details: `請先處理 ${blockingShippingOrders.length} 筆出貨單（狀態：${blockingShippingOrders.map(o => o.status || 'UNKNOWN').join(', ')}）`
       }, { status: 400 })
     }
 
