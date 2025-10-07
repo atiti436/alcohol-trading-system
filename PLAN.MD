@@ -337,7 +337,9 @@
 
     **實作進度**:
     - ✅ confirm/route.ts 修改完成（2025-10-07 16:00）
-    - ⏳ 待檢查：admin-cancel, ship API
+    - ✅ admin-cancel/route.ts 修改完成（Line 50-51, 73: 加入 targetWarehouse）
+    - ✅ ship/route.ts 修改完成（Line 88-89, 116: 加入 targetWarehouse）
+    - ✅ 所有修改已推送到 GitHub (commit 3f86719)
     - ⏳ 待測試：3 個場景
 
     **修改摘要**:

@@ -46,6 +46,10 @@ export async function POST(
       return NextResponse.json({ error: '訂單已出貨，暫不支援直接取消，請先處理退貨' }, { status: 400 })
     }
 
+    // 🔒 根據銷售單的資金來源決定目標倉庫
+    const targetWarehouse = sale.funding_source === 'PERSONAL' ? 'PRIVATE' : 'COMPANY'
+    console.log(`[Admin Cancel] 訂單 ${sale.sale_number} 資金來源: ${sale.funding_source} → 回滾倉庫: ${targetWarehouse}`)
+
     await prisma.$transaction(async (tx) => {
       // 若已預留庫存（CONFIRMED），歸還 reserved -> available
       if (sale.status === 'CONFIRMED') {
@@ -61,11 +65,12 @@ export async function POST(
             })
 
             // 2. 更新 Inventory 表（主要庫存來源）- FIFO 回滾
-            // ✅ 從 Inventory 表查詢可用庫存
+            // 🔒 只從目標倉庫回滾
             let remainingToRelease = item.quantity
             const inventories = await tx.inventory.findMany({
               where: {
                 variant_id: item.variant_id,
+                warehouse: targetWarehouse,  // 🔒 只查目標倉庫
                 reserved: { gt: 0 }
               },
               orderBy: { created_at: 'asc' } // FIFO

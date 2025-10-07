@@ -84,6 +84,10 @@ export async function POST(
       console.log(`[自動出貨] 銷售單 ${sale.sale_number} 自動生成出貨明細，共 ${shippingItems.length} 項商品`)
     }
 
+    // 🔒 根據銷售單的資金來源決定目標倉庫
+    const targetWarehouse = sale.funding_source === 'PERSONAL' ? 'PRIVATE' : 'COMPANY'
+    console.log(`[出貨] 訂單 ${sale.sale_number} 資金來源: ${sale.funding_source} → 目標倉庫: ${targetWarehouse}`)
+
     // 檢查庫存是否充足
     const inventoryChecks: Array<{
       saleItem: any;
@@ -106,10 +110,12 @@ export async function POST(
       }
 
       // 檢查預留庫存（因為確認訂單時已經預留了）
-      // ✅ 從 Inventory 表查詢可用庫存
-      // 查詢 Inventory 表中的預留庫存
+      // ✅ 從 Inventory 表查詢可用庫存（只查目標倉庫）
       const inventories = await prisma.inventory.findMany({
-        where: { variant_id: shipItem.variant_id },
+        where: {
+          variant_id: shipItem.variant_id,
+          warehouse: targetWarehouse  // 🔒 只查目標倉庫
+        },
         select: {
           id: true,
           warehouse: true,
@@ -117,7 +123,7 @@ export async function POST(
           quantity: true
         },
         orderBy: [
-          { warehouse: 'asc' } // COMPANY 優先
+          { created_at: 'asc' } // FIFO
         ]
       })
 
