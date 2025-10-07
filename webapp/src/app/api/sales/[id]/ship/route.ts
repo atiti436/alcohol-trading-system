@@ -33,7 +33,10 @@ export async function POST(
       tracking_number, // 追蹤號碼
       notes = '', // 出貨備註
       items = [], // 出貨明細：[{sale_item_id, ship_quantity, variant_id}]
-      print = false // 是否需要列印出貨單
+      print = false, // 是否需要列印出貨單
+      // 🆕 發票資訊
+      invoice_number, // 發票號碼（選填）
+      invoice_date // 發票日期（選填）
     } = body
 
     // 檢查銷售訂單是否存在
@@ -163,7 +166,10 @@ export async function POST(
           tracking_number: tracking_number || null,
           status: 'SHIPPED',
           shipped_at: new Date(),
-          notes
+          notes,
+          // 🆕 發票資訊
+          invoice_number: invoice_number || null,
+          invoice_date: invoice_date ? new Date(invoice_date) : null
         }
       })
 

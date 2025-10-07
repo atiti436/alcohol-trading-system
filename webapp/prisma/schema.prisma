@@ -599,6 +599,9 @@ model ShippingOrder {
   status           String         @default("PENDING")
   shipped_at       DateTime?
   delivered_at     DateTime?
+  // 🆕 發票資訊（選填）
+  invoice_number   String? // 發票號碼
+  invoice_date     DateTime? // 發票日期
   notes            String?
   created_at       DateTime       @default(now())
   updated_at       DateTime       @updatedAt

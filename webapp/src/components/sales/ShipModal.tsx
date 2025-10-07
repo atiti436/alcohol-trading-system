@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Modal, Form, Input, Radio, Space, Alert } from 'antd'
-import { TruckOutlined } from '@ant-design/icons'
+import { Modal, Form, Input, Radio, Space, Alert, Checkbox, DatePicker } from 'antd'
+import { TruckOutlined, FileTextOutlined } from '@ant-design/icons'
+import dayjs from 'dayjs'
 
 const { TextArea } = Input
 
@@ -19,6 +20,9 @@ export interface ShipFormData {
   shipping_address?: string
   tracking_number?: string
   notes?: string
+  // 🆕 發票資訊
+  invoice_number?: string
+  invoice_date?: string
 }
 
 /**
@@ -34,6 +38,7 @@ export function ShipModal({
 }: ShipModalProps) {
   const [form] = Form.useForm()
   const [shippingMethod, setShippingMethod] = useState<string>('HAND_DELIVERY')
+  const [needInvoice, setNeedInvoice] = useState(false)  // 🆕 是否需要開發票
 
   const handleSubmit = async () => {
     try {
@@ -48,6 +53,7 @@ export function ShipModal({
   const handleCancel = () => {
     form.resetFields()
     setShippingMethod('HAND_DELIVERY')
+    setNeedInvoice(false)  // 🆕 重置發票狀態
     onCancel()
   }
 
@@ -129,6 +135,55 @@ export function ShipModal({
         >
           <TextArea rows={3} placeholder="選填：特殊注意事項" />
         </Form.Item>
+
+        {/* 🆕 發票資訊區塊 */}
+        <div style={{ marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+              <FileTextOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+              <span style={{ fontWeight: 'bold' }}>發票資訊（選填）</span>
+            </div>
+
+            <Checkbox
+              checked={needInvoice}
+              onChange={(e) => {
+                setNeedInvoice(e.target.checked)
+                if (!e.target.checked) {
+                  form.setFieldsValue({ invoice_number: undefined, invoice_date: undefined })
+                } else {
+                  form.setFieldsValue({ invoice_date: dayjs() })
+                }
+              }}
+            >
+              需要開立發票
+            </Checkbox>
+
+            {needInvoice && (
+              <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
+                <Form.Item
+                  name="invoice_number"
+                  label="發票號碼"
+                  style={{ marginBottom: 8 }}
+                >
+                  <Input placeholder="如：AB12345678" />
+                </Form.Item>
+
+                <Form.Item
+                  name="invoice_date"
+                  label="發票日期"
+                  style={{ marginBottom: 0 }}
+                  initialValue={dayjs()}
+                >
+                  <DatePicker
+                    style={{ width: '100%' }}
+                    format="YYYY/MM/DD"
+                    placeholder="選擇發票日期"
+                  />
+                </Form.Item>
+              </Space>
+            )}
+          </Space>
+        </div>
 
         {shippingMethod === 'PICKUP' && (
           <Alert
