@@ -375,6 +375,20 @@ export function SaleOrderModal({
                 const variantName = variant.description || variant.variant_type || '標準款'
                 const fullProductName = `${record.product?.name || ''} - ${variantName}`
 
+                // 🔒 根據資金來源顯示對應倉庫的庫存
+                const fundingSource = form.getFieldValue('fundingSource')
+                const targetWarehouse = fundingSource === 'PERSONAL' ? 'PRIVATE' : 'COMPANY'
+                const warehouseName = targetWarehouse === 'COMPANY' ? '公司倉' : '個人倉'
+
+                let availableStock = 0
+                if (variant.inventory && Array.isArray(variant.inventory)) {
+                  const warehouseInventory = variant.inventory.find((inv: any) => inv.warehouse === targetWarehouse)
+                  availableStock = warehouseInventory?.available || 0
+                } else {
+                  // 舊資料兼容：沒有 inventory 數組時使用總庫存
+                  availableStock = variant.available_stock || variant.stock_quantity || 0
+                }
+
                 return (
                   <Option key={variant.id} value={variant.id}>
                     <div style={{
@@ -386,7 +400,7 @@ export function SaleOrderModal({
                         {fullProductName}
                       </div>
                       <div style={{ fontSize: '11px', color: '#999' }}>
-                        {variant.variant_code} | 庫存: {variant.available_stock || variant.stock_quantity || 0}瓶 | NT$ {variant.current_price?.toLocaleString()}
+                        {variant.variant_code} | {warehouseName}: {availableStock}瓶 | NT$ {variant.current_price?.toLocaleString()}
                       </div>
                     </div>
                   </Option>
