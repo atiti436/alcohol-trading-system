@@ -448,11 +448,58 @@ export default function InventoryPage() {
                 return <div style={{ padding: '12px', color: '#999' }}>無變體資料</div>
               }
 
+              // 🔒 按 (variant, warehouse) 組合展開資料，投資方不顯示個人倉
+              const expandedData: Array<{
+                key: string
+                variant_code: string
+                warehouse: string
+                warehouse_name: string
+                quantity: number
+                reserved: number
+                available: number
+                cost_price: number
+              }> = []
+
+              record.variants.forEach(variant => {
+                if (variant.inventory && variant.inventory.length > 0) {
+                  // 有倉庫明細：按倉庫展開
+                  variant.inventory.forEach((inv: any) => {
+                    // 🔒 投資方不顯示個人倉
+                    if (session?.user?.role === 'INVESTOR' && inv.warehouse === 'PRIVATE') {
+                      return
+                    }
+
+                    expandedData.push({
+                      key: `${variant.id}-${inv.warehouse}`,
+                      variant_code: variant.variant_code,
+                      warehouse: inv.warehouse,
+                      warehouse_name: inv.warehouse === 'COMPANY' ? '公司倉' : '個人倉',
+                      quantity: inv.quantity,
+                      reserved: inv.reserved,
+                      available: inv.available,
+                      cost_price: inv.cost_price
+                    })
+                  })
+                } else {
+                  // 無倉庫明細（舊資料）：顯示總計
+                  expandedData.push({
+                    key: variant.id,
+                    variant_code: variant.variant_code,
+                    warehouse: 'TOTAL',
+                    warehouse_name: '總計',
+                    quantity: variant.stock_quantity,
+                    reserved: 0,
+                    available: variant.available_stock,
+                    cost_price: variant.cost_price
+                  })
+                }
+              })
+
               return (
                 <Table
                   size="small"
-                  dataSource={record.variants}
-                  rowKey="id"
+                  dataSource={expandedData}
+                  rowKey="key"
                   pagination={false}
                   columns={[
                     {
@@ -465,20 +512,39 @@ export default function InventoryPage() {
                       )
                     },
                     {
+                      title: '倉庫',
+                      dataIndex: 'warehouse_name',
+                      key: 'warehouse_name',
+                      width: 80,
+                      render: (text: string, record: any) => (
+                        <Tag color={record.warehouse === 'COMPANY' ? 'blue' : record.warehouse === 'PRIVATE' ? 'orange' : 'default'}>
+                          {text}
+                        </Tag>
+                      )
+                    },
+                    {
                       title: '庫存數量',
-                      dataIndex: 'stock_quantity',
-                      key: 'stock_quantity',
+                      dataIndex: 'quantity',
+                      key: 'quantity',
                       width: 100,
                       align: 'center' as const
                     },
                     {
+                      title: '預留',
+                      dataIndex: 'reserved',
+                      key: 'reserved',
+                      width: 80,
+                      align: 'center' as const,
+                      render: (value: number) => value > 0 ? <span style={{ color: '#faad14' }}>{value}</span> : value
+                    },
+                    {
                       title: '可售庫存',
-                      dataIndex: 'available_stock',
-                      key: 'available_stock',
+                      dataIndex: 'available',
+                      key: 'available',
                       width: 100,
                       align: 'center' as const,
                       render: (value: number) => (
-                        <span style={{ color: value > 0 ? '#52c41a' : '#ff4d4f' }}>
+                        <span style={{ color: value > 0 ? '#52c41a' : '#ff4d4f', fontWeight: 'bold' }}>
                           {value}
                         </span>
                       )

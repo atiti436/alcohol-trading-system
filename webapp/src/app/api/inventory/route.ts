@@ -101,6 +101,9 @@ export async function GET(request: NextRequest) {
               condition: true,
               // ✅ 從 Inventory 表查詢庫存
               inventory: {
+                where: session.user.role === 'INVESTOR'
+                  ? { warehouse: 'COMPANY' }  // 🔒 投資方只能看公司倉
+                  : undefined,  // 員工和管理員可以看全部倉庫
                 select: {
                   id: true,
                   warehouse: true,
@@ -171,11 +174,9 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // 🔒 數據過濾 - 投資方只能看公司倉（根據新的 warehouse 欄位）
+    // 🔒 數據過濾 - 投資方隱藏實際售價（個人倉已在查詢時過濾）
     const filteredData = inventoryData.map(product => {
       if (session.user.role === 'INVESTOR') {
-        // 過濾變體：只查詢公司倉庫存
-        // 注意：此處假設 variants 已關聯 inventory，需要額外查詢
         return {
           ...product,
           variants: product.variants.map(variant => ({

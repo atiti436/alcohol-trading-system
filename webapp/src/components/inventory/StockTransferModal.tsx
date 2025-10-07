@@ -45,6 +45,8 @@ export default function StockTransferModal({
   const [selectedTargetProduct, setSelectedTargetProduct] = useState<string | null>(null)
   const [selectedSourceVariant, setSelectedSourceVariant] = useState<any>(null)
   const [selectedTargetVariant, setSelectedTargetVariant] = useState<any>(null)
+  const [sourceWarehouse, setSourceWarehouse] = useState<'COMPANY' | 'PRIVATE'>('COMPANY')  // 🔒 新增
+  const [targetWarehouse, setTargetWarehouse] = useState<'COMPANY' | 'PRIVATE'>('COMPANY')  // 🔒 新增
 
   // 重置表單
   const resetForm = () => {
@@ -53,6 +55,8 @@ export default function StockTransferModal({
     setSelectedTargetProduct(null)
     setSelectedSourceVariant(null)
     setSelectedTargetVariant(null)
+    setSourceWarehouse('COMPANY')  // 🔒 重置倉庫選擇
+    setTargetWarehouse('COMPANY')
   }
 
   // 處理來源產品變化
@@ -94,6 +98,8 @@ export default function StockTransferModal({
         body: JSON.stringify({
           source_variant_id: values.source_variant_id,
           target_variant_id: values.target_variant_id,
+          source_warehouse: sourceWarehouse,  // 🔒 新增
+          target_warehouse: targetWarehouse,  // 🔒 新增
           quantity: values.quantity,
           reason: values.reason,
           notes: values.notes
@@ -193,9 +199,21 @@ export default function StockTransferModal({
             </Select>
           </Form.Item>
 
+          {/* 🔒 新增：來源倉庫選擇 */}
+          <Form.Item label="來源倉庫">
+            <Select
+              value={sourceWarehouse}
+              onChange={(value) => setSourceWarehouse(value)}
+              style={{ width: '100%' }}
+            >
+              <Option value="COMPANY">公司倉</Option>
+              <Option value="PRIVATE">個人倉</Option>
+            </Select>
+          </Form.Item>
+
           {selectedSourceVariant && (
             <Alert
-              message={`當前可售庫存: ${selectedSourceVariant.available_stock}`}
+              message={`當前可售庫存: ${selectedSourceVariant.available_stock} （${sourceWarehouse === 'COMPANY' ? '公司倉' : '個人倉'}）`}
               type="success"
               showIcon
             />
@@ -251,9 +269,21 @@ export default function StockTransferModal({
             </Select>
           </Form.Item>
 
+          {/* 🔒 新增：目標倉庫選擇 */}
+          <Form.Item label="目標倉庫">
+            <Select
+              value={targetWarehouse}
+              onChange={(value) => setTargetWarehouse(value)}
+              style={{ width: '100%' }}
+            >
+              <Option value="COMPANY">公司倉</Option>
+              <Option value="PRIVATE">個人倉</Option>
+            </Select>
+          </Form.Item>
+
           {selectedTargetVariant && (
             <Alert
-              message={`當前可售庫存: ${selectedTargetVariant.available_stock}`}
+              message={`當前可售庫存: ${selectedTargetVariant.available_stock} （${targetWarehouse === 'COMPANY' ? '公司倉' : '個人倉'}）`}
               type="info"
               showIcon
             />

@@ -73,6 +73,8 @@ export async function POST(request: NextRequest) {
     const {
       source_variant_id,
       target_variant_id,
+      source_warehouse = 'COMPANY',  // 🔒 新增：來源倉庫（預設公司倉）
+      target_warehouse = 'COMPANY',  // 🔒 新增：目標倉庫（預設公司倉）
       quantity,
       reason,
       notes
@@ -91,9 +93,23 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    if (source_variant_id === target_variant_id) {
+    // 🔒 驗證倉庫參數
+    if (!['COMPANY', 'PRIVATE'].includes(source_warehouse)) {
       return NextResponse.json({
-        error: 'Source and target variants cannot be the same'
+        error: '來源倉庫必須是 COMPANY 或 PRIVATE'
+      }, { status: 400 })
+    }
+
+    if (!['COMPANY', 'PRIVATE'].includes(target_warehouse)) {
+      return NextResponse.json({
+        error: '目標倉庫必須是 COMPANY 或 PRIVATE'
+      }, { status: 400 })
+    }
+
+    // 🔒 同一變體在同一倉庫內不能轉移
+    if (source_variant_id === target_variant_id && source_warehouse === target_warehouse) {
+      return NextResponse.json({
+        error: '來源和目標不能是同一變體的同一倉庫'
       }, { status: 400 })
     }
 
@@ -159,20 +175,23 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // ✅ 更新來源變體的 Inventory 表（減少公司倉庫存）
+      // ✅ 更新來源變體的 Inventory 表（從指定倉庫減少庫存）
       const sourceInventory = await tx.inventory.findFirst({
         where: {
           variant_id: source_variant_id,
-          warehouse: 'COMPANY'
+          warehouse: source_warehouse
         }
       })
 
+      const sourceWarehouseName = source_warehouse === 'COMPANY' ? '公司倉' : '個人倉'
+      const targetWarehouseName = target_warehouse === 'COMPANY' ? '公司倉' : '個人倉'
+
       if (!sourceInventory) {
-        throw new Error(`來源變體 ${sourceVariant.variant_code} 在公司倉無庫存記錄`)
+        throw new Error(`來源變體 ${sourceVariant.variant_code} 在${sourceWarehouseName}無庫存記錄`)
       }
 
       if (sourceInventory.available < quantity) {
-        throw new Error(`庫存不足。可用：${sourceInventory.available}，需要：${quantity}`)
+        throw new Error(`${sourceWarehouseName}庫存不足。可用：${sourceInventory.available}，需要：${quantity}`)
       }
 
       await tx.inventory.update({
@@ -183,20 +202,20 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // ✅ 更新目標變體的 Inventory 表（增加公司倉庫存）
+      // ✅ 更新目標變體的 Inventory 表（向指定倉庫增加庫存）
       const targetInventory = await tx.inventory.findFirst({
         where: {
           variant_id: target_variant_id,
-          warehouse: 'COMPANY'
+          warehouse: target_warehouse
         }
       })
 
       if (!targetInventory) {
-        // 如果目標變體沒有庫存記錄，創建一筆
+        // 如果目標變體在該倉庫沒有庫存記錄，創建一筆
         await tx.inventory.create({
           data: {
             variant_id: target_variant_id,
-            warehouse: 'COMPANY',
+            warehouse: target_warehouse,
             quantity: quantity,
             available: quantity,
             reserved: 0,
@@ -220,7 +239,7 @@ export async function POST(request: NextRequest) {
           variant_id: source_variant_id,
           movement_type: 'OUT',
           adjustment_type: 'TRANSFER',
-          reason: `轉出至 ${targetVariant.variant_code}`,
+          reason: `轉出至 ${targetVariant.variant_code} [${targetWarehouseName}]`,
           notes,
           reference_id: transfer.id,
           reference_type: 'STOCK_TRANSFER',
@@ -230,7 +249,7 @@ export async function POST(request: NextRequest) {
           quantity_change: -quantity,
           unit_cost,
           total_cost,
-          warehouse: 'COMPANY'
+          warehouse: source_warehouse
         }
       })
 
@@ -240,7 +259,7 @@ export async function POST(request: NextRequest) {
           variant_id: target_variant_id,
           movement_type: 'IN',
           adjustment_type: 'TRANSFER',
-          reason: `從 ${sourceVariant.variant_code} 轉入`,
+          reason: `從 ${sourceVariant.variant_code} [${sourceWarehouseName}] 轉入`,
           notes,
           reference_id: transfer.id,
           reference_type: 'STOCK_TRANSFER',
@@ -250,7 +269,7 @@ export async function POST(request: NextRequest) {
           quantity_change: quantity,
           unit_cost,
           total_cost,
-          warehouse: 'COMPANY'
+          warehouse: target_warehouse
         }
       })
 
