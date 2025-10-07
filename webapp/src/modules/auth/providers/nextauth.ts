@@ -70,12 +70,38 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      // 將JWT中的資訊附加到session
-      if (token) {
-        session.user.id = token.id as string
-        session.user.role = token.role as Role
-        session.user.investor_id = token.investor_id as string | undefined
+      // 🔍 每次請求都驗證 User 是否存在（防止過期 session）
+      if (token?.id) {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              investor_id: true,
+              is_active: true
+            }
+          })
+
+          // ❌ User 不存在或被停用 → 強制登出
+          if (!user || !user.is_active) {
+            console.warn(`[Session 驗證失敗] User ${token.id} 不存在或已停用`)
+            throw new Error('User not found or inactive')
+          }
+
+          // ✅ User 存在且正常 → 更新 session 資料
+          session.user.id = user.id
+          session.user.email = user.email
+          session.user.role = user.role as Role
+          session.user.investor_id = user.investor_id || undefined
+        } catch (error) {
+          // 驗證失敗，返回 null 會強制用戶重新登入
+          console.error('[Session 驗證錯誤]', error)
+          return null as any
+        }
       }
+
       return session
     },
     async signIn({ user }) {
