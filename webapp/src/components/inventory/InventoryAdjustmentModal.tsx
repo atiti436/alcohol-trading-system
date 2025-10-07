@@ -32,6 +32,15 @@ interface InventoryItem {
     // 補齊 UI 會用到的欄位（可選）
     description?: string
     variant_type?: string
+    // 🔒 新增：各倉庫的庫存明細
+    inventory?: Array<{
+      id: string
+      warehouse: 'COMPANY' | 'PRIVATE'
+      quantity: number
+      reserved: number
+      available: number
+      cost_price: number
+    }>
   }>
 }
 
@@ -39,7 +48,9 @@ interface AdjustmentItem {
   key: string
   variant_id: string
   variant_code: string
+  warehouse: 'COMPANY' | 'PRIVATE'  // 🔒 新增：倉庫欄位
   current_stock: number
+  available_stock: number  // 🔒 新增：可用庫存
   adjustment_quantity: number
   new_stock: number
   reason: string
@@ -65,16 +76,41 @@ export function InventoryAdjustmentModal({
 
   useEffect(() => {
     if (inventoryItem && visible) {
-      // 初始化調整項目
-      const initialAdjustments = inventoryItem.variants.map((variant, index) => ({
-        key: `adj-${index}`,
-        variant_id: variant.id,
-        variant_code: variant.variant_code,
-        current_stock: variant.stock_quantity,
-        adjustment_quantity: 0,
-        new_stock: variant.stock_quantity,
-        reason: ''
-      }))
+      // 🔒 初始化調整項目：按 (variant, warehouse) 組合展開
+      const initialAdjustments: AdjustmentItem[] = []
+
+      inventoryItem.variants.forEach(variant => {
+        if (variant.inventory && variant.inventory.length > 0) {
+          // 有倉庫明細：為每個倉庫創建一筆調整項目
+          variant.inventory.forEach(inv => {
+            initialAdjustments.push({
+              key: `adj-${variant.id}-${inv.warehouse}`,
+              variant_id: variant.id,
+              variant_code: variant.variant_code,
+              warehouse: inv.warehouse,
+              current_stock: inv.quantity,
+              available_stock: inv.available,
+              adjustment_quantity: 0,
+              new_stock: inv.quantity,
+              reason: ''
+            })
+          })
+        } else {
+          // 無倉庫明細（舊資料）：顯示總庫存，預設 COMPANY 倉
+          initialAdjustments.push({
+            key: `adj-${variant.id}-COMPANY`,
+            variant_id: variant.id,
+            variant_code: variant.variant_code,
+            warehouse: 'COMPANY',
+            current_stock: variant.stock_quantity,
+            available_stock: variant.available_stock,
+            adjustment_quantity: 0,
+            new_stock: variant.stock_quantity,
+            reason: ''
+          })
+        }
+      })
+
       setAdjustments(initialAdjustments)
     } else {
       setAdjustments([])
@@ -89,7 +125,9 @@ export function InventoryAdjustmentModal({
       key: `adj-${Date.now()}`,
       variant_id: '',
       variant_code: '',
+      warehouse: 'COMPANY',  // 🔒 預設公司倉
       current_stock: 0,
+      available_stock: 0,
       adjustment_quantity: 0,
       new_stock: 0,
       reason: ''
@@ -101,18 +139,49 @@ export function InventoryAdjustmentModal({
     setAdjustments(adjustments.filter(item => item.key !== key))
   }
 
+  // 🔒 新增：處理倉庫變更
+  const handleWarehouseChange = (key: string, warehouse: 'COMPANY' | 'PRIVATE') => {
+    setAdjustments(prev => prev.map(item => {
+      if (item.key === key) {
+        const variant = inventoryItem?.variants.find(v => v.id === item.variant_id)
+        if (!variant) return item
+
+        const inv = variant.inventory?.find(i => i.warehouse === warehouse)
+        const stock = inv?.quantity || 0
+        const available = inv?.available || 0
+
+        return {
+          ...item,
+          warehouse,
+          current_stock: stock,
+          available_stock: available,
+          new_stock: stock + item.adjustment_quantity
+        }
+      }
+      return item
+    }))
+  }
+
   const handleVariantChange = (key: string, variantId: string) => {
     const variant = inventoryItem?.variants.find(v => v.id === variantId)
     if (!variant) return
 
     setAdjustments(prev => prev.map(item => {
       if (item.key === key) {
+        // 🔒 預設選第一個倉庫
+        const warehouse = item.warehouse || 'COMPANY'
+        const inv = variant.inventory?.find(i => i.warehouse === warehouse) || variant.inventory?.[0]
+        const stock = inv?.quantity || variant.stock_quantity
+        const available = inv?.available || variant.available_stock
+
         return {
           ...item,
           variant_id: variantId,
           variant_code: variant.variant_code,
-          current_stock: variant.stock_quantity,
-          new_stock: variant.stock_quantity + item.adjustment_quantity
+          warehouse: inv?.warehouse || warehouse,
+          current_stock: stock,
+          available_stock: available,
+          new_stock: stock + item.adjustment_quantity
         }
       }
       return item
@@ -164,6 +233,7 @@ export function InventoryAdjustmentModal({
         notes: values.notes,
         adjustments: validAdjustments.map(item => ({
           variant_id: item.variant_id,
+          warehouse: item.warehouse,  // 🔒 新增：倉庫參數
           adjustment_quantity: item.adjustment_quantity,
           reason: item.reason
         }))
@@ -179,27 +249,62 @@ export function InventoryAdjustmentModal({
     {
       title: '變體',
       key: 'variant',
-      width: 150,
+      width: 180,
+      render: (_: any, record: AdjustmentItem) => {
+        // 🔒 顯示變體資訊（如果已選擇）
+        if (record.variant_id) {
+          const variant = inventoryItem?.variants.find(v => v.id === record.variant_id)
+          const warehouseName = record.warehouse === 'COMPANY' ? '公司倉' : '個人倉'
+          return (
+            <div>
+              <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
+                {variant?.description || variant?.variant_type || record.variant_code}
+              </div>
+              <div style={{ fontSize: '12px', color: '#999' }}>
+                {record.variant_code} | {warehouseName}
+              </div>
+            </div>
+          )
+        }
+
+        // 未選擇：顯示下拉選單
+        return (
+          <Select
+            placeholder="⚠️ 請選擇版本"
+            value={record.variant_id || undefined}
+            onChange={(value) => handleVariantChange(record.key, value)}
+            style={{ width: '100%' }}
+            notFoundContent="無可用版本"
+          >
+            {inventoryItem?.variants.map(variant => (
+              <Option key={variant.id} value={variant.id}>
+                <div>
+                  <span style={{ fontWeight: 'bold' }}>
+                    {variant.description || variant.variant_type}
+                  </span>
+                  <div style={{ color: '#999', fontSize: '12px' }}>
+                    {variant.variant_code}
+                  </div>
+                </div>
+              </Option>
+            ))}
+          </Select>
+        )
+      }
+    },
+    {
+      title: '倉庫',
+      key: 'warehouse',
+      width: 100,
       render: (_: any, record: AdjustmentItem) => (
         <Select
-          placeholder="⚠️ 請選擇版本"
-          value={record.variant_id || undefined}
-          onChange={(value) => handleVariantChange(record.key, value)}
+          value={record.warehouse}
+          onChange={(value) => handleWarehouseChange(record.key, value)}
           style={{ width: '100%' }}
-          notFoundContent="無可用版本"
+          disabled={!record.variant_id}  // 未選變體時禁用
         >
-          {inventoryItem?.variants.map(variant => (
-            <Option key={variant.id} value={variant.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 'bold' }}>
-                  {variant.description || variant.variant_type}
-                </span>
-                <span style={{ color: '#999', fontSize: '12px' }}>
-                  {variant.variant_code} | 庫存: {variant.available_stock || variant.stock_quantity || 0}瓶
-                </span>
-              </div>
-            </Option>
-          ))}
+          <Option value="COMPANY">公司倉</Option>
+          <Option value="PRIVATE">個人倉</Option>
         </Select>
       )
     },
@@ -208,7 +313,12 @@ export function InventoryAdjustmentModal({
       key: 'current_stock',
       width: 100,
       render: (_: any, record: AdjustmentItem) => (
-        <span>{record.current_stock}</span>
+        <div>
+          <div>{record.current_stock} 瓶</div>
+          <div style={{ fontSize: '12px', color: '#52c41a' }}>
+            可用: {record.available_stock}
+          </div>
+        </div>
       )
     },
     {

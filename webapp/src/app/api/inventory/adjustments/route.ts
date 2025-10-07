@@ -37,11 +37,14 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
       const movements = []
 
       for (const adjustment of validAdjustments) {
-        // ✅ 改用 Inventory 表：查詢公司倉庫存（預設調整公司倉）
+        // 🔒 使用調整項目指定的倉庫（預設 COMPANY）
+        const targetWarehouse = adjustment.warehouse || 'COMPANY'
+
+        // ✅ 改用 Inventory 表：查詢指定倉庫的庫存
         const inventory = await tx.inventory.findFirst({
           where: {
             variant_id: adjustment.variant_id,
-            warehouse: 'COMPANY'
+            warehouse: targetWarehouse
           },
           include: {
             variant: {
@@ -54,7 +57,8 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
         })
 
         if (!inventory) {
-          throw new Error(`變體 ${adjustment.variant_id} 在公司倉庫不存在`)
+          const warehouseName = targetWarehouse === 'COMPANY' ? '公司倉' : '個人倉'
+          throw new Error(`變體 ${adjustment.variant_id} 在${warehouseName}不存在`)
         }
 
         const newQuantity = inventory.quantity + adjustment.adjustment_quantity
@@ -62,10 +66,17 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
 
         // 檢查庫存不能為負數
         if (newQuantity < 0) {
-          throw new Error(`變體 ${inventory.variant.variant_code} 庫存不足，當前庫存 ${inventory.quantity}，調整數量 ${adjustment.adjustment_quantity}`)
+          const warehouseName = targetWarehouse === 'COMPANY' ? '公司倉' : '個人倉'
+          throw new Error(`變體 ${inventory.variant.variant_code} ${warehouseName}庫存不足，當前庫存 ${inventory.quantity}，調整數量 ${adjustment.adjustment_quantity}`)
         }
 
-        // ✅ 更新 Inventory 表（公司倉）
+        // 🔒 檢查可用庫存不能小於 0
+        if (newAvailable < 0) {
+          const warehouseName = targetWarehouse === 'COMPANY' ? '公司倉' : '個人倉'
+          throw new Error(`變體 ${inventory.variant.variant_code} ${warehouseName}可用庫存不足，當前可用 ${inventory.available}，調整數量 ${adjustment.adjustment_quantity}`)
+        }
+
+        // ✅ 更新 Inventory 表（指定倉庫）
         await tx.inventory.update({
           where: { id: inventory.id },
           data: {
@@ -87,7 +98,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
             unit_cost: inventory.variant.cost_price || 0,
             total_cost: Math.abs(adjustment.adjustment_quantity) * (inventory.variant.cost_price || 0),
             reason: adjustment.reason,
-            warehouse: 'COMPANY',
+            warehouse: targetWarehouse,  // 🔒 記錄實際調整的倉庫
             notes: notes || `庫存調整 - ${adjustment_type}`,
             reference_type: 'ADJUSTMENT',
             created_by: context.userId
