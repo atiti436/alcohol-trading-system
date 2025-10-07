@@ -11,8 +11,6 @@ export const dynamic = 'force-dynamic'
  */
 export const POST = withAppActiveUser(async (request: NextRequest, response: NextResponse, context: any) => {
   try {
-    const { session } = context
-
     const body = await request.json()
     const { product_id, adjustment_type, notes, adjustments } = body
 
@@ -92,7 +90,7 @@ export const POST = withAppActiveUser(async (request: NextRequest, response: Nex
             warehouse: 'COMPANY',
             notes: notes || `庫存調整 - ${adjustment_type}`,
             reference_type: 'ADJUSTMENT',
-            created_by: session.user.id
+            created_by: context.userId
           }
         })
 
