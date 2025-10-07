@@ -298,11 +298,57 @@ return (
 | ERP業務邏輯 | ✅ 完美 | 5/5 | 成本計算 + 採購/進貨/刪除 |
 | 多餘程式碼 | ✅ 良好 | 3/3 | - |
 | Schema一致性 | ✅ 完成 | 3/3 | Inventory 表已建立並正常運作 |
-| 安全防護 | ✅ 優秀 | 12/12 | CORS/CSRF/Rate Limiting |
+| 安全防護 | ⚠️ 良好 | 11/12 | CORS 暫時關閉中（見下方說明） |
 | 庫存系統 | ✅ 重構完成 | 9/9 | 移動平均成本計算完成 |
 
-**總體進度**: 35/35 問題已修復 (100%) 🎉
-**狀態**: ✅ 生產環境就緒
+**總體進度**: 34/35 問題已修復 (97%)
+**狀態**: ✅ 生產環境就緒（待完成：CORS 重新啟用）
+
+#### 🔒 CORS 狀態說明
+
+**什麼是 CORS？**
+- CORS（Cross-Origin Resource Sharing）= 跨域資源共享
+- 作用：防止其他網站偷用你的 API（門禁系統）
+- 保護：只允許你自己的網域 `https://alcohol-trading-system.zeabur.app` 呼叫 API
+
+**目前狀態**：⚠️ **暫時關閉中**
+- 檔案位置：`webapp/src/middleware.ts` (Line 44-51)
+- 原因：環境變數診斷中，避免自己網站被誤擋
+- 影響：目前任何來源都能呼叫 API（理論上有風險，但因為有登入驗證 + Rate Limiting，實際風險不高）
+
+**為什麼關閉？**
+```typescript
+// middleware.ts:44-51
+// ⚠️ 暫時關閉 CORS 檢查進行診斷
+// TODO: 修復環境變數後重新啟用
+/*
+if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
+  const corsError = checkCORS(originHeader, allowedOrigins)
+  if (corsError) return corsError
+}
+*/
+```
+
+**開發流程說明**：
+- ❌ 不在本地測試（本地環境有問題）
+- ✅ 推送到 GitHub → 自動部署到 Zeabur
+- 🌐 Zeabur = 測試環境 + 正式環境
+- ⚠️ 若 CORS 開啟但環境變數錯誤，會導致連自己網站都被擋（所有 POST/PUT/DELETE/PATCH 都 403）
+
+**其他保護機制**（仍運作中）：
+- ✅ NextAuth.js 登入驗證（未登入無法操作）
+- ✅ Rate Limiting（防止 DDoS 攻擊）
+  - 認證 API：10 次/分鐘
+  - 寫入操作：20 次/分鐘
+  - 查詢操作：60 次/分鐘
+- ✅ 角色權限檢查（SUPER_ADMIN/EMPLOYEE/INVESTOR 分層）
+
+**重新啟用計畫**（P0 待處理）：
+1. 確認 Zeabur 環境變數 `NEXTAUTH_URL` 是 `https://` 開頭
+2. 取消 `middleware.ts` 的 CORS 註解
+3. 推送到 GitHub → 自動部署
+4. 測試確認不影響正常功能
+5. 詳見：`健檢報告_20251008_CLAUDE.MD` - 問題 11
 
 ---
 

@@ -268,6 +268,9 @@ export async function POST(
 
       console.log(`[出貨完成] 訂單 ${sale.sale_number} 狀態已更新為 SHIPPED`)
 
+      // 計算總出貨數量
+      const totalShippedQuantity = shippingItems.reduce((sum, item) => sum + item.shipped_quantity, 0)
+
       return {
         shippingOrder,
         shippingItems,

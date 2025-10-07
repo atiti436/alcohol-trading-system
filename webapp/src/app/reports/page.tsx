@@ -32,6 +32,7 @@ import { useSession } from 'next-auth/react'
 import dayjs, { Dayjs } from 'dayjs'
 import { HideFromInvestor, SuperAdminOnly } from '@/components/auth/RoleGuard'
 import { SecurePriceDisplay } from '@/components/common/SecurePriceDisplay'
+import { exportToExcel, getStatusText, getFundingSourceText } from '@/utils/export'
 
 const { Option } = Select
 const { RangePicker } = DatePicker
@@ -184,7 +185,221 @@ export default function ReportsPage() {
 
   // 導出報表
   const exportReport = () => {
-    message.info('報表導出功能開發中...')
+    try {
+      const isInvestor = session?.user?.role === 'INVESTOR'
+      const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN'
+
+      // 根據不同 tab 匯出不同資料
+      switch (activeTab) {
+        case 'overview':
+          if (!overviewData) {
+            message.warning('無資料可匯出')
+            return
+          }
+          exportOverviewData(overviewData, isInvestor, isSuperAdmin)
+          break
+
+        case 'trend':
+          if (!trendData) {
+            message.warning('無資料可匯出')
+            return
+          }
+          exportTrendData(trendData, isInvestor, isSuperAdmin)
+          break
+
+        case 'product':
+          if (!productData) {
+            message.warning('無資料可匯出')
+            return
+          }
+          exportProductData(productData, isInvestor, isSuperAdmin)
+          break
+
+        case 'customer':
+          if (!customerData) {
+            message.warning('無資料可匯出')
+            return
+          }
+          exportCustomerData(customerData, isInvestor, isSuperAdmin)
+          break
+
+        default:
+          message.warning('未知的報表類型')
+      }
+    } catch (error) {
+      console.error('匯出失敗:', error)
+      message.error('匯出失敗：' + (error instanceof Error ? error.message : '未知錯誤'))
+    }
+  }
+
+  // 匯出總覽報表
+  const exportOverviewData = (data: OverviewData, isInvestor: boolean, isSuperAdmin: boolean) => {
+    const exportData: any[] = []
+
+    // 1. 關鍵指標
+    const overview = {
+      '報表類型': '總覽報表',
+      '總銷售筆數': data.overview.totalSales,
+      '總客戶數': data.overview.totalCustomers,
+      '總商品數': data.overview.totalProducts,
+      '總營業額': data.overview.totalRevenue
+    }
+
+    // 只有超級管理員能看到實收金額和傭金
+    if (isSuperAdmin) {
+      Object.assign(overview, {
+        '總實收金額': data.overview.totalActualRevenue || 0,
+        '總傭金': data.overview.totalCommission || 0
+      })
+    }
+
+    exportData.push(overview)
+    exportData.push({}) // 空行
+
+    // 2. 每日趨勢
+    const dailyTrend = data.dailyTrend.map(item => {
+      const row: any = {
+        '日期': item.date,
+        '銷售筆數': item.sales,
+        '營業額': item.revenue
+      }
+
+      if (isSuperAdmin && item.actualRevenue) {
+        row['實收金額'] = item.actualRevenue
+      }
+
+      return row
+    })
+
+    // 3. 熱銷商品
+    const topProducts = data.topProducts.map((item, index) => ({
+      '排名': index + 1,
+      '商品名稱': item.name,
+      '商品編號': item.product_code,
+      '類別': item.category,
+      '銷售數量': item.totalQuantity,
+      '營業額': item.totalRevenue
+    }))
+
+    const success = exportToExcel(
+      [...exportData, ...dailyTrend, {}, ...topProducts],
+      '總覽報表',
+      '總覽'
+    )
+
+    if (success) {
+      message.success('報表匯出成功')
+    } else {
+      message.error('報表匯出失敗')
+    }
+  }
+
+  // 匯出趨勢報表
+  const exportTrendData = (data: TrendData, isInvestor: boolean, isSuperAdmin: boolean) => {
+    const exportData = data.trend.map(item => {
+      const row: any = {
+        '期間': item.period,
+        '銷售筆數': item.sales,
+        '營業額': item.revenue
+      }
+
+      if (isSuperAdmin) {
+        row['實收金額'] = item.actualRevenue || 0
+        row['傭金'] = item.commission || 0
+      }
+
+      return row
+    })
+
+    const success = exportToExcel(exportData, `${data.period}趨勢報表`, '趨勢分析')
+
+    if (success) {
+      message.success('趨勢報表匯出成功')
+    } else {
+      message.error('趨勢報表匯出失敗')
+    }
+  }
+
+  // 匯出商品分析
+  const exportProductData = (data: ProductAnalysisData, isInvestor: boolean, isSuperAdmin: boolean) => {
+    // 商品明細
+    const products = data.products.map((item, index) => {
+      const row: any = {
+        '排名': index + 1,
+        '商品名稱': item.name,
+        '商品編號': item.product_code,
+        '類別': item.category,
+        '銷售筆數': item.salesCount,
+        '銷售數量': item.totalQuantity,
+        '營業額': item.revenue
+      }
+
+      if (isSuperAdmin) {
+        row['實收金額'] = item.actualRevenue || 0
+        row['毛利'] = item.profit || 0
+      }
+
+      return row
+    })
+
+    // 類別統計
+    const categories = data.categories.map((item, index) => {
+      const row: any = {
+        '排名': index + 1,
+        '類別': item.category,
+        '銷售筆數': item.salesCount,
+        '銷售數量': item.totalQuantity,
+        '營業額': item.revenue
+      }
+
+      if (isSuperAdmin) {
+        row['實收金額'] = item.actualRevenue || 0
+      }
+
+      return row
+    })
+
+    const success = exportToExcel(
+      [...products, {}, ...categories],
+      '商品分析報表',
+      '商品分析'
+    )
+
+    if (success) {
+      message.success('商品分析報表匯出成功')
+    } else {
+      message.error('商品分析報表匯出失敗')
+    }
+  }
+
+  // 匯出客戶分析
+  const exportCustomerData = (data: CustomerAnalysisData, isInvestor: boolean, isSuperAdmin: boolean) => {
+    const exportData = data.customers.map((item, index) => {
+      const row: any = {
+        '排名': index + 1,
+        '客戶名稱': item.name,
+        '客戶編號': item.customer_code,
+        '公司': item.company || '-',
+        '客戶等級': item.tier,
+        '購買次數': item.salesCount,
+        '總營業額': item.revenue,
+        '平均訂單金額': item.averageOrderValue
+      }
+
+      if (isSuperAdmin && item.actualRevenue) {
+        row['實收金額'] = item.actualRevenue
+      }
+
+      return row
+    })
+
+    const success = exportToExcel(exportData, '客戶分析報表', '客戶分析')
+
+    if (success) {
+      message.success('客戶分析報表匯出成功')
+    } else {
+      message.error('客戶分析報表匯出失敗')
+    }
   }
 
   // 總覽報表組件
