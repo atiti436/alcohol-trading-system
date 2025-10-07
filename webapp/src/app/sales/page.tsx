@@ -730,7 +730,13 @@ export default function SalesPage() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        message.success('出貨完成')
+        // 🔒 顯示出貨單號
+        const shippingNumber = result.data?.shipping_number
+        if (shippingNumber) {
+          message.success(`出貨完成！出貨單號：${shippingNumber}`)
+        } else {
+          message.success('出貨完成')
+        }
         setShipModalVisible(false)
         setShippingSale(null)
         await loadSales(false)

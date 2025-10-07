@@ -252,19 +252,15 @@ export async function POST(
         })
       }
 
-      // 3. 檢查是否完全出貨，更新銷售訂單狀態
-      const totalOrderedQuantity = sale.items.reduce((sum, item) => sum + item.quantity, 0)
-      const totalShippedQuantity = shippingItems.reduce((sum: number, item: any) => sum + item.ship_quantity, 0)
+      // 3. 更新銷售訂單狀態為已出貨
+      await tx.sale.update({
+        where: { id: saleId },
+        data: {
+          status: 'SHIPPED'  // 🔒 更新為已出貨狀態
+        }
+      })
 
-      if (totalShippedQuantity >= totalOrderedQuantity) {
-        await tx.sale.update({
-          where: { id: saleId },
-          data: {
-            // 假設有 shipped_status 欄位
-            // shipped_status: 'FULLY_SHIPPED'
-          }
-        })
-      }
+      console.log(`[出貨完成] 訂單 ${sale.sale_number} 狀態已更新為 SHIPPED`)
 
       return {
         shippingOrder,
