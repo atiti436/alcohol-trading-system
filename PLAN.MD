@@ -264,7 +264,120 @@
     - ✅ 更新註解說明檢查項目
   - 推送到 GitHub (commit 91953db)
 
-### 🔥 優先級 P0 (進行中 - 2025-10-07 下午)
+### 🚨 優先級 P0 (緊急 - 2025-10-07 下午)
+
+- [ ] **核心商業邏輯修正：資金來源與成本追蹤** (🔥 最優先，阻擋上線)
+  - 📋 **問題發現**: 深入檢查後發現資金流與成本計算有嚴重混淆風險
+  - 🎯 **影響範圍**:
+    - 銷售時無法正確區分「誰的貨、誰的錢、誰的利潤」
+    - 收支記錄可能算給錯誤的資金來源
+    - 投資方與個人的利潤無法正確分帳
+
+  - 🔍 **問題分析**:
+
+    **問題 1：銷售確認時不分倉庫扣庫存** (最嚴重)
+    - **現況**:
+      ```typescript
+      // Line 162-167: confirm/route.ts
+      const inventories = await tx.inventory.findMany({
+        where: { variant_id },  // ❌ 查所有倉庫
+        orderBy: { warehouse: 'asc' }  // COMPANY 優先
+      })
+      // 總是優先從 COMPANY 倉扣，不管 sale.funding_source
+      ```
+    - **影響**:
+      - 個人訂單（PERSONAL）可能扣到投資方的貨（COMPANY 倉）
+      - 成本 1050（投資方的）賣出 1200，利潤卻算給個人
+      - 資金來源錯亂，無法正確分帳
+
+    **問題 2：SaleItem 沒記錄實際成本**
+    - **現況**:
+      - `SaleItem.cost_price` 欄位存在但沒被設置
+      - 無法追溯這筆銷售實際從哪個倉庫扣貨
+      - 無法知道真實成本是多少
+    - **影響**:
+      - 利潤計算不準確
+      - 無法回溯成本來源
+
+    **問題 3：Cashflow 記錄只看 sale.funding_source**
+    - **現況**:
+      ```typescript
+      // Line 70: syncSaleCashflow.ts
+      funding_source: sale.funding_source === 'PERSONAL' ? 'PERSONAL' : 'INVESTOR'
+      ```
+    - **影響**:
+      - 實際扣 COMPANY 倉的貨
+      - Cashflow 卻記錄 PERSONAL
+      - 利潤分配錯誤
+
+    **✅ 好消息：移動平均成本是分倉庫計算的**
+    - `Inventory.cost_price` 按 `(variant_id, warehouse)` 獨立計算
+    - COMPANY 倉和 PRIVATE 倉的成本不會混在一起
+
+  - 🔧 **修正方案**:
+
+    **方案 A：銷售確認時按 funding_source 選倉庫** (推薦)
+    1. [ ] 修改 `/api/sales/[id]/confirm`：
+       - 根據 `sale.funding_source` 決定從哪個倉庫扣
+       - `PERSONAL` → 只從 `PRIVATE` 倉扣
+       - `COMPANY` → 只從 `COMPANY` 倉扣
+    2. [ ] 記錄 `SaleItem.cost_price`：
+       - 扣庫存時同步記錄該倉庫的 `inventory.cost_price`
+       - 用於後續利潤計算和成本回溯
+    3. [ ] 調整 Cashflow 邏輯：
+       - 基於實際扣除的倉庫計算成本
+       - 正確分配利潤給對應資金來源
+    4. [ ] 庫存不足處理：
+       - 如果對應倉庫庫存不足，明確報錯
+       - 不允許跨倉庫扣除（避免混淆）
+
+    **預估工時**: 3-4 小時（含測試）
+
+    **測試場景**:
+    ```
+    場景 1：個人訂單賣個人的貨 ✅
+    - PRIVATE 倉：山崎 x 5（成本 1000）
+    - 創建 PERSONAL 訂單，賣 2 瓶，售價 1200/瓶
+    - 預期：從 PRIVATE 倉扣 2 瓶
+    - 預期：SaleItem.cost_price = 1000
+    - 預期：Cashflow 記錄 PERSONAL 收入 2400，成本 2000，利潤 400
+
+    場景 2：公司訂單賣投資方的貨 ✅
+    - COMPANY 倉：山崎 x 10（成本 1050）
+    - 創建 COMPANY 訂單，賣 3 瓶，售價 1200/瓶
+    - 預期：從 COMPANY 倉扣 3 瓶
+    - 預期：SaleItem.cost_price = 1050
+    - 預期：Cashflow 記錄 INVESTOR 收入 3600，成本 3150，利潤 450
+
+    場景 3：個人訂單但只有公司倉有貨 ❌
+    - COMPANY 倉：山崎 x 10（成本 1050）
+    - PRIVATE 倉：山崎 x 0（無庫存）
+    - 創建 PERSONAL 訂單，賣 2 瓶
+    - 預期：報錯「PRIVATE 倉庫存不足」
+    - 不允許從 COMPANY 倉扣（避免混淆）
+    ```
+
+  - ⚠️ **風險評估**:
+    - ✅ Schema 不需修改（SaleItem.cost_price 已存在）
+    - ✅ Inventory 架構已支援分倉庫
+    - ⚠️ 需要修改 3 個核心檔案（confirm, syncSaleCashflow, 可能還有 ship）
+    - ⚠️ 現有測試資料可能受影響（需重新測試）
+    - ✅ 不影響採購流程（採購邏輯已正確）
+
+  - 📊 **執行優先順序**:
+    1. **此問題** → 立即修正（影響核心商業模式）
+    2. 採購單批次選取 → 延後（操作效率問題）
+    3. 金額顯示優化 → 延後（顯示問題）
+
+  - 📚 **受影響檔案**:
+    - `webapp/src/app/api/sales/[id]/confirm/route.ts` (主要)
+    - `webapp/src/lib/cashflow/syncSaleCashflow.ts` (次要)
+    - `webapp/src/app/api/sales/[id]/ship/route.ts` (可能)
+    - `webapp/src/app/api/sales/[id]/admin-cancel/route.ts` (庫存回滾)
+
+---
+
+### 🔥 優先級 P1 (暫緩 - 等 P0 完成)
 
 - [ ] **採購單批次選取商品 + 金額顯示優化** (本周上線目標)
   - 📋 **需求來源**: `追加.txt` - 用戶實際操作痛點
