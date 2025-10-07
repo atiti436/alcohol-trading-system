@@ -1,7 +1,7 @@
 # 酒類交易 ERP 系統 - 主計劃文檔
 
-**最後更新**: 2025-10-07 (銷售單收支同步功能 + 健康檢查改進 - 已完成)
-**專案狀態**: 🟢 生產環境就緒 - 所有 P0 任務已完成
+**最後更新**: 2025-10-08 (出貨功能完善 + 發票系統 + 個人資金訂單優化 - 已完成)
+**專案狀態**: 🟢 生產環境就緒 - 核心功能持續完善中
 
 ---
 
@@ -29,13 +29,187 @@
 
 ## 📊 當前狀態
 
-### ✅ 今日完成項目 (2025-10-07)
+### ✅ 今日完成項目 (2025-10-08)
 
-**銷售單與收支記錄自動同步** ✅ (100% 完成)
-- 目標：銷售單建立/確認/刪除時自動產生 cashflow 記錄
-- 進度：方案 A + B 全部完成，已推送到 GitHub
-- 額外修正：Session 驗證、健康檢查改進
-- 詳見：P0 優先級任務
+**出貨與發票系統完善** ✅ (100% 完成)
+- 目標：修復出貨功能缺失、新增發票系統、優化個人資金訂單體驗
+- 進度：全部完成並部署到 Zeabur
+- 詳見：2025-10-08 完成項目總覽
+
+---
+
+### 2025-10-08 完成項目總覽
+
+#### 1️⃣ 出貨功能修復 (P0 緊急)
+
+**問題發現**：
+用戶反應「出貨後沒有單據、沒出貨單號、還能重複選取同一張銷售單出貨」
+
+**根本原因**：
+```typescript
+// 之前：出貨後沒有更新銷售單狀態（代碼被註解）
+// shipped_status: 'FULLY_SHIPPED'  ❌
+
+// 修復後：更新為 SHIPPED
+await tx.sale.update({
+  where: { id: saleId },
+  data: { status: 'SHIPPED' }  ✅
+})
+```
+
+**修復內容**：
+- ✅ 出貨後更新 `Sale.status = 'SHIPPED'`
+- ✅ 出貨成功後顯示出貨單號（如 `SH-20251008-001`）
+- ✅ 防止已出貨訂單被重複選取
+- ✅ 新增管理工具：`/api/admin/fix-shipped-status`（批次修復歷史訂單）
+
+**影響範圍**：
+- `webapp/src/app/api/sales/[id]/ship/route.ts` (Line 256-263)
+- `webapp/src/app/sales/page.tsx` (Line 733-739)
+
+**測試工具**（修復消失的訂單）：
+```javascript
+// 瀏覽器 Console 執行
+fetch('/api/admin/fix-shipped-status', { method: 'POST' })
+  .then(r => r.json())
+  .then(console.log)
+```
+
+---
+
+#### 2️⃣ 發票系統 (P1)
+
+**需求背景**：
+- 用戶在出貨時才輸入發票號碼（線上開立）
+- 不是每張訂單都需要發票
+- 需記錄發票號碼和日期供查詢和列印
+
+**Schema 變更**：
+```prisma
+model ShippingOrder {
+  // ... 原有欄位
+  // 🆕 發票資訊（選填）
+  invoice_number String?   // 發票號碼
+  invoice_date   DateTime? // 發票日期
+}
+```
+
+**UI 設計**（出貨對話框）：
+```
+┌─────────────────────────┐
+│ 出貨資訊                │
+├─────────────────────────┤
+│ 出貨方式：○親送 ○貨運  │
+│ 追蹤號碼：_____________ │
+│                         │
+│ ┌─ 發票資訊（選填）──┐ │
+│ │ ☑ 需要開立發票      │ │
+│ │                     │ │
+│ │ 發票號碼：AB12345678│ │
+│ │ 發票日期：2025/10/8 │ │
+│ └────────────────────┘ │
+└─────────────────────────┘
+```
+
+**實作細節**：
+- Checkbox 控制是否顯示發票輸入欄位
+- 發票日期預設為今天（`dayjs()`）
+- 取消勾選時自動清空發票欄位
+- API 儲存到 `ShippingOrder.invoice_number` 和 `invoice_date`
+
+**未來擴展**：
+- 出貨單列印時顯示發票資訊
+- 串接政府電子發票 API
+- 發票查詢和管理介面
+
+**影響範圍**：
+- `webapp/prisma/schema.prisma` (Line 602-604)
+- `webapp/src/components/sales/ShipModal.tsx` (Line 23-25, 139-186)
+- `webapp/src/app/api/sales/[id]/ship/route.ts` (Line 37-39, 170-172)
+
+---
+
+#### 3️⃣ 個人資金訂單優化 (P1)
+
+**問題分析**：
+個人資金訂單不需要隱藏利潤給投資方，所以雙重價格（顯示單價 vs 實收單價）沒有意義。
+
+**修改邏輯**：
+```typescript
+// 選「個人資金」
+資金來源：○ 公司資金  ● 個人資金
+
+價格設定：
+  單價：NT$ 2400  ← 只有一個欄位
+
+// 選「公司資金」
+資金來源：● 公司資金  ○ 個人資金
+
+價格設定：
+  顯示單價：NT$ 2400  ← 投資方看到的
+  實收單價：NT$ 2600  ← 實際收到的（含傭金）
+```
+
+**實作方式**：
+```typescript
+const fundingSource = form.getFieldValue('fundingSource')
+const isPersonalFunding = fundingSource === 'PERSONAL'
+
+return (
+  <div>
+    <Text>{isPersonalFunding ? '單價' : '顯示單價'}</Text>
+    <InputNumber ... />
+  </div>
+
+  {/* 只有公司資金才顯示實收單價 */}
+  {!isPersonalFunding && (
+    <SuperAdminOnly>
+      <div>
+        <Text>實收單價</Text>
+        <InputNumber ... />
+      </div>
+    </SuperAdminOnly>
+  )}
+)
+```
+
+**影響範圍**：
+- `webapp/src/components/sales/SaleOrderModal.tsx` (Line 456-510)
+
+---
+
+#### 4️⃣ 其他 Bug 修復
+
+**A. 庫存調整自動創建倉庫記錄**
+- **問題**：調整個人倉庫存時報錯「變體在個人倉不存在」
+- **原因**：從未在個人倉進過貨，沒有 Inventory 記錄
+- **修復**：調整時自動創建記錄（只允許正數調整）
+- **影響**：`webapp/src/app/api/inventory/adjustments/route.ts` (Line 68-87)
+
+**B. 銷售訂單顯示對應倉庫庫存**
+- **問題**：顯示「庫存 4」，但實際是公司倉 2 + 個人倉 2
+- **原因**：顯示總庫存，沒按資金來源過濾
+- **修復**：根據資金來源顯示對應倉庫庫存
+  ```typescript
+  // 選「個人資金」→ 山崎18年 | 個人倉: 2瓶
+  // 選「公司資金」→ 山崎18年 | 公司倉: 2瓶
+  ```
+- **影響**：`webapp/src/components/sales/SaleOrderModal.tsx` (Line 378-407)
+
+**C. 價格輸入框焦點跳失**
+- **問題**：輸入「1600」需要分別點擊 4 次：1→點→6→點→0→點→0
+- **原因**：`onChange` + `formatter` 頻繁觸發重渲染
+- **修復**：改用 `onBlur` + `defaultValue`
+  ```typescript
+  // 之前：每次輸入都觸發
+  <InputNumber value={x} onChange={...} formatter={...} />
+
+  // 現在：失去焦點時才觸發
+  <InputNumber defaultValue={x} onBlur={...} />
+  ```
+- **影響**：
+  - `webapp/src/components/sales/DualPriceManager.tsx` (Line 184-217)
+  - `webapp/src/components/sales/SaleOrderModal.tsx` (Line 274-297, 459-509)
 
 ---
 
