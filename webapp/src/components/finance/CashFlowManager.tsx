@@ -28,9 +28,11 @@ import {
   EditOutlined,
   SearchOutlined,
   CalendarOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  LinkOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import Link from 'next/link'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -264,8 +266,23 @@ export default function CashFlowManager() {
       title: '參考編號',
       dataIndex: 'reference',
       key: 'reference',
-      width: 120,
-      render: (ref: string) => ref || '-'
+      width: 150,
+      render: (ref: string) => {
+        if (!ref) return '-'
+
+        // 解析 reference 格式：sale:{id}
+        if (ref.startsWith('sale:')) {
+          const saleId = ref.replace('sale:', '')
+          return (
+            <Link href={`/sales`} style={{ color: '#1890ff' }}>
+              <LinkOutlined /> 銷售單
+            </Link>
+          )
+        }
+
+        // 其他類型的 reference 直接顯示
+        return <Text code>{ref}</Text>
+      }
     },
     {
       title: '操作',
