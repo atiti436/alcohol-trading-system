@@ -317,21 +317,46 @@
   - 🔧 **修正方案**:
 
     **方案 A：銷售確認時按 funding_source 選倉庫** (推薦)
-    1. [ ] 修改 `/api/sales/[id]/confirm`：
-       - 根據 `sale.funding_source` 決定從哪個倉庫扣
-       - `PERSONAL` → 只從 `PRIVATE` 倉扣
-       - `COMPANY` → 只從 `COMPANY` 倉扣
-    2. [ ] 記錄 `SaleItem.cost_price`：
-       - 扣庫存時同步記錄該倉庫的 `inventory.cost_price`
-       - 用於後續利潤計算和成本回溯
-    3. [ ] 調整 Cashflow 邏輯：
-       - 基於實際扣除的倉庫計算成本
-       - 正確分配利潤給對應資金來源
-    4. [ ] 庫存不足處理：
-       - 如果對應倉庫庫存不足，明確報錯
-       - 不允許跨倉庫扣除（避免混淆）
+    1. [x] 修改 `/api/sales/[id]/confirm`： ✅ 已完成
+       - ✅ Line 76: 根據 `sale.funding_source` 決定 `targetWarehouse`
+       - ✅ Line 93: 庫存檢查時只查目標倉庫 `where: { warehouse: targetWarehouse }`
+       - ✅ Line 170-178: 預留庫存時只從目標倉庫扣
+       - ✅ Line 176: 使用 FIFO `orderBy: { created_at: 'asc' }`
+    2. [x] 記錄 `SaleItem.cost_price`： ✅ 已完成
+       - ✅ Line 180-200: 扣庫存時累計成本
+       - ✅ Line 213: 計算加權平均成本 `avgCost = totalCost / totalQtyReserved`
+       - ✅ Line 218-224: 更新 `SaleItem.cost_price`
+       - ✅ Line 204, 215: 新增 console.log 追蹤成本計算
+    3. [ ] 調整 Cashflow 邏輯： ⏳ 待確認
+       - ℹ️ 現有邏輯已基本正確（Line 70: `funding_source` 表示會計歸屬）
+       - ⚠️ 需檢查：是否需要加入成本計算？
+    4. [x] 庫存不足處理： ✅ 已完成
+       - ✅ Line 135-137: 報錯訊息包含倉庫資訊
+       - ✅ Line 209: 預留時若不足會報錯「在 X 倉庫存不足」
+       - ✅ 不允許跨倉庫扣除
 
-    **預估工時**: 3-4 小時（含測試）
+    **實作進度**:
+    - ✅ confirm/route.ts 修改完成（2025-10-07 16:00）
+    - ⏳ 待檢查：admin-cancel, ship API
+    - ⏳ 待測試：3 個場景
+
+    **修改摘要**:
+    ```typescript
+    // Line 76-77: 決定目標倉庫
+    const targetWarehouse = existingSale.funding_source === 'PERSONAL' ? 'PRIVATE' : 'COMPANY'
+    console.log(`[銷售確認] 訂單 ${existingSale.sale_number} → 目標倉庫: ${targetWarehouse}`)
+
+    // Line 93, 126: 只查目標倉庫
+    where: { warehouse: targetWarehouse }
+
+    // Line 197-200: 累計成本
+    const invCost = Number(inv.cost_price || 0)
+    totalCost += invCost * toReserve
+
+    // Line 213, 222: 記錄加權平均成本
+    const avgCost = totalQtyReserved > 0 ? totalCost / totalQtyReserved : 0
+    data: { cost_price: avgCost }
+    ```
 
     **測試場景**:
     ```

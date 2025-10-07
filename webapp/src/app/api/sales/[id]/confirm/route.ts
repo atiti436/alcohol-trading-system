@@ -72,7 +72,11 @@ export async function POST(
       )
     }
 
-    // 檢查庫存是否足夠（從 Inventory 表查詢，匯總所有倉庫）
+    // 🔒 根據銷售單的資金來源決定目標倉庫
+    const targetWarehouse = existingSale.funding_source === 'PERSONAL' ? 'PRIVATE' : 'COMPANY'
+    console.log(`[銷售確認] 訂單 ${existingSale.sale_number} 資金來源: ${existingSale.funding_source} → 目標倉庫: ${targetWarehouse}`)
+
+    // 檢查庫存是否足夠（只檢查目標倉庫）
     const chosenVariants: Record<string, string> = {} // sale_item_id -> variant_id
     const stockCheckErrors: string[] = []
     for (const item of existingSale.items) {
@@ -81,11 +85,12 @@ export async function POST(
 
       if (!variantIdToUse) {
         // 嘗試找到該商品下可用庫存足夠的變體，優先 A 版
-        // ✅ 從 Inventory 表查詢可用庫存
+        // ✅ 從 Inventory 表查詢可用庫存（只查目標倉庫）
         const variants = await prisma.productVariant.findMany({
           where: { product_id: item.product_id },
           include: {
             inventory: {
+              where: { warehouse: targetWarehouse },  // 🔒 只查目標倉庫
               select: {
                 available: true
               }
@@ -96,7 +101,7 @@ export async function POST(
           ]
         })
 
-        // 計算每個變體的總可用庫存（所有倉庫）
+        // 計算每個變體在目標倉庫的可用庫存
         const variantsWithStock = variants.map(v => ({
           id: v.id,
           variant_type: v.variant_type,
@@ -114,10 +119,12 @@ export async function POST(
           availableStock = totalAvailable
         }
       } else {
-        // ✅ 從 Inventory 表查詢可用庫存
-        // 查詢指定變體的庫存（匯總所有倉庫）
+        // ✅ 從 Inventory 表查詢可用庫存（只查目標倉庫）
         const inventories = await prisma.inventory.findMany({
-          where: { variant_id: variantIdToUse },
+          where: {
+            variant_id: variantIdToUse,
+            warehouse: targetWarehouse  // 🔒 只查目標倉庫
+          },
           select: { available: true }
         })
         availableStock = inventories.reduce((sum, inv) => sum + inv.available, 0)
@@ -125,7 +132,9 @@ export async function POST(
 
       if (availableStock < item.quantity) {
         const productName = item.variant?.variant_type || item.variant?.variant_code || item.product?.name || '未知商品'
-        stockCheckErrors.push(`商品 ${productName} 庫存不足，需要 ${item.quantity}，可用 ${availableStock}`)
+        stockCheckErrors.push(
+          `商品 ${productName} 在 ${targetWarehouse} 倉庫存不足，需要 ${item.quantity}，可用 ${availableStock}`
+        )
       } else if (!item.variant_id && variantIdToUse) {
         chosenVariants[item.id] = variantIdToUse
       }
@@ -150,23 +159,28 @@ export async function POST(
         }
       })
 
-      // 2. 預留庫存（從 Inventory 表，優先從公司倉扣除）
+      // 2. 預留庫存（只從目標倉庫扣除）
       for (const item of existingSale.items) {
         const variantId = item.variant_id || chosenVariants[item.id]
         if (!variantId) {
           throw new Error(`銷售項目 ${item.product?.name || item.product_id} 缺少可用變體`)
         }
 
-        // ✅ 從 Inventory 表查詢可用庫存
-        // 查詢該變體的所有倉庫庫存，優先從公司倉扣
+        // ✅ 從 Inventory 表查詢可用庫存（只查目標倉庫）
         const inventories = await tx.inventory.findMany({
-          where: { variant_id: variantId },
+          where: {
+            variant_id: variantId,
+            warehouse: targetWarehouse  // 🔒 只從目標倉庫扣
+          },
           orderBy: [
-            { warehouse: 'asc' } // COMPANY 排在 PRIVATE 前面
+            { created_at: 'asc' } // FIFO
           ]
         })
 
         let remainingQty = item.quantity
+        let totalCost = 0  // 🔒 累計成本（用於計算加權平均）
+        let totalQtyReserved = 0
+
         for (const inv of inventories) {
           if (remainingQty <= 0) break
 
@@ -179,21 +193,35 @@ export async function POST(
                 reserved: { increment: toReserve }
               }
             })
+
+            // 🔒 累計成本
+            const invCost = Number(inv.cost_price || 0)
+            totalCost += invCost * toReserve
+            totalQtyReserved += toReserve
+
             remainingQty -= toReserve
+
+            console.log(`  扣除 ${targetWarehouse} 倉 ${toReserve} 件，成本 ${invCost.toFixed(2)}/件`)
           }
         }
 
         if (remainingQty > 0) {
-          throw new Error(`變體 ${variantId} 庫存不足，無法預留`)
+          throw new Error(`變體 ${variantId} 在 ${targetWarehouse} 倉庫存不足，無法預留`)
         }
 
-        // 更新 sale item 的 variant_id（如果是自動選擇的）
-        if (!item.variant_id) {
-          await tx.saleItem.update({
-            where: { id: item.id },
-            data: { variant_id: variantId }
-          })
-        }
+        // 🔒 計算加權平均成本
+        const avgCost = totalQtyReserved > 0 ? totalCost / totalQtyReserved : 0
+
+        console.log(`  總計：扣除 ${totalQtyReserved} 件，平均成本 ${avgCost.toFixed(2)}/件`)
+
+        // 更新 sale item 的 variant_id 和 cost_price
+        await tx.saleItem.update({
+          where: { id: item.id },
+          data: {
+            variant_id: variantId,
+            cost_price: avgCost  // 🔒 記錄實際成本
+          }
+        })
       }
 
       // 3. 🔄 載入完整的銷售單（含 items）並同步 cashflow
