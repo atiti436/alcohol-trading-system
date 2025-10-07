@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { Role } from '@/types/auth'
+import { syncSaleCashflow } from '@/lib/cashflow/syncSaleCashflow'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'

@@ -26,16 +26,14 @@ interface ProfileUpdateData {
  */
 export const GET = withAppActiveUser(async (request: NextRequest, response: NextResponse, context: any) => {
   try {
-    const { session } = context
-
     // 記錄敏感資料存取
     await logSensitiveAccess({
-      userId: session.user.id,
-      userEmail: session.user.email,
-      userRole: session.user.role,
+      userId: context.userId,
+      userEmail: '', // context 沒有 email，留空或從 DB 查
+      userRole: context.role,
       action: 'READ',
       resourceType: 'USERS',
-      resourceId: session.user.id,
+      resourceId: context.userId,
       sensitiveFields: ['name', 'email', 'phone', 'preferences'],
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
       userAgent: request.headers.get('user-agent') || undefined
@@ -43,7 +41,7 @@ export const GET = withAppActiveUser(async (request: NextRequest, response: Next
 
     // 從資料庫獲取用戶資料
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: context.userId },
       select: {
         id: true,
         name: true,
@@ -107,17 +105,16 @@ export const GET = withAppActiveUser(async (request: NextRequest, response: Next
  */
 export const PUT = withAppActiveUser(async (request: NextRequest, response: NextResponse, context: any) => {
   try {
-    const { session } = context
     const body: ProfileUpdateData = await request.json()
 
     // 記錄敏感資料修改
     await logSensitiveAccess({
-      userId: session.user.id,
-      userEmail: session.user.email,
-      userRole: session.user.role,
+      userId: context.userId,
+      userEmail: '', // context 沒有 email
+      userRole: context.role,
       action: 'WRITE',
       resourceType: 'USERS',
-      resourceId: session.user.id,
+      resourceId: context.userId,
       sensitiveFields: Object.keys(body),
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
       userAgent: request.headers.get('user-agent') || undefined
@@ -133,7 +130,7 @@ export const PUT = withAppActiveUser(async (request: NextRequest, response: Next
 
     // 構建 preferences JSON
     const currentUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: context.userId },
       select: { preferences: true }
     })
 
@@ -172,7 +169,7 @@ export const PUT = withAppActiveUser(async (request: NextRequest, response: Next
 
     // 更新資料庫
     const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: context.userId },
       data: updateData,
       select: {
         id: true,

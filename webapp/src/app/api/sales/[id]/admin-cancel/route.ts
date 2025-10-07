@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
+import { syncSaleCashflow } from '@/lib/cashflow/syncSaleCashflow'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -90,6 +91,11 @@ export async function POST(
 
       // 🔒 刪除或取消關聯資料
       if (shouldDelete) {
+        // 0. 🔄 清理 cashflow 記錄
+        await tx.cashFlowRecord.deleteMany({
+          where: { reference: `sale:${id}` }
+        })
+
         // 1. 刪除應收帳款（如果存在）
         if (sale.accounts_receivables && sale.accounts_receivables.length > 0) {
           await tx.accountsReceivable.deleteMany({ where: { sale_id: id } })
@@ -114,10 +120,21 @@ export async function POST(
           })
         }
 
+        // 更新銷售單狀態為取消
         await tx.sale.update({
           where: { id },
           data: { status: 'CANCELLED' }
         })
+
+        // 🔄 重新載入銷售單並同步 cashflow（狀態變 CANCELLED 會自動清除）
+        const updatedSale = await tx.sale.findUnique({
+          where: { id },
+          include: { items: true }
+        })
+
+        if (updatedSale) {
+          await syncSaleCashflow(tx, updatedSale)
+        }
       }
     })
 

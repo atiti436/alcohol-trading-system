@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/modules/auth/providers/nextauth'
 import { Role } from '@/types/auth'
+import { syncSaleCashflow } from '@/lib/cashflow/syncSaleCashflow'
 
 // 強制動態渲染
 export const dynamic = 'force-dynamic'
@@ -90,65 +91,80 @@ export async function POST(
     let finalActualUnitPrice = unit_price // 預設實際價格等於顯示價格
 
     // 只有超級管理員能設定不同的實際價格
-    if (session.user.role === 'SUPER_ADMIN' && actual_unit_price) {
+    if (session.user.role === Role.SUPER_ADMIN && actual_unit_price) {
       finalActualUnitPrice = actual_unit_price
     }
 
     const total_price = unit_price * quantity
     const actual_total_price = finalActualUnitPrice * quantity
 
-    // 新增銷售明細
-    const saleItem = await prisma.saleItem.create({
-      data: {
-        sale_id,
-        product_id,
-        variant_id,
-        quantity,
-        unit_price,                                    // 顯示單價
-        actual_unit_price: finalActualUnitPrice,        // 實際單價
-        total_price,                                   // 顯示總價
-        actual_total_price,                            // 實際總價
-        is_personal_purchase: sale.funding_source === 'PERSONAL'
-      },
-      include: {
-        product: {
-          select: {
-            id: true,
-            product_code: true,
-            name: true,
-            category: true,
-            volume_ml: true,
-            alc_percentage: true
-          }
+    // 🔄 使用 Transaction 新增明細並同步 cashflow
+    const saleItem = await prisma.$transaction(async (tx) => {
+      // 新增銷售明細
+      const newItem = await tx.saleItem.create({
+        data: {
+          sale_id,
+          product_id,
+          variant_id,
+          quantity,
+          unit_price,                                    // 顯示單價
+          actual_unit_price: finalActualUnitPrice,        // 實際單價
+          total_price,                                   // 顯示總價
+          actual_total_price,                            // 實際總價
+          is_personal_purchase: sale.funding_source === 'PERSONAL'
         },
-        variant: {
-          select: {
-            id: true,
-            variant_code: true,
-            variant_type: true,
-            description: true
+        include: {
+          product: {
+            select: {
+              id: true,
+              product_code: true,
+              name: true,
+              category: true,
+              volume_ml: true,
+              alc_percentage: true
+            }
+          },
+          variant: {
+            select: {
+              id: true,
+              variant_code: true,
+              variant_type: true,
+              description: true
+            }
           }
         }
+      })
+
+      // 重新計算銷售訂單總金額
+      const updatedItems = await tx.saleItem.findMany({
+        where: { sale_id }
+      })
+
+      const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.total_price, 0)
+      const newActualAmount = updatedItems.reduce((sum, item) => sum + (item.actual_total_price || 0), 0)
+      const newCommission = newActualAmount - newTotalAmount
+
+      // 更新銷售訂單總金額
+      await tx.sale.update({
+        where: { id: sale_id },
+        data: {
+          total_amount: newTotalAmount,
+          actual_amount: newActualAmount,
+          commission: newCommission
+        }
+      })
+
+      // 🔄 同步 cashflow 記錄
+      const updatedSale = await tx.sale.findUnique({
+        where: { id: sale_id },
+        include: { items: true }
+      })
+
+      if (updatedSale) {
+        await syncSaleCashflow(tx, updatedSale)
       }
-    })
 
-    // 重新計算銷售訂單總金額
-    const updatedItems = await prisma.saleItem.findMany({
-      where: { sale_id }
-    })
-
-    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.total_price, 0)
-    const newActualAmount = updatedItems.reduce((sum, item) => sum + (item.actual_total_price || 0), 0)
-    const newCommission = newActualAmount - newTotalAmount
-
-    // 更新銷售訂單總金額
-    await prisma.sale.update({
-      where: { id: sale_id },
-      data: {
-        total_amount: newTotalAmount,
-        actual_amount: newActualAmount,
-        commission: newCommission
-      }
+      return newItem
     })
 
     // 🔒 回傳前過濾敏感資料 (INVESTOR已在上方被阻擋)
