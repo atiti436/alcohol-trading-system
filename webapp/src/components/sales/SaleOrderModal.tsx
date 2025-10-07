@@ -453,11 +453,17 @@ export function SaleOrderModal({
       title: '價格設定',
       key: 'price',
       width: 300,
-      render: (_: any, record: SaleOrderItem) => (
-        record.product_id ? (
+      render: (_: any, record: SaleOrderItem) => {
+        // 🔒 個人資金訂單不需要雙重價格
+        const fundingSource = form.getFieldValue('fundingSource')
+        const isPersonalFunding = fundingSource === 'PERSONAL'
+
+        return record.product_id ? (
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>
-              <Text type="secondary" style={{ marginRight: 8 }}>顯示單價</Text>
+              <Text type="secondary" style={{ marginRight: 8 }}>
+                {isPersonalFunding ? '單價' : '顯示單價'}
+              </Text>
               <InputNumber
                 min={0}
                 precision={0}
@@ -474,31 +480,34 @@ export function SaleOrderModal({
                 prefix="NT$"
               />
             </div>
-            <SuperAdminOnly>
-              <div>
-                <Text type="secondary" style={{ marginRight: 8 }}>實收單價</Text>
-                <InputNumber
-                  min={0}
-                  precision={0}
-                  defaultValue={record.actualPrice}
-                  onBlur={(e) => {
-                    const value = parseFloat(e.target.value) || 0
-                    handleActualPriceBlur(record.key, value)
-                  }}
-                  onPressEnter={(e) => {
-                    const value = parseFloat((e.target as HTMLInputElement).value) || 0
-                    handleActualPriceBlur(record.key, value)
-                  }}
-                  style={{ width: '100%' }}
-                  prefix="NT$"
-                />
-              </div>
-            </SuperAdminOnly>
+            {/* 🔒 只有公司資金才顯示實收單價 */}
+            {!isPersonalFunding && (
+              <SuperAdminOnly>
+                <div>
+                  <Text type="secondary" style={{ marginRight: 8 }}>實收單價</Text>
+                  <InputNumber
+                    min={0}
+                    precision={0}
+                    defaultValue={record.actualPrice}
+                    onBlur={(e) => {
+                      const value = parseFloat(e.target.value) || 0
+                      handleActualPriceBlur(record.key, value)
+                    }}
+                    onPressEnter={(e) => {
+                      const value = parseFloat((e.target as HTMLInputElement).value) || 0
+                      handleActualPriceBlur(record.key, value)
+                    }}
+                    style={{ width: '100%' }}
+                    prefix="NT$"
+                  />
+                </div>
+              </SuperAdminOnly>
+            )}
           </Space>
         ) : (
           <Text type="secondary">請先選擇商品</Text>
         )
-      )
+      }
     },
     {
       title: '小計',
