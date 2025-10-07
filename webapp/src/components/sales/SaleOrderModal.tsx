@@ -271,6 +271,31 @@ export function SaleOrderModal({
     }))
   }
 
+  // 🔒 優化：使用 onBlur 而非 onChange，避免輸入時頻繁觸發
+  const handleDisplayPriceBlur = (key: string, value: number | null) => {
+    const finalValue = value || 0
+    const item = orderItems.find(i => i.key === key)
+    if (item && item.displayPrice !== finalValue) {
+      handlePriceChange(key, {
+        displayPrice: finalValue,
+        actualPrice: item.actualPrice,
+        commission: (item.actualPrice - finalValue)
+      })
+    }
+  }
+
+  const handleActualPriceBlur = (key: string, value: number | null) => {
+    const finalValue = value || 0
+    const item = orderItems.find(i => i.key === key)
+    if (item && item.actualPrice !== finalValue) {
+      handlePriceChange(key, {
+        displayPrice: item.displayPrice,
+        actualPrice: finalValue,
+        commission: (finalValue - item.displayPrice)
+      })
+    }
+  }
+
   // 數量變更處理
   const handleQuantityChange = (key: string, quantity: number) => {
     setOrderItems(prev => prev.map(item =>
@@ -436,16 +461,17 @@ export function SaleOrderModal({
               <InputNumber
                 min={0}
                 precision={0}
-                value={record.displayPrice}
-                onChange={(v) => {
-                  if (typeof v !== 'number') return
-                  handlePriceChange(record.key, {
-                    displayPrice: v,
-                    actualPrice: record.actualPrice,
-                    commission: (record.actualPrice - v)
-                  })
+                defaultValue={record.displayPrice}
+                onBlur={(e) => {
+                  const value = parseFloat(e.target.value) || 0
+                  handleDisplayPriceBlur(record.key, value)
+                }}
+                onPressEnter={(e) => {
+                  const value = parseFloat((e.target as HTMLInputElement).value) || 0
+                  handleDisplayPriceBlur(record.key, value)
                 }}
                 style={{ width: '100%' }}
+                prefix="NT$"
               />
             </div>
             <SuperAdminOnly>
@@ -454,16 +480,17 @@ export function SaleOrderModal({
                 <InputNumber
                   min={0}
                   precision={0}
-                  value={record.actualPrice}
-                  onChange={(v) => {
-                    if (typeof v !== 'number') return
-                    handlePriceChange(record.key, {
-                      displayPrice: record.displayPrice,
-                      actualPrice: v,
-                      commission: (v - record.displayPrice)
-                    })
+                  defaultValue={record.actualPrice}
+                  onBlur={(e) => {
+                    const value = parseFloat(e.target.value) || 0
+                    handleActualPriceBlur(record.key, value)
+                  }}
+                  onPressEnter={(e) => {
+                    const value = parseFloat((e.target as HTMLInputElement).value) || 0
+                    handleActualPriceBlur(record.key, value)
                   }}
                   style={{ width: '100%' }}
+                  prefix="NT$"
                 />
               </div>
             </SuperAdminOnly>
