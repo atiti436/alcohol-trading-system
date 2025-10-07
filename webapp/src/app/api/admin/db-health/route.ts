@@ -7,7 +7,16 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/admin/db-health
- * 資料庫健康檢查 - 檢查 Inventory 表和資料一致性
+ * 資料庫健康檢查 - 檢查 Inventory 表內部一致性
+ *
+ * 檢查項目：
+ * 1. Inventory 表存在性和基本統計
+ * 2. 負數庫存檢查
+ * 3. 庫存狀態一致性 (available + reserved = quantity)
+ * 4. 孤立記錄檢查 (variant 不存在)
+ * 5. 最近的庫存異動記錄
+ *
+ * 注意：不檢查 ProductVariant.stock_quantity，因該欄位已棄用
  */
 export async function GET(request: NextRequest) {
   try {
@@ -67,105 +76,85 @@ export async function GET(request: NextRequest) {
       results.errors.push('Inventory 表不存在或無法訪問')
     }
 
-    // 2. 檢查 ProductVariant 表
+    // 2. 檢查 Inventory 內部一致性
     try {
-      const variantCount = await prisma.productVariant.count()
-      const totalStockQuantity = await prisma.productVariant.aggregate({
-        _sum: { stock_quantity: true },
-        _min: { stock_quantity: true },
-        _max: { stock_quantity: true }
-      })
-
-      results.tables.product_variants = {
-        exists: true,
-        count: variantCount,
-        total_stock: totalStockQuantity._sum.stock_quantity || 0,
-        min_stock: totalStockQuantity._min.stock_quantity || 0,
-        max_stock: totalStockQuantity._max.stock_quantity || 0,
-        status: 'OK'
-      }
-
       // 檢查負數庫存
-      const negativeStock = await prisma.productVariant.count({
-        where: { stock_quantity: { lt: 0 } }
+      const negativeInventory = await prisma.inventory.count({
+        where: { quantity: { lt: 0 } }
       })
-      if (negativeStock > 0) {
-        results.warnings.push(`ProductVariant 有 ${negativeStock} 筆負數庫存`)
+      if (negativeInventory > 0) {
+        results.errors.push(`Inventory 有 ${negativeInventory} 筆負數總量 (需修正)`)
 
-        const negativeSamples = await prisma.productVariant.findMany({
-          where: { stock_quantity: { lt: 0 } },
+        const negativeSamples = await prisma.inventory.findMany({
+          where: { quantity: { lt: 0 } },
           take: 5,
-          select: {
-            variant_code: true,
-            stock_quantity: true,
-            product: { select: { name: true } }
+          include: {
+            variant: {
+              select: {
+                variant_code: true,
+                product: { select: { name: true } }
+              }
+            }
           }
         })
-        results.tables.product_variants.negative_samples = negativeSamples
+        results.consistency.negative_samples = negativeSamples.map(inv => ({
+          variant_code: inv.variant.variant_code,
+          product_name: inv.variant.product.name,
+          warehouse: inv.warehouse,
+          quantity: inv.quantity
+        }))
       }
+
+      // 檢查 available + reserved 是否等於 quantity
+      const inconsistentInventory = await prisma.$queryRaw<Array<{
+        id: string
+        variant_code: string
+        product_name: string
+        warehouse: string
+        quantity: number
+        available: number
+        reserved: number
+      }>>`
+        SELECT i.id, pv.variant_code, p.name as product_name, i.warehouse,
+               i.quantity, i.available, i.reserved
+        FROM inventory i
+        INNER JOIN product_variants pv ON i.variant_id = pv.id
+        INNER JOIN products p ON pv.product_id = p.id
+        WHERE i.available + i.reserved != i.quantity
+        LIMIT 10
+      `
+
+      if (inconsistentInventory.length > 0) {
+        results.errors.push(
+          `Inventory 有 ${inconsistentInventory.length} 筆庫存狀態不一致 (available + reserved ≠ quantity)`
+        )
+        results.consistency.inconsistent_samples = inconsistentInventory.map(inv => ({
+          variant_code: inv.variant_code,
+          product_name: inv.product_name,
+          warehouse: inv.warehouse,
+          quantity: inv.quantity,
+          available: inv.available,
+          reserved: inv.reserved,
+          calculated: inv.available + inv.reserved
+        }))
+      }
+
+      // 檢查是否有孤立的 Inventory 記錄（variant 不存在）
+      const orphanedInventory = await prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*) as count
+        FROM inventory i
+        LEFT JOIN product_variants pv ON i.variant_id = pv.id
+        WHERE pv.id IS NULL
+      `
+      const orphanedCount = Number(orphanedInventory[0]?.count || 0)
+
+      if (orphanedCount > 0) {
+        results.errors.push(`有 ${orphanedCount} 筆 Inventory 記錄的 variant 不存在 (需清理)`)
+      }
+
     } catch (error: any) {
-      results.tables.product_variants = {
-        exists: false,
-        error: error.message,
-        status: 'ERROR'
-      }
-      results.errors.push('ProductVariant 表無法訪問')
-    }
-
-    // 3. 資料一致性檢查（如果兩個表都存在）
-    if (results.tables.inventory?.exists && results.tables.product_variants?.exists) {
-      try {
-        // 檢查 Inventory 和 ProductVariant 的數量差異
-        const inventoryTotal = await prisma.$queryRaw<Array<{ total: bigint }>>`
-          SELECT COALESCE(SUM(quantity), 0) as total FROM inventory
-        `
-        const inventorySum = Number(inventoryTotal[0]?.total || 0)
-        const variantSum = results.tables.product_variants.total_stock
-
-        results.consistency.inventory_vs_variant = {
-          inventory_total: inventorySum,
-          variant_total: variantSum,
-          difference: inventorySum - variantSum,
-          status: Math.abs(inventorySum - variantSum) < 1 ? 'OK' : 'WARNING'
-        }
-
-        if (Math.abs(inventorySum - variantSum) > 0) {
-          results.warnings.push(
-            `Inventory 總量 (${inventorySum}) 與 ProductVariant 總量 (${variantSum}) 不一致，差異：${inventorySum - variantSum}`
-          )
-        }
-
-        // 檢查缺少 Inventory 記錄的 Variant
-        const variantsWithoutInventory = await prisma.$queryRaw<Array<{ count: bigint }>>`
-          SELECT COUNT(*) as count
-          FROM product_variants pv
-          LEFT JOIN inventory i ON i.variant_id = pv.id
-          WHERE i.id IS NULL AND pv.stock_quantity != 0
-        `
-        const missingCount = Number(variantsWithoutInventory[0]?.count || 0)
-
-        if (missingCount > 0) {
-          results.warnings.push(`有 ${missingCount} 個 Variant 有庫存但缺少 Inventory 記錄`)
-
-          const missingSamples = await prisma.$queryRaw<Array<{
-            variant_code: string
-            stock_quantity: number
-            product_name: string
-          }>>`
-            SELECT pv.variant_code, pv.stock_quantity, p.name as product_name
-            FROM product_variants pv
-            LEFT JOIN inventory i ON i.variant_id = pv.id
-            INNER JOIN products p ON pv.product_id = p.id
-            WHERE i.id IS NULL AND pv.stock_quantity != 0
-            LIMIT 5
-          `
-          results.consistency.missing_inventory_samples = missingSamples
-        }
-
-      } catch (error: any) {
-        results.consistency.error = error.message
-        results.errors.push('一致性檢查失敗')
-      }
+      results.consistency.error = error.message
+      results.errors.push('Inventory 一致性檢查失敗')
     }
 
     // 4. 檢查最近的庫存異動
