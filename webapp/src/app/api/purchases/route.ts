@@ -211,6 +211,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '至少需要一個採購項目' }, { status: 400 })
     }
 
+    // 🔍 Debug: 檢查 session.user.id
+    console.log('[採購單建立] session.user:', {
+      id: session.user.id,
+      email: session.user.email,
+      role: session.user.role
+    })
+
     // 生成採購單號
     const purchase_number = await generatePurchaseNumber()
 
