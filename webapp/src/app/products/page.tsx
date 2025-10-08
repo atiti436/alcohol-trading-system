@@ -59,8 +59,8 @@ export default function ProductsPage() {
     page: 1,
     limit: 20,
     search: '',
-    orderBy: 'created_at',
-    order: 'desc',
+    orderBy: 'product_code',
+    order: 'asc',
     active: true
   })
 
