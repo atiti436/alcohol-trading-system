@@ -56,7 +56,7 @@ export default function ImportEditModal({
       const values = await form.validateFields()
       setLoading(true)
 
-      const response = await fetch(`/api/imports/${importRecord.id}`, {
+      const response = await fetch(`/api/imports-v2/${importRecord.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'

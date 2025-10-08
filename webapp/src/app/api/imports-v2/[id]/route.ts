@@ -7,6 +7,145 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 /**
+ * GET /api/imports-v2/[id] - 取得進貨單詳細資料
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: '未授權' }, { status: 401 })
+    }
+
+    const importId = params.id
+
+    const importRecord = await prisma.import.findUnique({
+      where: { id: importId },
+      include: {
+        purchase: {
+          select: {
+            purchase_code: true,
+            supplier: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  select: {
+                    product_code: true,
+                    name: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        costs: true
+      }
+    })
+
+    if (!importRecord) {
+      return NextResponse.json(
+        { success: false, error: '進貨單不存在' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: importRecord
+    })
+
+  } catch (error) {
+    console.error('查詢進貨單失敗:', error)
+    return NextResponse.json(
+      { success: false, error: '查詢失敗', details: error instanceof Error ? error.message : '未知錯誤' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * PATCH /api/imports-v2/[id] - 更新進貨單資訊（匯率、報單號碼、備註等）
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: '未授權' }, { status: 401 })
+    }
+
+    const importId = params.id
+    const body = await request.json()
+
+    // 驗證進貨單是否存在
+    const existingImport = await prisma.import.findUnique({
+      where: { id: importId }
+    })
+
+    if (!existingImport) {
+      return NextResponse.json(
+        { success: false, error: '進貨單不存在' },
+        { status: 404 }
+      )
+    }
+
+    // 更新進貨單
+    const updated = await prisma.import.update({
+      where: { id: importId },
+      data: {
+        exchange_rate: body.exchange_rate !== undefined ? body.exchange_rate : undefined,
+        declaration_number: body.declaration_number !== undefined ? body.declaration_number : undefined,
+        declaration_date: body.declaration_date
+          ? new Date(body.declaration_date)
+          : body.declaration_date === null
+            ? null
+            : undefined,
+        notes: body.notes !== undefined ? body.notes : undefined,
+        updated_at: new Date()
+      },
+      include: {
+        purchase: {
+          select: {
+            purchase_code: true,
+            supplier: {
+              select: {
+                name: true
+              }
+            }
+          }
+        },
+        items: true
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: updated,
+      message: '進貨單已更新'
+    })
+
+  } catch (error) {
+    console.error('更新進貨單失敗:', error)
+    return NextResponse.json(
+      { success: false, error: '更新失敗', details: error instanceof Error ? error.message : '未知錯誤' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
  * DELETE /api/imports-v2/[id] - 刪除進貨單（級聯刪除所有相關資料）
  */
 export async function DELETE(
