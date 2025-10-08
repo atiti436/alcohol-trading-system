@@ -259,30 +259,58 @@ export async function POST(request: NextRequest) {
 
     const shippingNumber = `SH${dateStr}${nextNumber.toString().padStart(3, '0')}`
 
-    // 暫時將出貨單資訊存儲在sales表的notes中
-    // TODO: 後續可建立獨立的shipping_orders表
-    const shippingData = {
-      type: 'SHIPPING_ORDER',
-      shippingNumber,
-      shippingDate: shipping_date || new Date().toISOString(),
-      status: 'READY',
-      items: items.map((item: any) => ({
-        product_id: item.product_id,
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        notes: item.notes
-      })),
-      originalNotes: sale?.notes || notes
-    }
+    // 計算總金額
+    const totalAmount = items.reduce((sum: number, item: any) => {
+      return sum + (item.unit_price * item.quantity)
+    }, 0)
+
+    // 創建出貨單（使用 Sale 模型，標記為已付款）
+    const newShipping = await prisma.sale.create({
+      data: {
+        sale_number: shippingNumber,
+        customer_id: sale?.customer_id || customer_id,
+        sale_date: new Date(shipping_date || new Date()),
+        total_amount: totalAmount,
+        actual_amount: totalAmount,
+        payment_status: 'PAID',
+        is_paid: true, // 標記為已付款，才會出現在出貨單列表
+        funding_source: sale?.funding_source || 'COMPANY',
+        created_by: session.user.id,
+        notes: notes || `出貨單 - ${shippingNumber}`,
+        items: {
+          create: items.map((item: any) => ({
+            product_id: item.product_id,
+            variant_id: item.variant_id || null,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            actual_unit_price: item.unit_price,
+            total_price: item.unit_price * item.quantity,
+            actual_total_price: item.unit_price * item.quantity,
+            notes: item.notes
+          }))
+        }
+      },
+      include: {
+        customer: true,
+        items: {
+          include: {
+            product: true,
+            variant: true
+          }
+        }
+      }
+    })
 
     return NextResponse.json({
       success: true,
       data: {
+        id: newShipping.id,
         shippingNumber,
-        shippingDate: shippingData.shippingDate,
-        customer_id: sale?.customer_id || customer_id,
-        customer: sale?.customer,
-        items: shippingData.items,
+        shippingDate: newShipping.sale_date,
+        customer_id: newShipping.customer_id,
+        customer: newShipping.customer,
+        items: newShipping.items,
+        totalAmount,
         totalItems: items.reduce((sum: number, item: any) => sum + item.quantity, 0)
       },
       message: '出貨單創建成功'
