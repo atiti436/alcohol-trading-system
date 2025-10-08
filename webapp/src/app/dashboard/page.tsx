@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { Card, Row, Col, Statistic, Typography, Space, Button, List, Tag, Progress, Spin, message, theme } from 'antd'
+import { Card, Row, Col, Statistic, Typography, Space, Button, List, Tag, Progress, Spin, message } from 'antd'
 import {
   DollarOutlined,
   ShoppingOutlined,
@@ -27,7 +27,6 @@ const { Title, Text } = Typography
 
 export default function Dashboard() {
   const { data: session } = useSession()
-  const { token } = theme.useToken()
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -125,12 +124,12 @@ function SuperAdminDashboard({ data }: { data: any }) {
 
   // 商品類別分布 - 使用真實數據或顯示空狀態
   const categoryChart = data.categoryDistribution?.length > 0 ? data.categoryDistribution : [
-    { name: '暫無數據', value: 1, color: token.colorBorder }
+    { name: '暫無數據', value: 1, color: '#d9d9d9' }
   ]
 
   // 客戶分布 - 使用真實數據或顯示空狀態
   const customerChart = data.customerDistribution?.length > 0 ? data.customerDistribution : [
-    { name: '暫無數據', value: 1, color: token.colorBorder }
+    { name: '暫無數據', value: 1, color: '#d9d9d9' }
   ]
 
   return (
@@ -145,7 +144,7 @@ function SuperAdminDashboard({ data }: { data: any }) {
               precision={0}
               prefix={<DollarOutlined />}
               suffix="元"
-              valueStyle={{ color: token.colorSuccess }}
+              valueStyle={{ color: '#3f8600' }}
             />
           </Card>
         </Col>
@@ -157,7 +156,7 @@ function SuperAdminDashboard({ data }: { data: any }) {
               precision={0}
               prefix={<LineChartOutlined />}
               suffix="元"
-              valueStyle={{ color: token.colorPrimary }}
+              valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
@@ -180,7 +179,7 @@ function SuperAdminDashboard({ data }: { data: any }) {
               precision={0}
               prefix={<DollarOutlined />}
               suffix="元"
-              valueStyle={{ color: token.colorError }}
+              valueStyle={{ color: '#cf1322' }}
             />
           </Card>
         </Col>
@@ -265,7 +264,7 @@ function SuperAdminDashboard({ data }: { data: any }) {
           <Card
             title={
               <Space>
-                <WarningOutlined style={{ color: token.colorWarning }} />
+                <WarningOutlined style={{ color: '#faad14' }} />
                 <span>低庫存警報</span>
               </Space>
             }
@@ -299,8 +298,6 @@ function SuperAdminDashboard({ data }: { data: any }) {
 
 // 投資方Dashboard
 function InvestorDashboard({ data }: { data: any }) {
-  const { token } = theme.useToken()
-
   // 處理投資獲利趨勢圖表數據
   const investmentChart = data.monthlyTrend?.map((trend: any) => ({
     month: trend.month,
@@ -309,7 +306,7 @@ function InvestorDashboard({ data }: { data: any }) {
 
   // 商品分布數據 - 使用真實數據或顯示空狀態
   const productChart = data.categoryDistribution?.length > 0 ? data.categoryDistribution : [
-    { name: '暫無數據', value: 1, color: token.colorBorder }
+    { name: '暫無數據', value: 1, color: '#d9d9d9' }
   ]
 
   return (
@@ -324,7 +321,7 @@ function InvestorDashboard({ data }: { data: any }) {
               precision={0}
               prefix={<DollarOutlined />}
               suffix="元"
-              valueStyle={{ color: token.colorSuccess }}
+              valueStyle={{ color: '#3f8600' }}
             />
           </Card>
         </Col>
@@ -336,7 +333,7 @@ function InvestorDashboard({ data }: { data: any }) {
               precision={0}
               prefix={<LineChartOutlined />}
               suffix="元"
-              valueStyle={{ color: token.colorPrimary }}
+              valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
@@ -411,9 +408,9 @@ function EmployeeDashboard({ data }: { data: any }) {
                 <List.Item>
                   <Space>
                     {item.status === 'completed' ? (
-                      <CheckCircleOutlined style={{ color: token.colorSuccess }} />
+                      <CheckCircleOutlined style={{ color: '#52c41a' }} />
                     ) : (
-                      <WarningOutlined style={{ color: token.colorWarning }} />
+                      <WarningOutlined style={{ color: '#faad14' }} />
                     )}
                     <Text delete={item.status === 'completed'}>{item.task}</Text>
                   </Space>

@@ -15,8 +15,7 @@ import {
   Spin,
   message,
   Tabs,
-  Progress,
-  theme
+  Progress
 } from 'antd'
 import {
   BarChartOutlined,
@@ -114,7 +113,6 @@ interface CustomerAnalysisData {
  */
 export default function ReportsPage() {
   const { data: session } = useSession()
-  const { token } = theme.useToken()
 
   // 狀態管理
   const [loading, setLoading] = useState(false)
@@ -183,16 +181,7 @@ export default function ReportsPage() {
     }
   }, [activeTab, dateRange, period, loadReportData])
 
-  // 自動刷新：每 30 秒重新載入數據
-  useEffect(() => {
-    if (!dateRange) return
-
-    const interval = setInterval(() => {
-      loadReportData()
-    }, 30000) // 30 seconds
-
-    return () => clearInterval(interval)
-  }, [dateRange, loadReportData])
+  // （已移至前方，確保 useEffect 依賴時機正確）
 
   // 導出報表
   const exportReport = () => {
@@ -426,7 +415,7 @@ export default function ReportsPage() {
                   title="總銷售筆數"
                   value={overviewData.overview.totalSales}
                   prefix={<ShoppingOutlined />}
-                  valueStyle={{ color: token.colorPrimary }}
+                  valueStyle={{ color: '#1890ff' }}
                 />
               </Card>
             </Col>
@@ -436,7 +425,7 @@ export default function ReportsPage() {
                   title="活躍客戶數"
                   value={overviewData.overview.totalCustomers}
                   prefix={<UserOutlined />}
-                  valueStyle={{ color: token.colorSuccess }}
+                  valueStyle={{ color: '#52c41a' }}
                 />
               </Card>
             </Col>
@@ -447,7 +436,7 @@ export default function ReportsPage() {
                   value={overviewData.overview.totalRevenue}
                   prefix={<DollarOutlined />}
                   formatter={(value) => `NT$ ${(value as number).toLocaleString()}`}
-                  valueStyle={{ color: token.colorPrimary }}
+                  valueStyle={{ color: '#722ed1' }}
                 />
               </Card>
             </Col>
@@ -459,7 +448,7 @@ export default function ReportsPage() {
                     value={overviewData.overview.totalActualRevenue || overviewData.overview.totalRevenue}
                     prefix={<DollarOutlined />}
                     formatter={(value) => `NT$ ${(value as number).toLocaleString()}`}
-                    valueStyle={{ color: token.colorWarning }}
+                    valueStyle={{ color: '#fa8c16' }}
                   />
                 </Card>
               </SuperAdminOnly>
@@ -470,7 +459,7 @@ export default function ReportsPage() {
                     value={overviewData.overview.totalCommission || 0}
                     prefix={<DollarOutlined />}
                     formatter={(value) => `NT$ ${(value as number).toLocaleString()}`}
-                    valueStyle={{ color: token.colorError }}
+                    valueStyle={{ color: '#f5222d' }}
                   />
                 </Card>
               </HideFromInvestor>
@@ -487,7 +476,7 @@ export default function ReportsPage() {
                       <div
                         style={{
                           height: `${Math.max(20, (day.revenue / Math.max(...overviewData.dailyTrend.map(d => d.revenue))) * 200)}px`,
-                          backgroundColor: token.colorPrimary,
+                          backgroundColor: '#1890ff',
                           margin: '0 2px',
                           borderRadius: '2px 2px 0 0'
                         }}
@@ -495,7 +484,7 @@ export default function ReportsPage() {
                       <div style={{ fontSize: '12px', marginTop: '5px' }}>
                         {dayjs(day.date).format('MM/DD')}
                       </div>
-                      <div style={{ fontSize: '10px', color: token.colorTextSecondary }}>
+                      <div style={{ fontSize: '10px', color: '#666' }}>
                         {day.sales}筆
                       </div>
                     </div>
@@ -507,21 +496,21 @@ export default function ReportsPage() {
               <Card title="熱銷商品 TOP 5" extra={<TrophyOutlined />}>
                 <div style={{ height: '300px', overflow: 'auto' }}>
                   {overviewData.topProducts.map((product, index) => (
-                    <div key={product.product_code} style={{ marginBottom: '16px', padding: '8px', border: `1px solid ${token.colorBorder}`, borderRadius: '4px' }}>
+                    <div key={product.product_code} style={{ marginBottom: '16px', padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
                             #{index + 1} {product.name}
                           </div>
-                          <div style={{ fontSize: '12px', color: token.colorTextSecondary }}>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
                             {product.product_code} | {product.category}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 'bold', color: token.colorPrimary }}>
+                          <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
                             {product.totalQuantity}
                           </div>
-                          <div style={{ fontSize: '12px', color: token.colorTextSecondary }}>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
                             <SecurePriceDisplay amount={product.totalRevenue} />
                           </div>
                         </div>
@@ -689,7 +678,7 @@ export default function ReportsPage() {
                     <SuperAdminOnly>
                       <SecurePriceDisplay
                         amount={value}
-                        style={{ color: value > 0 ? token.colorSuccess : token.colorError }}
+                        style={{ color: value > 0 ? '#52c41a' : '#f5222d' }}
                       />
                     </SuperAdminOnly>
                   ) : null
