@@ -59,7 +59,7 @@ interface ImportRecord {
   supplier: string
   declarationNumber?: string
   declarationDate?: string
-  status: 'PENDING' | 'PROCESSING' | 'CUSTOMS_CLEARED' | 'RECEIVED' | 'COMPLETED'
+  status: 'PENDING' | 'PROCESSING' | 'CUSTOMS_CLEARED' | 'RECEIVED' | 'COMPLETED' | 'FINALIZED'
   totalValue: number
   currency: string
   exchangeRate: number
@@ -253,7 +253,8 @@ export default function ImportsPage() {
       PROCESSING: '處理中',
       CUSTOMS_CLEARED: '通關完成',
       RECEIVED: '已收貨',
-      COMPLETED: '已完成'
+      COMPLETED: '已完成',
+      FINALIZED: '已完成' // 國內採購直接完成
     }
     return statusNames[status as keyof typeof statusNames] || status
   }
@@ -266,6 +267,7 @@ export default function ImportsPage() {
       case 'CUSTOMS_CLEARED': return 2
       case 'RECEIVED': return 3
       case 'COMPLETED': return 4
+      case 'FINALIZED': return 4 // 國內採購直接完成，顯示在最後一步
       default: return 0
     }
   }
@@ -401,7 +403,8 @@ export default function ImportsPage() {
         { text: '處理中', value: 'PROCESSING' },
         { text: '通關完成', value: 'CUSTOMS_CLEARED' },
         { text: '已收貨', value: 'RECEIVED' },
-        { text: '已完成', value: 'COMPLETED' }
+        { text: '已完成', value: 'COMPLETED' },
+        { text: '已完成 (國內)', value: 'FINALIZED' }
       ]
     },
     {
