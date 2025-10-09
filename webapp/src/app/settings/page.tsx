@@ -337,11 +337,9 @@ export default function SettingsPage() {
               <Col span={24}>
                 <ApiKeySettings />
               </Col>
-              {process.env.NEXT_PUBLIC_ENABLE_LINEBOT_SETTINGS === 'true' && (
-                <Col span={24}>
-                  <LineBotSettings />
-                </Col>
-              )}
+              <Col span={24}>
+                <LineBotSettings />
+              </Col>
             </Row>
           </TabPane>
         )}
