@@ -445,7 +445,7 @@ export default function InventoryPage() {
           expandable={{
             expandedRowRender: (record: InventoryItem) => {
               if (!record.variants || record.variants.length === 0) {
-                return <div style={{ padding: '12px', color: '#999' }}>無變體資料</div>
+                return <div className="p-3 text-gray-400">無變體資料</div>
               }
 
               // 🔒 按 (variant, warehouse) 組合展開資料，投資方不顯示個人倉
@@ -508,7 +508,7 @@ export default function InventoryPage() {
                       key: 'variant_code',
                       width: 150,
                       render: (text: string) => (
-                        <span style={{ color: '#1890ff', fontWeight: 'bold' }}>{text}</span>
+                        <span className="text-blue-500 font-bold">{text}</span>
                       )
                     },
                     {
@@ -535,7 +535,7 @@ export default function InventoryPage() {
                       key: 'reserved',
                       width: 80,
                       align: 'center' as const,
-                      render: (value: number) => value > 0 ? <span style={{ color: '#faad14' }}>{value}</span> : value
+                      render: (value: number) => value > 0 ? <span className="text-orange-400">{value}</span> : value
                     },
                     {
                       title: '可售庫存',
@@ -544,7 +544,7 @@ export default function InventoryPage() {
                       width: 100,
                       align: 'center' as const,
                       render: (value: number) => (
-                        <span style={{ color: value > 0 ? '#52c41a' : '#ff4d4f', fontWeight: 'bold' }}>
+                        <span className={value > 0 ? 'text-green-500 font-bold' : 'text-red-500 font-bold'}>
                           {value}
                         </span>
                       )

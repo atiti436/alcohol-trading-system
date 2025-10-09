@@ -140,17 +140,17 @@ export default function CustomersPage() {
         <div>
           <div style={{ fontWeight: 'bold' }}>{record.name}</div>
           {record.contact_person && (
-            <div style={{ fontSize: '12px', color: '#666' }}>
+            <div className="text-xs text-gray-500">
               <UserOutlined /> {record.contact_person}
             </div>
           )}
           {record.phone && (
-            <div style={{ fontSize: '12px', color: '#666' }}>
+            <div className="text-xs text-gray-500">
               <PhoneOutlined /> {record.phone}
             </div>
           )}
           {record.email && (
-            <div style={{ fontSize: '12px', color: '#666' }}>
+            <div className="text-xs text-gray-500">
               <MailOutlined /> {record.email}
             </div>
           )}
@@ -197,7 +197,7 @@ export default function CustomersPage() {
         <div style={{ textAlign: 'center' }}>
           <div>{record._count.sales} 筆</div>
           {record.total_amount && (
-            <div style={{ fontSize: '12px', color: '#666' }}>
+            <div className="text-xs text-gray-500">
               ${record.total_amount.toLocaleString()}
             </div>
           )}

@@ -47,11 +47,11 @@ export default function DBHealthPage() {
     switch (status) {
       case 'HEALTHY':
       case 'OK':
-        return <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 24 }} />
+        return <CheckCircleOutlined className="text-green-500 text-2xl" />
       case 'WARNING':
-        return <WarningOutlined style={{ color: '#faad14', fontSize: 24 }} />
+        return <WarningOutlined className="text-orange-400 text-2xl" />
       case 'ERROR':
-        return <CloseCircleOutlined style={{ color: '#f5222d', fontSize: 24 }} />
+        return <CloseCircleOutlined className="text-red-500 text-2xl" />
       default:
         return null
     }

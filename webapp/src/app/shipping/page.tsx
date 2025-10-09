@@ -366,7 +366,7 @@ export default function ShippingPage() {
       render: (text: string, record: ShippingOrder) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             關聯: {record.saleNumber}
           </div>
         </div>
@@ -379,11 +379,11 @@ export default function ShippingPage() {
       render: (record: ShippingOrder) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{record.customer.name}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {record.customer.customer_code}
           </div>
           {record.customer.company && (
-            <div style={{ fontSize: '12px', color: '#999' }}>
+            <div className="text-xs text-gray-400">
               {record.customer.company}
             </div>
           )}
@@ -413,7 +413,7 @@ export default function ShippingPage() {
           </div>
           <HideFromInvestor>
             {record.actual_amount && record.actual_amount !== record.total_amount && (
-              <div style={{ fontSize: '12px', color: '#52c41a' }}>
+              <div className="text-xs text-green-500">
                 實收: <SecurePriceDisplay
                   amount={record.actual_amount}
                   currency="NT$"
@@ -631,7 +631,7 @@ export default function ShippingPage() {
                   render: (_: any, record: any) => (
                     <div>
                       <div style={{ fontWeight: 'bold' }}>{record.product.name}</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
+                      <div className="text-xs text-gray-500">
                         {record.product.product_code}
                         {record.variant && ` - ${record.variant.description}`}
                       </div>

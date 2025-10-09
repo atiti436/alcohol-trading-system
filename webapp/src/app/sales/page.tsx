@@ -223,11 +223,11 @@ export default function SalesPage() {
               <Tag color="purple" style={{ marginLeft: 8 }}>預購</Tag>
             )}
           </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {dayjs(record.created_at).format('YYYY/MM/DD')}
           </div>
           {record.is_preorder && record.expected_arrival_date && (
-            <div style={{ fontSize: '11px', color: '#722ed1' }}>
+            <div className="text-[11px] text-purple-600">
               預計到貨: {dayjs(record.expected_arrival_date).format('MM/DD')}
             </div>
           )}
@@ -241,11 +241,11 @@ export default function SalesPage() {
       render: (record: Sale) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{record.customer?.name}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {record.customer?.customer_code}
           </div>
           {record.customer?.company && (
-            <div style={{ fontSize: '12px', color: '#999' }}>
+            <div className="text-xs text-gray-400">
               {record.customer.company}
             </div>
           )}
@@ -282,7 +282,7 @@ export default function SalesPage() {
           {/* 實際金額（只有超級管理員和員工能看到） */}
           <HideFromInvestor>
             {record.actual_amount && record.actual_amount !== record.total_amount && (
-              <div style={{ fontSize: '12px', color: '#52c41a' }}>
+              <div className="text-xs text-green-500">
                 實收: <SecurePriceDisplay
                   amount={record.actual_amount}
                   currency="NT$"
@@ -292,7 +292,7 @@ export default function SalesPage() {
               </div>
             )}
             {record.commission && record.commission > 0 && (
-              <div style={{ fontSize: '12px', color: '#1890ff' }}>
+              <div className="text-xs text-blue-500">
                 傭金: <SecurePriceDisplay
                   amount={record.commission}
                   currency="NT$"
@@ -324,7 +324,7 @@ export default function SalesPage() {
           <Tag color={getStatusColor(record.status)}>
             {getStatusName(record.status)}
           </Tag>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+          <div className="text-xs text-gray-500 mt-0.5">
             {record.is_paid ? '已付款' : '未付款'}
           </div>
         </div>
@@ -338,13 +338,11 @@ export default function SalesPage() {
       render: (due_date: Date) => (
         <div>
           {due_date ? (
-            <div style={{
-              color: dayjs(due_date).isBefore(dayjs()) ? '#ff4d4f' : '#666'
-            }}>
+            <div className={dayjs(due_date).isBefore(dayjs()) ? 'text-red-500' : 'text-gray-500'}>
               {dayjs(due_date).format('YYYY/MM/DD')}
             </div>
           ) : (
-            <span style={{ color: '#ccc' }}>無設定</span>
+            <span className="text-gray-300">無設定</span>
           )}
         </div>
       )
@@ -1126,21 +1124,21 @@ export default function SalesPage() {
               <h3>金額資訊</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div><strong>顯示總額：</strong>
-                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#1890ff' }}>
+                  <span className="text-base font-bold text-blue-500">
                     ${editingSale.total_amount.toLocaleString()}
                   </span>
                 </div>
                 <HideFromInvestor>
                   {editingSale.actual_amount && editingSale.actual_amount !== editingSale.total_amount && (
                     <div><strong>實際收取：</strong>
-                      <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#52c41a' }}>
+                      <span className="text-base font-bold text-green-500">
                         ${editingSale.actual_amount.toLocaleString()}
                       </span>
                     </div>
                   )}
                   {editingSale.commission && editingSale.commission > 0 && (
                     <div><strong>抽成金額：</strong>
-                      <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#fa8c16' }}>
+                      <span className="text-base font-bold text-orange-500">
                         ${editingSale.commission.toLocaleString()}
                       </span>
                     </div>
@@ -1177,12 +1175,12 @@ export default function SalesPage() {
                             {record.product?.name || '未知商品'}
                           </div>
                           {record.product?.product_code && (
-                            <div style={{ fontSize: '12px', color: '#666' }}>
+                            <div className="text-xs text-gray-500">
                               {record.product.product_code}
                             </div>
                           )}
                           {record.variant?.variant_code && (
-                            <div style={{ fontSize: '12px', color: '#666' }}>
+                            <div className="text-xs text-gray-500">
                               變體: {record.variant.variant_code}
                             </div>
                           )}
@@ -1208,7 +1206,7 @@ export default function SalesPage() {
                           </div>
                           <HideFromInvestor>
                             {record.actual_unit_price && record.actual_unit_price !== record.unit_price && (
-                              <div style={{ fontSize: '12px', color: '#52c41a' }}>
+                              <div className="text-xs text-green-500">
                                 實收: ${record.actual_unit_price.toLocaleString()}
                               </div>
                             )}
@@ -1228,7 +1226,7 @@ export default function SalesPage() {
                           </div>
                           <HideFromInvestor>
                             {record.actual_total_price && record.actual_total_price !== record.total_price && (
-                              <div style={{ fontSize: '12px', color: '#52c41a' }}>
+                              <div className="text-xs text-green-500">
                                 實收: ${record.actual_total_price.toLocaleString()}
                               </div>
                             )}
@@ -1240,7 +1238,7 @@ export default function SalesPage() {
                   scroll={{ x: 'max-content' }}
                 />
               ) : (
-                <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+                <div className="text-center text-gray-400 p-5">
                   暫無銷售明細
                 </div>
               )}
@@ -1314,11 +1312,11 @@ export default function SalesPage() {
                 render: (record: ShippingItemRow) => (
                   <div>
                     <div style={{ fontWeight: 'bold', fontSize: '13px' }}>{record.product?.name}</div>
-                    <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                    <div className="text-[11px] text-gray-500 mt-0.5">
                       品號：{record.product?.product_code}
                     </div>
                     {record.variant?.variant_code && (
-                      <div style={{ fontSize: '11px', color: '#666' }}>
+                      <div className="text-[11px] text-gray-500">
                         規格：{record.variant.variant_code}
                       </div>
                     )}
@@ -1339,7 +1337,7 @@ export default function SalesPage() {
                 align: 'center' as const,
                 width: '12%',
                 render: (record: ShippingItemRow) => (
-                  <strong style={{ color: '#1890ff' }}>
+                  <strong className="text-blue-500">
                     {record.shipped_quantity ?? record.quantity ?? 0}
                   </strong>
                 )
@@ -1392,11 +1390,11 @@ export default function SalesPage() {
                       <Text strong style={{ fontSize: '14px' }}>{totalQuantity}</Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={2}>
-                      <Text strong style={{ fontSize: '14px', color: '#1890ff' }}>{totalQuantity}</Text>
+                      <Text strong className="text-sm text-blue-500">{totalQuantity}</Text>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={3}></Table.Summary.Cell>
                     <Table.Summary.Cell index={4}>
-                      <Text strong style={{ fontSize: '14px', color: '#f50' }}>
+                      <Text strong className="text-sm text-red-500">
                         ${totalAmount.toLocaleString()}
                       </Text>
                     </Table.Summary.Cell>

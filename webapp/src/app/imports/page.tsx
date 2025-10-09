@@ -282,13 +282,13 @@ export default function ImportsPage() {
       render: (text: string, record: ImportRecord) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             來源：
             <a href={`/purchases?search=${encodeURIComponent(record.purchaseNumber)}`} style={{ textDecoration: 'underline' }}>
               {record.purchaseNumber}
             </a>
           </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {dayjs(record.created_at).format('YYYY/MM/DD')}
           </div>
         </div>
@@ -313,13 +313,13 @@ export default function ImportsPage() {
                 {record.declarationNumber}
               </div>
               {record.declarationDate && (
-                <div style={{ fontSize: '12px', color: '#666' }}>
+                <div className="text-xs text-gray-500">
                   {dayjs(record.declarationDate).format('YYYY/MM/DD')}
                 </div>
               )}
             </div>
           ) : (
-            <span style={{ color: '#ccc' }}>待上傳</span>
+            <span className="text-gray-300">待上傳</span>
           )}
         </div>
       )
@@ -339,7 +339,7 @@ export default function ImportsPage() {
               showFallbackIcon={true}
             />
           </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             匯率 {record.exchangeRate}
           </div>
         </div>
@@ -351,13 +351,13 @@ export default function ImportsPage() {
       width: 100,
       render: (record: ImportRecord) => (
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 'bold', color: '#fa541c' }}>
+          <div className="font-bold text-orange-500">
             NT$ {record.totalTaxes?.toLocaleString() || '0'}
           </div>
-          <div style={{ fontSize: '10px', color: '#666' }}>
+          <div className="text-[10px] text-gray-500">
             菸酒稅: {record.alcoholTax?.toLocaleString() || '0'}
           </div>
-          <div style={{ fontSize: '10px', color: '#666' }}>
+          <div className="text-[10px] text-gray-500">
             營業稅: {record.businessTax?.toLocaleString() || '0'}
           </div>
         </div>
@@ -635,7 +635,7 @@ export default function ImportsPage() {
       content: (
         <div>
           <p>進貨單號：{importRecord.importNumber}</p>
-          <p style={{ color: '#ff4d4f' }}>
+          <p className="text-red-500">
             刪除後將：
           </p>
           <ul>
@@ -864,7 +864,7 @@ export default function ImportsPage() {
                   <div><strong>營業稅：</strong>NT$ {selectedImport.businessTax?.toLocaleString() || '0'}</div>
                   <div><strong>推廣費：</strong>NT$ {selectedImport.tradePromotionFee?.toLocaleString() || '0'}</div>
                   <div><strong>稅費總計：</strong>
-                    <span style={{ color: '#fa541c', fontWeight: 'bold' }}>
+                    <span className="text-orange-500 font-bold">
                       NT$ {selectedImport.totalTaxes?.toLocaleString() || '0'}
                     </span>
                   </div>
@@ -907,7 +907,7 @@ export default function ImportsPage() {
                         <div>
                           <div style={{ fontWeight: 'bold' }}>{text}</div>
                           {record.variant_code && (
-                            <div style={{ fontSize: '12px', color: '#1890ff', marginTop: '4px' }}>
+                            <div className="text-xs text-blue-500 mt-1">
                               變體：{record.variant_code}
                             </div>
                           )}
@@ -963,7 +963,7 @@ export default function ImportsPage() {
                   ]}
                 />
               ) : (
-                <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+                <div className="text-center text-gray-400 p-5">
                   暫無商品明細
                 </div>
               )}

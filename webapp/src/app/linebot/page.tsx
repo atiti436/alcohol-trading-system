@@ -202,7 +202,7 @@ export default function LineBotPage() {
       render: (_: any, record: BotMessage) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{record.userName || '匿名'}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {record.userId.substring(0, 8)}...
           </div>
         </div>
@@ -340,7 +340,7 @@ export default function LineBotPage() {
             <Card size="small" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>💰</div>
               <div style={{ fontWeight: 'bold' }}>即時成本計算</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>
+              <div className="text-xs text-gray-500">
                 支援日圓匯率轉換<br />
                 自動計算進口稅費
               </div>
@@ -350,7 +350,7 @@ export default function LineBotPage() {
             <Card size="small" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>🍷</div>
               <div style={{ fontWeight: 'bold' }}>智慧商品查詢</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>
+              <div className="text-xs text-gray-500">
                 商品庫存查詢<br />
                 價格資訊即時更新
               </div>
@@ -360,7 +360,7 @@ export default function LineBotPage() {
             <Card size="small" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>📷</div>
               <div style={{ fontWeight: 'bold' }}>圖片OCR辨識</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>
+              <div className="text-xs text-gray-500">
                 報單自動辨識<br />
                 商品標籤識別
               </div>
@@ -370,7 +370,7 @@ export default function LineBotPage() {
             <Card size="small" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>📊</div>
               <div style={{ fontWeight: 'bold' }}>銷售數據查詢</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>
+              <div className="text-xs text-gray-500">
                 即時銷售報表<br />
                 客戶數據分析
               </div>

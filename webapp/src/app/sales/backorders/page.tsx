@@ -221,7 +221,7 @@ export default function BackordersPage() {
       render: (record: BackorderGroup) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{record.product_name}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {record.variant_code} ({record.variant_type})
           </div>
         </div>
@@ -270,7 +270,7 @@ export default function BackordersPage() {
       render: (record: BackorderItem) => (
         <div>
           <div>{record.variant.product.name}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {record.variant.variant_code}
           </div>
         </div>

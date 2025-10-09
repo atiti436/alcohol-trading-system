@@ -129,7 +129,7 @@ export default function StockTransfersPage() {
       key: 'arrow',
       width: 40,
       align: 'center' as const,
-      render: () => <SwapOutlined style={{ color: '#1890ff', fontSize: 16 }} />
+      render: () => <SwapOutlined className="text-blue-500 text-base" />
     },
     {
       title: '目標變體',

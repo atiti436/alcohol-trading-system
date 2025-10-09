@@ -293,10 +293,7 @@ export default function PayablesPage() {
       render: (value: number, record: AccountsPayable) => (
         <SecurePriceDisplay
           amount={value}
-          style={{
-            color: record.remaining_amount > 0 ? '#ff4d4f' : '#52c41a',
-            fontWeight: 'bold'
-          }}
+          className={record.remaining_amount > 0 ? 'text-red-500 font-bold' : 'text-green-500 font-bold'}
         />
       )
     },
@@ -309,7 +306,7 @@ export default function PayablesPage() {
         const dueDate = dayjs(date)
         const isOverdue = dueDate.isBefore(dayjs(), 'day')
         return (
-          <span style={{ color: isOverdue ? '#ff4d4f' : undefined }}>
+          <span className={isOverdue ? 'text-red-500' : ''}>
             {dueDate.format('YYYY-MM-DD')}
           </span>
         )
@@ -417,9 +414,7 @@ export default function PayablesPage() {
                   precision={1}
                   suffix="天"
                   prefix={<CalendarOutlined />}
-                  valueStyle={{
-                    color: stats.average_days_overdue > 30 ? '#ff4d4f' : '#52c41a'
-                  }}
+                  className={stats.average_days_overdue > 30 ? 'text-red-500' : 'text-green-500'}
                 />
               </Card>
             </Col>
@@ -704,7 +699,7 @@ export default function PayablesPage() {
                 <Row gutter={16} style={{ marginTop: 8 }}>
                   <Col span={12}>
                     <Text type="secondary">未付金額：</Text>
-                    <Text strong style={{ color: '#ff4d4f' }}>
+                    <Text strong className="text-red-500">
                       <SecurePriceDisplay amount={selectedPayable.remaining_amount} />
                     </Text>
                   </Col>

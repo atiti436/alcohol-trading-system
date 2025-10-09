@@ -185,7 +185,7 @@ export default function PreorderSummaryPage() {
       render: (text, record) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {record.product_code} | {record.category}
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function PreorderSummaryPage() {
         <div style={{ paddingLeft: 20 }}>
           <Tag color="blue">{record.variant_code || record.variant_type}</Tag>
           {record.description && (
-            <div style={{ fontSize: '12px', color: '#666', marginTop: 4 }}>
+            <div className="text-xs text-gray-500 mt-1">
               {record.description}
             </div>
           )}
@@ -272,7 +272,7 @@ export default function PreorderSummaryPage() {
       render: (_, record) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{record.customer_name}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {record.customer_code}
             {record.company && ` | ${record.company}`}
           </div>
@@ -500,7 +500,7 @@ export default function PreorderSummaryPage() {
                             <Col span={8}>
                               <div>
                                 {order.items.map((item, idx) => (
-                                  <div key={idx} style={{ fontSize: '12px', color: '#666' }}>
+                                  <div key={idx} className="text-xs text-gray-500">
                                     {item.product_name} {item.variant_code && `(${item.variant_code})`} x {item.quantity}
                                   </div>
                                 ))}
@@ -594,7 +594,7 @@ export default function PreorderSummaryPage() {
             {/* 成功的訂單 */}
             {convertResult.success.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <Title level={5} style={{ color: '#52c41a' }}>
+                <Title level={5} className="text-green-500">
                   ✅ 成功轉換（{convertResult.success.length} 張）
                 </Title>
                 {convertResult.success.map((item: any) => (
@@ -612,7 +612,7 @@ export default function PreorderSummaryPage() {
             {/* 有警告的訂單 */}
             {convertResult.warnings.length > 0 && (
               <div style={{ marginBottom: 24 }}>
-                <Title level={5} style={{ color: '#fa8c16' }}>
+                <Title level={5} className="text-orange-500">
                   ⚠️ 成功但有警告（{convertResult.warnings.length} 張）
                 </Title>
                 {convertResult.warnings.map((item: any) => (
@@ -636,7 +636,7 @@ export default function PreorderSummaryPage() {
             {/* 失敗的訂單 */}
             {convertResult.failed.length > 0 && (
               <div>
-                <Title level={5} style={{ color: '#ff4d4f' }}>
+                <Title level={5} className="text-red-500">
                   ❌ 轉換失敗（{convertResult.failed.length} 張）
                 </Title>
                 {convertResult.failed.map((item: any) => (

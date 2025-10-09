@@ -362,7 +362,7 @@ export default function SettingsPage() {
         {!isAdmin && (
           <Card>
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <LockOutlined style={{ fontSize: 48, color: '#faad14', marginBottom: 16 }} />
+              <LockOutlined className="text-5xl text-orange-400 mb-4" />
               <Title level={4}>權限不足</Title>
               <Text type="secondary">
                 部分系統設定需要超級管理員權限才能查看和修改

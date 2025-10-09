@@ -139,10 +139,10 @@ export default function SignIn() {
         {/* 左側品牌/標語（桌機顯示）*/}
         <div style={{ display: 'none', gap: 16, flexDirection: 'column' as const, maxWidth: 560 }} className="signin-left">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <ShopOutlined style={{ fontSize: 36, color: '#007AFF' }} />
+            <ShopOutlined className="text-4xl text-blue-500" />
             <Title level={2} style={{ margin: 0 }}>酒類進口貿易系統</Title>
           </div>
-          <Text style={{ color: '#4B5563', fontSize: 18 }}>
+          <Text className="text-gray-600 text-lg">
             精準、順暢、具備擴充性的貿易營運中樞。
           </Text>
           <Space direction="vertical" size={8}>
@@ -167,7 +167,7 @@ export default function SignIn() {
           >
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
               <div style={{ textAlign: 'center' }}>
-                <ShopOutlined style={{ fontSize: 44, color: '#007AFF', marginBottom: 8 }} />
+                <ShopOutlined className="text-[44px] text-blue-500 mb-2" />
                 <Title level={3} style={{ margin: 0 }}>歡迎登入</Title>
                 <Text type="secondary">Alcohol Trading Management System</Text>
               </div>

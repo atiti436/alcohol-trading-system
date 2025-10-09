@@ -245,8 +245,8 @@ export default function ProductsPage() {
             >
               {record._count.variants} 個變體
             </Button>
-            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-              總庫存: <span style={{ fontWeight: 'bold', color: totalStock > 0 ? '#52c41a' : '#ff4d4f' }}>{totalStock}</span>
+            <div className="text-xs text-gray-500 mt-1">
+              總庫存: <span className={totalStock > 0 ? 'font-bold text-green-500' : 'font-bold text-red-500'}>{totalStock}</span>
             </div>
           </div>
         )
@@ -603,7 +603,7 @@ export default function ProductsPage() {
         >
           {/* 🎯 只需填寫品名和分類，規格在變體層級 */}
           <div style={{ background: '#e6f7ff', padding: '12px', borderRadius: '6px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '13px', color: '#1890ff' }}>
+            <div className="text-sm text-blue-500">
               💡 <strong>簡化流程：</strong>先創建商品 BASE（品名 + 分類），儲存後再新增變體以設定完整規格（容量、酒精度、重量、價格等）
             </div>
           </div>
@@ -634,7 +634,7 @@ export default function ProductsPage() {
           </Form.Item>
 
           <div style={{ background: '#fffbe6', padding: '12px', borderRadius: '6px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: '#ad8b00' }}>
+            <div className="text-xs text-yellow-600">
               📦 <strong>下一步：</strong>儲存後請點擊「查看詳情」或「變體管理」新增變體，每個變體可設定不同的容量（700ML/750ML）、酒精度（43%/48%）、包裝、價格等
             </div>
           </div>
@@ -712,7 +712,7 @@ export default function ProductsPage() {
                 />
               ) : (
                 <div style={{ background: '#f5f5f5', padding: '16px', marginTop: '16px' }}>
-                  <p style={{ margin: 0, color: '#666' }}>
+                  <p className="m-0 text-gray-500">
                     此商品尚無變體資料
                   </p>
                 </div>

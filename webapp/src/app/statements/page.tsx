@@ -231,7 +231,7 @@ export default function StatementsPage() {
           </div>
           <SuperAdminOnly>
             {record.actual_amount && record.actual_amount !== record.total_amount && (
-              <div style={{ fontSize: '12px', color: '#52c41a' }}>
+              <div className="text-xs text-green-500">
                 實收: <SecurePriceDisplay amount={record.actual_amount} />
               </div>
             )}
@@ -352,7 +352,7 @@ export default function StatementsPage() {
                   value={statementData.summary.totalOutstandingAmount}
                   prefix={<DollarOutlined />}
                   formatter={(value) => `NT$ ${(value as number).toLocaleString()}`}
-                  valueStyle={{ color: statementData.summary.totalOutstandingAmount > 0 ? '#fa8c16' : '#52c41a' }}
+                  className={statementData.summary.totalOutstandingAmount > 0 ? 'text-orange-500' : 'text-green-500'}
                 />
               </Col>
             </Row>
@@ -466,7 +466,7 @@ export default function StatementsPage() {
               <Row gutter={16}>
                 <Col span={6}>
                   <div style={{ textAlign: 'center', padding: '16px', background: '#f0f2f5' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff' }}>
+                    <div className="text-xl font-bold text-blue-500">
                       {statementData.summary.totalSales}
                     </div>
                     <div>銷售筆數</div>
@@ -474,7 +474,7 @@ export default function StatementsPage() {
                 </Col>
                 <Col span={6}>
                   <div style={{ textAlign: 'center', padding: '16px', background: '#f0f2f5' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#722ed1' }}>
+                    <div className="text-xl font-bold text-purple-600">
                       NT$ {statementData.summary.totalSalesAmount.toLocaleString()}
                     </div>
                     <div>銷售總額</div>
@@ -482,7 +482,7 @@ export default function StatementsPage() {
                 </Col>
                 <Col span={6}>
                   <div style={{ textAlign: 'center', padding: '16px', background: '#f0f2f5' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#52c41a' }}>
+                    <div className="text-xl font-bold text-green-500">
                       NT$ {statementData.summary.totalPaidAmount.toLocaleString()}
                     </div>
                     <div>已收金額</div>
@@ -490,11 +490,7 @@ export default function StatementsPage() {
                 </Col>
                 <Col span={6}>
                   <div style={{ textAlign: 'center', padding: '16px', background: '#f0f2f5' }}>
-                    <div style={{
-                      fontSize: '20px',
-                      fontWeight: 'bold',
-                      color: statementData.summary.totalOutstandingAmount > 0 ? '#fa8c16' : '#52c41a'
-                    }}>
+                    <div className={statementData.summary.totalOutstandingAmount > 0 ? 'text-xl font-bold text-orange-500' : 'text-xl font-bold text-green-500'}>
                       NT$ {statementData.summary.totalOutstandingAmount.toLocaleString()}
                     </div>
                     <div>未收金額</div>

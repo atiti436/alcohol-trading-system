@@ -224,7 +224,7 @@ export default function PurchasesPage() {
       render: (text: string, record: Purchase) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             {dayjs(record.created_at).format('YYYY/MM/DD')}
           </div>
         </div>
@@ -267,7 +267,7 @@ export default function PurchasesPage() {
               showFallbackIcon={true}
             />
           </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div className="text-xs text-gray-500">
             匯率 {record.exchangeRate}
           </div>
         </div>
@@ -313,13 +313,13 @@ export default function PurchasesPage() {
                 {record.declarationNumber}
               </div>
               {record.declarationDate && (
-                <div style={{ fontSize: '12px', color: '#666' }}>
+                <div className="text-xs text-gray-500">
                   {dayjs(record.declarationDate).format('YYYY/MM/DD')}
                 </div>
               )}
             </div>
           ) : (
-            <span style={{ color: '#ccc' }}>未填寫</span>
+            <span className="text-gray-300">未填寫</span>
           )}
         </div>
       )
@@ -994,13 +994,13 @@ export default function PurchasesPage() {
                         <div>
                           <div style={{ fontWeight: 'bold' }}>{text}</div>
                           {record.variant && record.variant.variant_code && (
-                            <div style={{ fontSize: '12px', color: '#1890ff', marginTop: '4px' }}>
+                            <div className="text-xs text-blue-500 mt-1">
                               變體：{record.variant.variant_code}
                               {record.variant.description && ` (${record.variant.description})`}
                             </div>
                           )}
                           {record.tariff_code && (
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                            <div className="text-xs text-gray-500 mt-0.5">
                               稅則：{record.tariff_code}
                             </div>
                           )}
@@ -1049,7 +1049,7 @@ export default function PurchasesPage() {
                   ]}
                 />
               ) : (
-                <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+                <div className="text-center text-gray-400 p-5">
                   暫無採購明細
                 </div>
               )}

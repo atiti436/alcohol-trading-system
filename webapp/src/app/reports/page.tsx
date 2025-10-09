@@ -484,7 +484,7 @@ export default function ReportsPage() {
                       <div style={{ fontSize: '12px', marginTop: '5px' }}>
                         {dayjs(day.date).format('MM/DD')}
                       </div>
-                      <div style={{ fontSize: '10px', color: '#666' }}>
+                      <div className="text-[10px] text-gray-500">
                         {day.sales}筆
                       </div>
                     </div>
@@ -502,15 +502,15 @@ export default function ReportsPage() {
                           <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
                             #{index + 1} {product.name}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
+                          <div className="text-xs text-gray-500">
                             {product.product_code} | {product.category}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
+                          <div className="font-bold text-blue-500">
                             {product.totalQuantity}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
+                          <div className="text-xs text-gray-500">
                             <SecurePriceDisplay amount={product.totalRevenue} />
                           </div>
                         </div>
@@ -633,7 +633,7 @@ export default function ReportsPage() {
                   render: (_: any, record: any) => (
                     <div>
                       <div style={{ fontWeight: 'bold' }}>{record.name}</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>
+                      <div className="text-xs text-gray-500">
                         {record.product_code} | {record.category}
                       </div>
                     </div>
@@ -678,7 +678,7 @@ export default function ReportsPage() {
                     <SuperAdminOnly>
                       <SecurePriceDisplay
                         amount={value}
-                        style={{ color: value > 0 ? '#52c41a' : '#f5222d' }}
+                        className={value > 0 ? 'text-green-500' : 'text-red-500'}
                       />
                     </SuperAdminOnly>
                   ) : null
@@ -708,7 +708,7 @@ export default function ReportsPage() {
                 render: (_: any, record: any) => (
                   <div>
                     <div style={{ fontWeight: 'bold' }}>{record.name}</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div className="text-xs text-gray-500">
                       {record.customer_code}
                       {record.company && ` | ${record.company}`}
                     </div>

@@ -365,7 +365,7 @@ export default function QuotationsPage() {
       width: 120,
       align: 'right' as const,
       render: (value: number) => (
-        <Text strong style={{ color: '#1890ff' }}>
+        <Text strong className="text-blue-500">
           ${value.toLocaleString()}
         </Text>
       )
@@ -802,7 +802,7 @@ export default function QuotationsPage() {
                 <div><strong>數量：</strong>{viewingQuotation.quantity.toLocaleString()} 支</div>
                 <div><strong>單價：</strong>${viewingQuotation.unit_price.toLocaleString()}</div>
                 <div><strong>總金額：</strong>
-                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#1890ff' }}>
+                  <span className="text-base font-bold text-blue-500">
                     ${viewingQuotation.total_amount.toLocaleString()}
                   </span>
                 </div>

@@ -264,7 +264,7 @@ function SuperAdminDashboard({ data }: { data: any }) {
           <Card
             title={
               <Space>
-                <WarningOutlined style={{ color: '#faad14' }} />
+                <WarningOutlined className="text-orange-400" />
                 <span>低庫存警報</span>
               </Space>
             }
@@ -408,9 +408,9 @@ function EmployeeDashboard({ data }: { data: any }) {
                 <List.Item>
                   <Space>
                     {item.status === 'completed' ? (
-                      <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                      <CheckCircleOutlined className="text-green-500" />
                     ) : (
-                      <WarningOutlined style={{ color: '#faad14' }} />
+                      <WarningOutlined className="text-orange-400" />
                     )}
                     <Text delete={item.status === 'completed'}>{item.task}</Text>
                   </Space>

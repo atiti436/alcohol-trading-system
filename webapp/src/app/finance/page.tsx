@@ -154,10 +154,7 @@ export default function FinanceOverviewPage() {
       render: (amount: number) => (
         <SecurePriceDisplay
           amount={Math.abs(amount)}
-          style={{
-            color: amount > 0 ? '#52c41a' : '#ff4d4f',
-            fontWeight: 'bold'
-          }}
+          className={amount > 0 ? 'text-green-500 font-bold' : 'text-red-500 font-bold'}
         />
       )
     }
@@ -196,7 +193,7 @@ export default function FinanceOverviewPage() {
               title="總收入"
               value={data.totalRevenue}
               precision={0}
-              prefix={<DollarOutlined style={{ color: '#52c41a' }} />}
+              prefix={<DollarOutlined className="text-green-500" />}
               valueStyle={{ color: '#52c41a' }}
               formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
             />
@@ -208,7 +205,7 @@ export default function FinanceOverviewPage() {
               title="總支出"
               value={data.totalExpenses}
               precision={0}
-              prefix={<ShoppingCartOutlined style={{ color: '#ff4d4f' }} />}
+              prefix={<ShoppingCartOutlined className="text-red-500" />}
               valueStyle={{ color: '#ff4d4f' }}
               formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
             />
@@ -220,8 +217,8 @@ export default function FinanceOverviewPage() {
               title="淨利潤"
               value={data.netProfit}
               precision={0}
-              prefix={data.netProfit >= 0 ? <RiseOutlined style={{ color: '#52c41a' }} /> : <FallOutlined style={{ color: '#ff4d4f' }} />}
-              valueStyle={{ color: data.netProfit >= 0 ? '#52c41a' : '#ff4d4f' }}
+              prefix={data.netProfit >= 0 ? <RiseOutlined className="text-green-500" /> : <FallOutlined className="text-red-500" />}
+              className={data.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}
               formatter={(value) => <SecurePriceDisplay amount={Math.abs(Number(value))} />}
             />
           </Card>
@@ -232,7 +229,7 @@ export default function FinanceOverviewPage() {
               title="待收款項"
               value={data.pendingPayments}
               precision={0}
-              prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+              prefix={<ClockCircleOutlined className="text-orange-400" />}
               valueStyle={{ color: '#faad14' }}
               formatter={(value) => <SecurePriceDisplay amount={Number(value)} />}
             />
