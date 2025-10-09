@@ -84,29 +84,28 @@ export default function SettingsPage() {
 
   return (
     <div style={{ padding: 0 }}>
-      <Title level={2} style={{ marginBottom: 24 }}>
-        <SettingOutlined style={{ marginRight: 8 }} />
-        系統設定
-      </Title>
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 999,
+        backgroundColor: '#fff',
+        paddingBottom: 8,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+      }}>
+        <Title level={2} style={{ marginBottom: 16 }}>
+          <SettingOutlined style={{ marginRight: 8 }} />
+          系統設定
+        </Title>
 
-      <Tabs
-        defaultActiveKey={activeTab}
-        activeKey={activeTab}
-        type="card"
-        onChange={(key) => {
-          router.push(`/settings?tab=${key}`)
-        }}
-        tabBarStyle={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 999,
-          backgroundColor: '#fff',
-          marginBottom: 0,
-          paddingTop: 8,
-          paddingBottom: 8,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-        }}
-      >
+        <Tabs
+          defaultActiveKey={activeTab}
+          activeKey={activeTab}
+          type="card"
+          onChange={(key) => {
+            router.push(`/settings?tab=${key}`)
+          }}
+          tabBarStyle={{ marginBottom: 0 }}
+        >
         {/* 公司資訊 */}
         {isAdmin && (
           <TabPane tab={
@@ -354,6 +353,7 @@ export default function SettingsPage() {
           </TabPane>
         )}
       </Tabs>
+      </div>
 
       {!isAdmin && (
         <Card style={{ marginTop: 24 }}>
