@@ -84,19 +84,31 @@ export default function SettingsPage() {
 
   return (
     <div style={{ padding: 0 }}>
-      <Title level={2} style={{ marginBottom: 24 }}>
-        <SettingOutlined style={{ marginRight: 8 }} />
-        系統設定
-      </Title>
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+        backgroundColor: '#fff',
+        paddingBottom: 16,
+        borderBottom: '1px solid #f0f0f0'
+      }}>
+        <Title level={2} style={{ marginBottom: 16 }}>
+          <SettingOutlined style={{ marginRight: 8 }} />
+          系統設定
+        </Title>
 
-      <Tabs
-        defaultActiveKey={activeTab}
-        activeKey={activeTab}
-        type="card"
-        onChange={(key) => {
-          router.push(`/settings?tab=${key}`)
-        }}
-      >
+        <Tabs
+          defaultActiveKey={activeTab}
+          activeKey={activeTab}
+          type="card"
+          onChange={(key) => {
+            router.push(`/settings?tab=${key}`)
+          }}
+          tabBarStyle={{ marginBottom: 0 }}
+          renderTabBar={(props, DefaultTabBar) => (
+            <DefaultTabBar {...props} />
+          )}
+        >
         {/* 公司資訊 */}
         {isAdmin && (
           <TabPane tab={
@@ -344,18 +356,21 @@ export default function SettingsPage() {
           </TabPane>
         )}
       </Tabs>
+      </div>
 
-      {!isAdmin && (
-        <Card style={{ marginTop: 24 }}>
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <LockOutlined style={{ fontSize: 48, color: '#faad14', marginBottom: 16 }} />
-            <Title level={4}>權限不足</Title>
-            <Text type="secondary">
-              部分系統設定需要超級管理員權限才能查看和修改
-            </Text>
-          </div>
-        </Card>
-      )}
+      <div style={{ paddingTop: 24 }}>
+        {!isAdmin && (
+          <Card>
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <LockOutlined style={{ fontSize: 48, color: '#faad14', marginBottom: 16 }} />
+              <Title level={4}>權限不足</Title>
+              <Text type="secondary">
+                部分系統設定需要超級管理員權限才能查看和修改
+              </Text>
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }
