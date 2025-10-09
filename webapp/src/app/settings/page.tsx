@@ -84,31 +84,27 @@ export default function SettingsPage() {
 
   return (
     <div style={{ padding: 0 }}>
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 10,
-        backgroundColor: '#fff',
-        paddingBottom: 16,
-        borderBottom: '1px solid #f0f0f0'
-      }}>
-        <Title level={2} style={{ marginBottom: 16 }}>
-          <SettingOutlined style={{ marginRight: 8 }} />
-          系統設定
-        </Title>
+      <Title level={2} style={{ marginBottom: 24 }}>
+        <SettingOutlined style={{ marginRight: 8 }} />
+        系統設定
+      </Title>
 
-        <Tabs
-          defaultActiveKey={activeTab}
-          activeKey={activeTab}
-          type="card"
-          onChange={(key) => {
-            router.push(`/settings?tab=${key}`)
-          }}
-          tabBarStyle={{ marginBottom: 0 }}
-          renderTabBar={(props, DefaultTabBar) => (
-            <DefaultTabBar {...props} />
-          )}
-        >
+      <Tabs
+        defaultActiveKey={activeTab}
+        activeKey={activeTab}
+        type="card"
+        onChange={(key) => {
+          router.push(`/settings?tab=${key}`)
+        }}
+        tabBarStyle={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          backgroundColor: '#fff',
+          marginBottom: 0,
+          paddingTop: 8
+        }}
+      >
         {/* 公司資訊 */}
         {isAdmin && (
           <TabPane tab={
@@ -356,21 +352,18 @@ export default function SettingsPage() {
           </TabPane>
         )}
       </Tabs>
-      </div>
 
-      <div style={{ paddingTop: 24 }}>
-        {!isAdmin && (
-          <Card>
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <LockOutlined className="text-5xl text-orange-400 mb-4" />
-              <Title level={4}>權限不足</Title>
-              <Text type="secondary">
-                部分系統設定需要超級管理員權限才能查看和修改
-              </Text>
-            </div>
-          </Card>
-        )}
-      </div>
+      {!isAdmin && (
+        <Card style={{ marginTop: 24 }}>
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <LockOutlined className="text-5xl text-orange-400 mb-4" />
+            <Title level={4}>權限不足</Title>
+            <Text type="secondary">
+              部分系統設定需要超級管理員權限才能查看和修改
+            </Text>
+          </div>
+        </Card>
+      )}
     </div>
   )
 }
