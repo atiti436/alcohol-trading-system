@@ -360,9 +360,7 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
       total_price: true,
       actual_total_price: true
     },
-    _count: {
-      id: true
-    }
+    _count: true // 修復：使用 _count: true 避免 id 歧義
   })
 
   // 取得所有相關產品的ID
@@ -399,7 +397,7 @@ async function getProductAnalysisReport(baseWhere: DatabaseWhereCondition, userR
 
     return {
       ...product,
-      salesCount: stat._count.id,
+      salesCount: stat._count, // 修復：_count: true 回傳的是數字，不是物件
       totalQuantity: stat._sum.quantity,
       revenue,
       actualRevenue: userRole === 'INVESTOR' ? undefined : actualRevenue,
