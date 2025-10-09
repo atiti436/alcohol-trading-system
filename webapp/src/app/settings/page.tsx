@@ -17,6 +17,7 @@ import ApiKeySettings from '@/components/settings/ApiKeySettings'
 import LineBotSettings from '@/components/settings/LineBotSettings'
 import UserManagementTab from '@/components/settings/UserManagementTab'
 import CompanyInfoTab from '@/components/settings/CompanyInfoTab'
+import DBHealthTab from '@/components/settings/DBHealthTab'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -316,73 +317,7 @@ export default function SettingsPage() {
         {/* 資料庫設定 - 只有管理員能看到 */}
         {isAdmin && (
           <TabPane tab="資料庫" key="database">
-            <Row gutter={[24, 24]}>
-              <Col xs={24} lg={12}>
-                <Card title={
-                  <React.Fragment>
-                    <DatabaseOutlined style={{ marginRight: 8 }} />
-                    備份設定
-                  </React.Fragment>
-                }>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text>自動備份</Text>
-                      <Switch defaultChecked />
-                    </div>
-                    <div>
-                      <Text strong>備份頻率:</Text>
-                      <Select defaultValue="daily" style={{ width: '100%', marginTop: 8 }}>
-                        <Option value="hourly">每小時</Option>
-                        <Option value="daily">每日</Option>
-                        <Option value="weekly">每週</Option>
-                        <Option value="monthly">每月</Option>
-                      </Select>
-                    </div>
-                    <div>
-                      <Text strong>保留期限:</Text>
-                      <Select defaultValue="30" style={{ width: '100%', marginTop: 8 }}>
-                        <Option value="7">7 天</Option>
-                        <Option value="30">30 天</Option>
-                        <Option value="90">90 天</Option>
-                        <Option value="365">1 年</Option>
-                      </Select>
-                    </div>
-                    <Button type="primary">立即備份</Button>
-                  </Space>
-                </Card>
-              </Col>
-
-              <Col xs={24} lg={12}>
-                <Card title={
-                  <React.Fragment>
-                    <DatabaseOutlined style={{ marginRight: 8 }} />
-                    資料庫狀態
-                  </React.Fragment>
-                }>
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <div>
-                      <Text strong>連接狀態: </Text>
-                      <Text style={{ color: '#52c41a' }}>正常</Text>
-                    </div>
-                    <div>
-                      <Text strong>資料庫大小: </Text>
-                      <Text>125.6 MB</Text>
-                    </div>
-                    <div>
-                      <Text strong>最後備份: </Text>
-                      <Text>2025-09-21 01:30</Text>
-                    </div>
-                    <div>
-                      <Text strong>記錄數量: </Text>
-                      <Text>1,247 筆</Text>
-                    </div>
-                    <Button type="link" danger style={{ padding: 0 }}>
-                      資料庫維護 →
-                    </Button>
-                  </Space>
-                </Card>
-              </Col>
-            </Row>
+            <DBHealthTab />
           </TabPane>
         )}
 
