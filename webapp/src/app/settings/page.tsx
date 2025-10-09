@@ -99,10 +99,12 @@ export default function SettingsPage() {
         tabBarStyle={{
           position: 'sticky',
           top: 0,
-          zIndex: 10,
+          zIndex: 999,
           backgroundColor: '#fff',
           marginBottom: 0,
-          paddingTop: 8
+          paddingTop: 8,
+          paddingBottom: 8,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
         }}
       >
         {/* 公司資訊 */}
