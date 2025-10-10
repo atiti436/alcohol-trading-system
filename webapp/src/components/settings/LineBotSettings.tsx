@@ -49,10 +49,6 @@ export default function LineBotSettings({ onSettingsChange }: LineBotSettingsPro
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
   const [hasSettings, setHasSettings] = useState(false)
 
-  useEffect(() => {
-    loadLineBotSettings()
-  }, [loadLineBotSettings])
-
   // 載入已儲存的 LINE Bot 設定
   const loadLineBotSettings = useCallback(async () => {
     try {
@@ -70,6 +66,10 @@ export default function LineBotSettings({ onSettingsChange }: LineBotSettingsPro
       setLoading(false)
     }
   }, [form])
+
+  useEffect(() => {
+    loadLineBotSettings()
+  }, [loadLineBotSettings])
 
   // 測試 LINE Bot 設定
   const testLineBotSettings = async () => {
