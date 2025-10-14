@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "test -d shared-src && cp -r shared-src shared && echo '✅ Copied shared from shared-src' || (test -d ../shared && cp -r ../shared . && echo '✅ Copied shared from parent') || echo '⚠️ No shared directory found'",
+    "postinstall": "test -d shared-src && cp -r shared-src shared && echo '✅ Copied shared from shared-src' || (test -d ../shared && cp -r ../shared . && echo '✅ Copied shared from parent') || echo '⚠️ No shared directory found'; prisma generate",
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma db push --accept-data-loss && next build",
     "start": "next start",
     "lint": "eslint src",
     "test": "jest",
