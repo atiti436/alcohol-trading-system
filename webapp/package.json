@@ -5,8 +5,8 @@
   "scripts": {
     "postinstall": "test -d shared-src && cp -r shared-src shared && echo '✅ Copied shared from shared-src' || (test -d ../shared && cp -r ../shared . && echo '✅ Copied shared from parent') || echo '⚠️ No shared directory found'; prisma generate",
     "dev": "next dev",
-    "build": "prisma db push --accept-data-loss && next build",
-    "start": "next start",
+    "build": "next build",
+    "start": "prisma db push --accept-data-loss && next start",
     "lint": "eslint src",
     "test": "jest",
     "test:security": "jest src/tests/security/",
