@@ -303,6 +303,7 @@ model Purchase {
   accounts_payable   AccountsPayable[]
   creator            User              @relation(fields: [created_by], references: [id])
   Import             Import[]
+  quotations         Quotation[] // 關聯的報價單
 
   @@map("purchases")
 }
@@ -577,13 +578,15 @@ model Quotation {
   quoted_by     String
   source        String          @default("WEB")
   line_user_id  String?
-  sale_id       String? // 關聯銷售單 (轉單追蹤)
+  sale_id       String? // 關聯銷售單 (轉銷售單追蹤)
+  purchase_id   String? // 關聯採購單 (轉採購單追蹤)
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
   customer      Customer        @relation(fields: [customer_id], references: [id])
   product       Product?        @relation(fields: [product_id], references: [id])
   quoter        User            @relation(fields: [quoted_by], references: [id])
   sale          Sale?           @relation(fields: [sale_id], references: [id], onDelete: Restrict)
+  purchase      Purchase?       @relation(fields: [purchase_id], references: [id], onDelete: Restrict)
 
   @@map("quotations")
 }
@@ -730,9 +733,10 @@ enum CustomerTier {
 
 enum QuotationStatus {
   PENDING
-  ACCEPTED
+  CONVERTED_TO_SALE     // 已轉銷售單
+  CONVERTED_TO_PURCHASE // 已轉採購單
   REJECTED
-  EXPIRED
+  // EXPIRED 已移除 - 改由前端自動判斷 valid_until
 }
 
 // 審計日誌模型

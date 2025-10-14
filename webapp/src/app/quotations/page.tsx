@@ -51,7 +51,7 @@ interface Quotation {
   unit_price: number
   total_amount: number
   special_notes?: string
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED'
+  status: 'PENDING' | 'CONVERTED_TO_SALE' | 'CONVERTED_TO_PURCHASE' | 'REJECTED'
   valid_until?: string
   source: 'WEB' | 'LINE_BOT'
   line_user_id?: string
@@ -84,7 +84,7 @@ export default function QuotationsPage() {
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
-    accepted: 0,
+    converted: 0,
     rejected: 0
   })
 
@@ -241,6 +241,85 @@ export default function QuotationsPage() {
     }
   }
 
+  // 轉銷售單
+  const handleConvertToSale = async (quotationId: string) => {
+    Modal.confirm({
+      title: '確認轉換為銷售單',
+      content: '此操作將創建新的銷售單並更新報價單狀態',
+      onOk: async () => {
+        try {
+          const response = await fetch(`/api/quotations/${quotationId}/convert-to-sale`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
+          const data = await response.json()
+          if (response.ok) {
+            message.success(`成功轉換為銷售單！銷售單號：${data.data.sale.sale_code}`)
+            loadQuotations()
+            loadStats()
+          } else {
+            message.error(data.error || '轉換失敗')
+          }
+        } catch (error) {
+          message.error('轉換失敗')
+        }
+      }
+    })
+  }
+
+  // 轉採購單
+  const handleConvertToPurchase = async (quotationId: string) => {
+    Modal.confirm({
+      title: '確認轉換為採購單',
+      content: (
+        <Form layout="vertical">
+          <Form.Item label="供應商名稱" required>
+            <Input id="supplier-input" placeholder="請輸入供應商名稱" />
+          </Form.Item>
+          <Form.Item label="幣別">
+            <Select id="currency-select" defaultValue="JPY">
+              <Option value="JPY">JPY</Option>
+              <Option value="TWD">TWD</Option>
+              <Option value="USD">USD</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="匯率">
+            <Input id="exchange-rate-input" type="number" defaultValue="1.0" step="0.01" />
+          </Form.Item>
+        </Form>
+      ),
+      onOk: async () => {
+        const supplier = (document.getElementById('supplier-input') as HTMLInputElement)?.value
+        const currency = (document.getElementById('currency-select') as HTMLSelectElement)?.value || 'JPY'
+        const exchange_rate = parseFloat((document.getElementById('exchange-rate-input') as HTMLInputElement)?.value || '1.0')
+
+        if (!supplier) {
+          message.error('請輸入供應商名稱')
+          return Promise.reject()
+        }
+
+        try {
+          const response = await fetch(`/api/quotations/${quotationId}/convert-to-purchase`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ supplier, currency, exchange_rate })
+          })
+          const data = await response.json()
+          if (response.ok) {
+            message.success(`成功轉換為採購單！採購單號：${data.data.purchase.purchase_number}`)
+            loadQuotations()
+            loadStats()
+          } else {
+            message.error(data.error || '轉換失敗')
+          }
+        } catch (error) {
+          message.error('轉換失敗')
+        }
+      }
+    })
+  }
+
   const handleCreateQuotation = async (values: any) => {
     try {
       const payload = {
@@ -279,9 +358,9 @@ export default function QuotationsPage() {
   const getStatusTag = (status: string) => {
     const statusConfig = {
       PENDING: { color: 'orange', icon: <ClockCircleOutlined />, text: '待回覆' },
-      ACCEPTED: { color: 'green', icon: <CheckCircleOutlined />, text: '已接受' },
-      REJECTED: { color: 'red', icon: <CloseCircleOutlined />, text: '已拒絕' },
-      EXPIRED: { color: 'default', icon: <ExclamationCircleOutlined />, text: '已過期' }
+      CONVERTED_TO_SALE: { color: 'green', icon: <CheckCircleOutlined />, text: '已轉銷售單' },
+      CONVERTED_TO_PURCHASE: { color: 'blue', icon: <CheckCircleOutlined />, text: '已轉採購單' },
+      REJECTED: { color: 'red', icon: <CloseCircleOutlined />, text: '已拒絕' }
     }
 
     const config = statusConfig[status as keyof typeof statusConfig]
@@ -394,28 +473,9 @@ export default function QuotationsPage() {
     {
       title: '操作',
       key: 'actions',
-      width: 150,
+      width: 200,
       render: (_: any, record: Quotation) => {
-        const statusMenuItems: MenuProps['items'] = [
-          {
-            key: 'ACCEPTED',
-            label: '標記為已接受',
-            icon: <CheckCircleOutlined />,
-            disabled: record.status === 'ACCEPTED'
-          },
-          {
-            key: 'REJECTED',
-            label: '標記為已拒絕',
-            icon: <CloseCircleOutlined />,
-            disabled: record.status === 'REJECTED'
-          },
-          {
-            key: 'EXPIRED',
-            label: '標記為已過期',
-            icon: <ExclamationCircleOutlined />,
-            disabled: record.status === 'EXPIRED'
-          }
-        ]
+        const isPending = record.status === 'PENDING'
 
         return (
           <Space size="small">
@@ -433,20 +493,39 @@ export default function QuotationsPage() {
               onClick={() => handleEditQuotation(record)}
               title="編輯報價"
             />
-            <Dropdown
-              menu={{
-                items: statusMenuItems,
-                onClick: ({ key }) => handleStatusUpdate(record.id, key)
-              }}
-              trigger={['click']}
-            >
+            {isPending && (
+              <>
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={() => handleConvertToSale(record.id)}
+                  title="轉銷售單"
+                  style={{ color: '#52c41a' }}
+                >
+                  轉銷售單
+                </Button>
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={() => handleConvertToPurchase(record.id)}
+                  title="轉採購單"
+                  style={{ color: '#1890ff' }}
+                >
+                  轉採購單
+                </Button>
+              </>
+            )}
+            {isPending && (
               <Button
                 type="text"
-                icon={<MoreOutlined />}
                 size="small"
-                title="更多操作"
-              />
-            </Dropdown>
+                onClick={() => handleStatusUpdate(record.id, 'REJECTED')}
+                title="拒絕"
+                danger
+              >
+                拒絕
+              </Button>
+            )}
             <Popconfirm
               title="確定要刪除此報價嗎？"
               description="刪除後將無法復原"
@@ -493,7 +572,7 @@ export default function QuotationsPage() {
         </Col>
         <Col xs={24} sm={12} md={6}>
           <Card>
-            <Statistic title="已接受" value={stats.accepted} valueStyle={{ color: '#52c41a' }} />
+            <Statistic title="已轉換" value={stats.converted} valueStyle={{ color: '#52c41a' }} />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
@@ -522,9 +601,9 @@ export default function QuotationsPage() {
               onChange={(value) => handleFilterChange('status', value || '')}
             >
               <Option value="PENDING">待回覆</Option>
-              <Option value="ACCEPTED">已接受</Option>
+              <Option value="CONVERTED_TO_SALE">已轉銷售單</Option>
+              <Option value="CONVERTED_TO_PURCHASE">已轉採購單</Option>
               <Option value="REJECTED">已拒絕</Option>
-              <Option value="EXPIRED">已過期</Option>
             </Select>
           </Col>
           <Col xs={24} sm={4}>
@@ -727,9 +806,9 @@ export default function QuotationsPage() {
             >
               <Select placeholder="選擇狀態">
                 <Option value="PENDING">待回覆</Option>
-                <Option value="ACCEPTED">已接受</Option>
+                <Option value="CONVERTED_TO_SALE">已轉銷售單</Option>
+                <Option value="CONVERTED_TO_PURCHASE">已轉採購單</Option>
                 <Option value="REJECTED">已拒絕</Option>
-                <Option value="EXPIRED">已過期</Option>
               </Select>
             </Form.Item>
           )}
